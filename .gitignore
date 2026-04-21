@@ -1,0 +1,40 @@
+# Environment and secrets
+.env
+.env.*
+.token
+
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build output
+dist/
+client/dist/
+server/dist/
+.vite/
+client/node_modules/.vite/
+*.tsbuildinfo
+
+# Runtime data
+server/data/*.sqlite
+server/data/*.sqlite-shm
+server/data/*.sqlite-wal
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.idea/
+.vscode/
+
+# Local planning docs
+plan.md

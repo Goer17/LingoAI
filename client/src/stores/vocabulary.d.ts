@@ -1,0 +1,551 @@
+import type { QuizSession, SearchResult, VocabularyEntry } from '@/types/models';
+export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabulary", Pick<{
+    items: import("vue").Ref<{
+        id: string;
+        text: string;
+        type: import("@/types/models").WordType;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+        note: string;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
+    }[], VocabularyEntry[] | {
+        id: string;
+        text: string;
+        type: import("@/types/models").WordType;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+        note: string;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
+    }[]>;
+    selectedId: import("vue").Ref<string, string>;
+    selectedWord: import("vue").ComputedRef<{
+        id: string;
+        text: string;
+        type: import("@/types/models").WordType;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+        note: string;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
+    } | null>;
+    searchResult: import("vue").Ref<{
+        text: string;
+        type: import("@/types/models").WordType;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+    } | null, SearchResult | {
+        text: string;
+        type: import("@/types/models").WordType;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+    } | null>;
+    loading: import("vue").Ref<boolean, boolean>;
+    searching: import("vue").Ref<boolean, boolean>;
+    savingWord: import("vue").Ref<boolean, boolean>;
+    quizSession: import("vue").Ref<{
+        id: string;
+        createdAt: string;
+        questionIds: string[];
+        questions: {
+            id: string;
+            type: import("@/types/models").QuizType;
+            word: string;
+            sentence: string;
+            answer: string;
+            ttsText?: string | undefined;
+            audioUrl?: string | undefined;
+        }[];
+        currentIndex: number;
+        answers: {
+            questionId: string;
+            response: string;
+            isCorrect: boolean;
+        }[];
+        completed: boolean;
+    } | null, QuizSession | {
+        id: string;
+        createdAt: string;
+        questionIds: string[];
+        questions: {
+            id: string;
+            type: import("@/types/models").QuizType;
+            word: string;
+            sentence: string;
+            answer: string;
+            ttsText?: string | undefined;
+            audioUrl?: string | undefined;
+        }[];
+        currentIndex: number;
+        answers: {
+            questionId: string;
+            response: string;
+            isCorrect: boolean;
+        }[];
+        completed: boolean;
+    } | null>;
+    fetchVocabulary: () => Promise<void>;
+    selectWord: (id: string) => Promise<void>;
+    searchWord: (query: string) => Promise<void>;
+    saveWord: () => Promise<{
+        created: boolean;
+        entry: VocabularyEntry;
+    }>;
+    updateNote: (note: string) => Promise<void>;
+    sendChatMessage: (message: string) => Promise<string>;
+    clearChatHistory: () => Promise<VocabularyEntry>;
+    generateQuiz: () => Promise<{
+        id: string;
+        createdAt: string;
+        questionIds: string[];
+        questions: {
+            id: string;
+            type: import("@/types/models").QuizType;
+            word: string;
+            sentence: string;
+            answer: string;
+            ttsText?: string | undefined;
+            audioUrl?: string | undefined;
+        }[];
+        currentIndex: number;
+        answers: {
+            questionId: string;
+            response: string;
+            isCorrect: boolean;
+        }[];
+        completed: boolean;
+    }>;
+    loadQuiz: (id: string) => Promise<void>;
+    submitQuizAnswer: (questionId: string, response: string) => Promise<{
+        session: QuizSession;
+        vocabulary?: VocabularyEntry[];
+    }>;
+}, "loading" | "items" | "selectedId" | "searchResult" | "searching" | "savingWord" | "quizSession">, Pick<{
+    items: import("vue").Ref<{
+        id: string;
+        text: string;
+        type: import("@/types/models").WordType;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+        note: string;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
+    }[], VocabularyEntry[] | {
+        id: string;
+        text: string;
+        type: import("@/types/models").WordType;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+        note: string;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
+    }[]>;
+    selectedId: import("vue").Ref<string, string>;
+    selectedWord: import("vue").ComputedRef<{
+        id: string;
+        text: string;
+        type: import("@/types/models").WordType;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+        note: string;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
+    } | null>;
+    searchResult: import("vue").Ref<{
+        text: string;
+        type: import("@/types/models").WordType;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+    } | null, SearchResult | {
+        text: string;
+        type: import("@/types/models").WordType;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+    } | null>;
+    loading: import("vue").Ref<boolean, boolean>;
+    searching: import("vue").Ref<boolean, boolean>;
+    savingWord: import("vue").Ref<boolean, boolean>;
+    quizSession: import("vue").Ref<{
+        id: string;
+        createdAt: string;
+        questionIds: string[];
+        questions: {
+            id: string;
+            type: import("@/types/models").QuizType;
+            word: string;
+            sentence: string;
+            answer: string;
+            ttsText?: string | undefined;
+            audioUrl?: string | undefined;
+        }[];
+        currentIndex: number;
+        answers: {
+            questionId: string;
+            response: string;
+            isCorrect: boolean;
+        }[];
+        completed: boolean;
+    } | null, QuizSession | {
+        id: string;
+        createdAt: string;
+        questionIds: string[];
+        questions: {
+            id: string;
+            type: import("@/types/models").QuizType;
+            word: string;
+            sentence: string;
+            answer: string;
+            ttsText?: string | undefined;
+            audioUrl?: string | undefined;
+        }[];
+        currentIndex: number;
+        answers: {
+            questionId: string;
+            response: string;
+            isCorrect: boolean;
+        }[];
+        completed: boolean;
+    } | null>;
+    fetchVocabulary: () => Promise<void>;
+    selectWord: (id: string) => Promise<void>;
+    searchWord: (query: string) => Promise<void>;
+    saveWord: () => Promise<{
+        created: boolean;
+        entry: VocabularyEntry;
+    }>;
+    updateNote: (note: string) => Promise<void>;
+    sendChatMessage: (message: string) => Promise<string>;
+    clearChatHistory: () => Promise<VocabularyEntry>;
+    generateQuiz: () => Promise<{
+        id: string;
+        createdAt: string;
+        questionIds: string[];
+        questions: {
+            id: string;
+            type: import("@/types/models").QuizType;
+            word: string;
+            sentence: string;
+            answer: string;
+            ttsText?: string | undefined;
+            audioUrl?: string | undefined;
+        }[];
+        currentIndex: number;
+        answers: {
+            questionId: string;
+            response: string;
+            isCorrect: boolean;
+        }[];
+        completed: boolean;
+    }>;
+    loadQuiz: (id: string) => Promise<void>;
+    submitQuizAnswer: (questionId: string, response: string) => Promise<{
+        session: QuizSession;
+        vocabulary?: VocabularyEntry[];
+    }>;
+}, "selectedWord">, Pick<{
+    items: import("vue").Ref<{
+        id: string;
+        text: string;
+        type: import("@/types/models").WordType;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+        note: string;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
+    }[], VocabularyEntry[] | {
+        id: string;
+        text: string;
+        type: import("@/types/models").WordType;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+        note: string;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
+    }[]>;
+    selectedId: import("vue").Ref<string, string>;
+    selectedWord: import("vue").ComputedRef<{
+        id: string;
+        text: string;
+        type: import("@/types/models").WordType;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+        note: string;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
+    } | null>;
+    searchResult: import("vue").Ref<{
+        text: string;
+        type: import("@/types/models").WordType;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+    } | null, SearchResult | {
+        text: string;
+        type: import("@/types/models").WordType;
+        pronunciation: string;
+        meanings: {
+            partOfSpeech: string;
+            englishMeaning: string;
+            chineseMeaning: string;
+            example: string;
+            exampleTranslation: string;
+        }[];
+        derivatives: string[];
+        ttsText: string;
+    } | null>;
+    loading: import("vue").Ref<boolean, boolean>;
+    searching: import("vue").Ref<boolean, boolean>;
+    savingWord: import("vue").Ref<boolean, boolean>;
+    quizSession: import("vue").Ref<{
+        id: string;
+        createdAt: string;
+        questionIds: string[];
+        questions: {
+            id: string;
+            type: import("@/types/models").QuizType;
+            word: string;
+            sentence: string;
+            answer: string;
+            ttsText?: string | undefined;
+            audioUrl?: string | undefined;
+        }[];
+        currentIndex: number;
+        answers: {
+            questionId: string;
+            response: string;
+            isCorrect: boolean;
+        }[];
+        completed: boolean;
+    } | null, QuizSession | {
+        id: string;
+        createdAt: string;
+        questionIds: string[];
+        questions: {
+            id: string;
+            type: import("@/types/models").QuizType;
+            word: string;
+            sentence: string;
+            answer: string;
+            ttsText?: string | undefined;
+            audioUrl?: string | undefined;
+        }[];
+        currentIndex: number;
+        answers: {
+            questionId: string;
+            response: string;
+            isCorrect: boolean;
+        }[];
+        completed: boolean;
+    } | null>;
+    fetchVocabulary: () => Promise<void>;
+    selectWord: (id: string) => Promise<void>;
+    searchWord: (query: string) => Promise<void>;
+    saveWord: () => Promise<{
+        created: boolean;
+        entry: VocabularyEntry;
+    }>;
+    updateNote: (note: string) => Promise<void>;
+    sendChatMessage: (message: string) => Promise<string>;
+    clearChatHistory: () => Promise<VocabularyEntry>;
+    generateQuiz: () => Promise<{
+        id: string;
+        createdAt: string;
+        questionIds: string[];
+        questions: {
+            id: string;
+            type: import("@/types/models").QuizType;
+            word: string;
+            sentence: string;
+            answer: string;
+            ttsText?: string | undefined;
+            audioUrl?: string | undefined;
+        }[];
+        currentIndex: number;
+        answers: {
+            questionId: string;
+            response: string;
+            isCorrect: boolean;
+        }[];
+        completed: boolean;
+    }>;
+    loadQuiz: (id: string) => Promise<void>;
+    submitQuizAnswer: (questionId: string, response: string) => Promise<{
+        session: QuizSession;
+        vocabulary?: VocabularyEntry[];
+    }>;
+}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "generateQuiz" | "loadQuiz" | "submitQuizAnswer">>;

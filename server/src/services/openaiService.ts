@@ -1,0 +1,113 @@
+import OpenAI from 'openai';
+import { z } from 'zod';
+import { getSettings } from './settingsService.js';
+import type { QuizDraftQuestion, SearchResult } from '../types/models.js';
+
+const searchResultSchema = z.object({
+  text: z.string().min(1),
+  type: z.enum(['word', 'phrase']),
+  pronunciation: z.string().min(1),
+  meanings: z.array(z.object({
+    partOfSpeech: z.string().min(1),
+    englishMeaning: z.string().min(1),
+    chineseMeaning: z.string().min(1),
+    example: z.string().min(1),
+    exampleTranslation: z.string().min(1),
+  })).min(1),
+  derivatives: z.array(z.string()),
+  ttsText: z.string().min(1),
+});
+
+const quizSchema = z.object({
+  questions: z.array(z.object({
+    type: z.enum(['fill_blank', 'listening']),
+    word: z.string().min(1),
+    sentence: z.string().min(1),
+    answer: z.string().min(1),
+    ttsText: z.string().optional(),
+  })).min(1),
+});
+
+function getClient() {
+  const settings = getSettings();
+
+  if (!settings.baseUrl || !settings.apiKey || !settings.languageModel || !settings.audioModel) {
+    throw new Error('Model settings are incomplete. Please update them in Setting.');
+  }
+
+  return {
+    settings,
+    client: new OpenAI({
+      baseURL: settings.baseUrl,
+      apiKey: settings.apiKey,
+    }),
+  };
+}
+
+async function requestJson<T>(prompt: string, parser: z.ZodSchema<T>): Promise<T> {
+  const { client, settings } = getClient();
+  const response = await client.chat.completions.create({
+    model: settings.languageModel,
+    temperature: 0.3,
+    response_format: { type: 'json_object' },
+    messages: [
+      {
+        role: 'system',
+        content: 'Return valid JSON only.',
+      },
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+  });
+
+  const content = response.choices[0]?.message?.content;
+  if (!content) {
+    throw new Error('The language model returned an empty response.');
+  }
+
+  return parser.parse(JSON.parse(content));
+}
+
+export async function searchWord(prompt: string): Promise<SearchResult> {
+  return requestJson(prompt, searchResultSchema);
+}
+
+export async function generateQuiz(prompt: string): Promise<{ questions: QuizDraftQuestion[] }> {
+  return requestJson(prompt, quizSchema);
+}
+
+export async function askWordChat(prompt: string): Promise<string> {
+  const { client, settings } = getClient();
+  const response = await client.chat.completions.create({
+    model: settings.languageModel,
+    temperature: 0.6,
+    messages: [
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+  });
+
+  const content = response.choices[0]?.message?.content?.trim();
+  if (!content) {
+    throw new Error('The language model returned an empty reply.');
+  }
+
+  return content;
+}
+
+export async function generateAudioBase64(input: string): Promise<string> {
+  const { client, settings } = getClient();
+  const response = await client.audio.speech.create({
+    model: settings.audioModel,
+    voice: 'alloy',
+    input,
+    response_format: 'mp3',
+  });
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  return buffer.toString('base64');
+}
