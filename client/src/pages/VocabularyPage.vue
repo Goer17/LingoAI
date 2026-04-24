@@ -136,10 +136,10 @@ async function startLearning() {
   error.value = '';
   quizLoading.value = true;
   try {
-    const session = await store.generateQuiz();
-    await router.push(`/quiz/${session.id}`);
+    await store.createVocabularyTask();
+    await router.push('/tasks');
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to create quiz.';
+    error.value = err instanceof Error ? err.message : 'Failed to create task.';
   } finally {
     quizLoading.value = false;
   }

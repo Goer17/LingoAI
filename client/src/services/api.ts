@@ -1,5 +1,5 @@
 import { http, unwrap } from './http';
-import type { QuizSession, SearchResult, SettingsForm, VocabularyEntry } from '@/types/models';
+import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, SearchResult, SettingsForm, VocabularyEntry } from '@/types/models';
 
 export const api = {
   login(token: string) {
@@ -13,6 +13,15 @@ export const api = {
   },
   getVocabulary() {
     return unwrap<VocabularyEntry[]>(http.get('/vocabulary'));
+  },
+  getListening() {
+    return unwrap<ListeningEntry[]>(http.get('/vocabulary/listening'));
+  },
+  addListeningSentence(sentence: string) {
+    return unwrap<{ created: boolean; entry: ListeningEntry }>(http.post('/vocabulary/listening', { sentence }));
+  },
+  deleteListeningSentence(id: string) {
+    return unwrap<{ removed: boolean }>(http.post(`/vocabulary/listening/${id}/delete`));
   },
   getWord(id: string) {
     return unwrap<VocabularyEntry>(http.get(`/vocabulary/${id}`));
@@ -38,10 +47,25 @@ export const api = {
   generateQuiz() {
     return unwrap<QuizSession>(http.post('/vocabulary/generate-quiz'));
   },
+  createVocabularyTask() {
+    return unwrap<LearningTask>(http.post('/vocabulary/tasks/vocabulary'));
+  },
+  createListeningTask() {
+    return unwrap<LearningTask>(http.post('/vocabulary/tasks/listening'));
+  },
+  getTasks() {
+    return unwrap<{ tasks: LearningTask[]; mistakes: MistakeEntry[] }>(http.get('/vocabulary/tasks'));
+  },
+  startTask(taskId: string) {
+    return unwrap<{ sessionId: string }>(http.post(`/vocabulary/tasks/${taskId}/start`));
+  },
+  startMistakeReview() {
+    return unwrap<{ sessionId: string }>(http.post('/vocabulary/tasks/mistakes/start'));
+  },
   getQuiz(id: string) {
     return unwrap<QuizSession>(http.get(`/vocabulary/quiz/${id}`));
   },
   submitQuizAnswer(id: string, questionId: string, response: string) {
-    return unwrap<{ session: QuizSession; vocabulary?: VocabularyEntry[] }>(http.post(`/vocabulary/quiz/${id}/answer`, { questionId, response }));
+    return unwrap<{ session: QuizSession; vocabulary?: VocabularyEntry[]; listening?: ListeningEntry[] }>(http.post(`/vocabulary/quiz/${id}/answer`, { questionId, response }));
   },
 };

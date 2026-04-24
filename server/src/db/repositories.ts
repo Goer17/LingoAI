@@ -1,5 +1,5 @@
 import { db } from './database.js';
-import type { QuizSession, Settings, VocabularyEntry } from '../types/models.js';
+import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, Settings, VocabularyEntry } from '../types/models.js';
 
 function parseJson<T>(value: string): T {
   return JSON.parse(value) as T;
@@ -163,19 +163,182 @@ export const quizRepository = {
 
   save(session: QuizSession) {
     db.prepare(`
-      INSERT INTO quiz_sessions (id, created_at, current_index, completed, payload_json)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO quiz_sessions (id, created_at, source_type, current_index, completed, payload_json)
+      VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         created_at = excluded.created_at,
+        source_type = excluded.source_type,
         current_index = excluded.current_index,
         completed = excluded.completed,
         payload_json = excluded.payload_json
     `).run(
       session.id,
       session.createdAt,
+      session.sourceType,
       session.currentIndex,
       session.completed ? 1 : 0,
       JSON.stringify(session),
     );
+  },
+};
+
+export const taskRepository = {
+  list(): LearningTask[] {
+    const rows = db.prepare(`
+      SELECT payload_json
+      FROM learning_tasks
+      ORDER BY created_at DESC
+    `).all() as Array<{ payload_json: string }>;
+
+    return rows.map((row) => parseJson<LearningTask>(row.payload_json));
+  },
+
+  getById(id: string): LearningTask | null {
+    const row = db.prepare(`
+      SELECT payload_json
+      FROM learning_tasks
+      WHERE id = ?
+    `).get(id) as { payload_json: string } | undefined;
+
+    return row ? parseJson<LearningTask>(row.payload_json) : null;
+  },
+
+  save(task: LearningTask) {
+    db.prepare(`
+      INSERT INTO learning_tasks (id, type, status, created_at, updated_at, quiz_session_id, question_count, error, payload_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        type = excluded.type,
+        status = excluded.status,
+        created_at = excluded.created_at,
+        updated_at = excluded.updated_at,
+        quiz_session_id = excluded.quiz_session_id,
+        question_count = excluded.question_count,
+        error = excluded.error,
+        payload_json = excluded.payload_json
+    `).run(
+      task.id,
+      task.type,
+      task.status,
+      task.createdAt,
+      task.updatedAt,
+      task.quizSessionId,
+      task.questionCount,
+      task.error,
+      JSON.stringify(task),
+    );
+  },
+
+  remove(id: string) {
+    db.prepare('DELETE FROM learning_tasks WHERE id = ?').run(id);
+  },
+
+  removeByQuizSessionId(quizSessionId: string) {
+    db.prepare('DELETE FROM learning_tasks WHERE quiz_session_id = ?').run(quizSessionId);
+  },
+};
+
+export const mistakeRepository = {
+  list(): MistakeEntry[] {
+    const rows = db.prepare(`
+      SELECT payload_json
+      FROM mistake_entries
+      ORDER BY created_at DESC
+    `).all() as Array<{ payload_json: string }>;
+
+    return rows.map((row) => parseJson<MistakeEntry>(row.payload_json));
+  },
+
+  getById(id: string): MistakeEntry | null {
+    const row = db.prepare(`
+      SELECT payload_json
+      FROM mistake_entries
+      WHERE id = ?
+    `).get(id) as { payload_json: string } | undefined;
+
+    return row ? parseJson<MistakeEntry>(row.payload_json) : null;
+  },
+
+  save(entry: MistakeEntry) {
+    db.prepare(`
+      INSERT INTO mistake_entries (id, created_at, updated_at, type, word, payload_json)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        created_at = excluded.created_at,
+        updated_at = excluded.updated_at,
+        type = excluded.type,
+        word = excluded.word,
+        payload_json = excluded.payload_json
+    `).run(
+      entry.id,
+      entry.createdAt,
+      entry.updatedAt,
+      entry.type,
+      entry.word,
+      JSON.stringify(entry),
+    );
+  },
+
+  remove(id: string) {
+    db.prepare('DELETE FROM mistake_entries WHERE id = ?').run(id);
+  },
+};
+
+export const listeningRepository = {
+  list(): ListeningEntry[] {
+    const rows = db.prepare(`
+      SELECT payload_json
+      FROM listening_entries
+      ORDER BY familiarity ASC, created_at DESC
+    `).all() as Array<{ payload_json: string }>;
+
+    return rows.map((row) => parseJson<ListeningEntry>(row.payload_json));
+  },
+
+  getById(id: string): ListeningEntry | null {
+    const row = db.prepare(`
+      SELECT payload_json
+      FROM listening_entries
+      WHERE id = ?
+    `).get(id) as { payload_json: string } | undefined;
+
+    return row ? parseJson<ListeningEntry>(row.payload_json) : null;
+  },
+
+  getByNormalizedSentence(normalizedSentence: string): ListeningEntry | null {
+    const row = db.prepare(`
+      SELECT payload_json
+      FROM listening_entries
+      WHERE normalized_sentence = ?
+    `).get(normalizedSentence) as { payload_json: string } | undefined;
+
+    return row ? parseJson<ListeningEntry>(row.payload_json) : null;
+  },
+
+  save(entry: ListeningEntry) {
+    db.prepare(`
+      INSERT INTO listening_entries (
+        id, sentence, normalized_sentence, familiarity, created_at, updated_at, payload_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        sentence = excluded.sentence,
+        normalized_sentence = excluded.normalized_sentence,
+        familiarity = excluded.familiarity,
+        created_at = excluded.created_at,
+        updated_at = excluded.updated_at,
+        payload_json = excluded.payload_json
+    `).run(
+      entry.id,
+      entry.sentence,
+      entry.sentence.trim().toLowerCase(),
+      entry.familiarity,
+      entry.createdAt,
+      entry.updatedAt,
+      JSON.stringify(entry),
+    );
+  },
+
+  remove(id: string) {
+    db.prepare('DELETE FROM listening_entries WHERE id = ?').run(id);
   },
 };

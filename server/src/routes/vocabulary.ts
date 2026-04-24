@@ -5,8 +5,21 @@ import { createGenerateQuizPrompt } from '../prompts/generateQuizPrompt.js';
 import { createSearchWordPrompt } from '../prompts/searchWordPrompt.js';
 import { createAudioDataUrl } from '../services/audioService.js';
 import { askWordChat, generateQuiz, searchWord } from '../services/openaiService.js';
+import { addListeningSentence, applyListeningQuizResults, createListeningQuizDraft, listListeningEntries, pickListeningEntries, removeListeningSentence } from '../services/listeningService.js';
 import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, updateWordNote } from '../services/vocabularyService.js';
 import { createQuizSession, getQuizSession, pickQuizEntries, submitQuizAnswer } from '../services/quizService.js';
+import {
+  createLearningTask,
+  createMistakeReviewSession,
+  getLearningTask,
+  listLearningTasks,
+  listMistakeEntries,
+  markLearningTaskFailed,
+  markLearningTaskReady,
+  removeLearningTaskByQuizSessionId,
+  reconcileMistakesForCompletedSession,
+  upsertMistakesFromSession,
+} from '../services/taskService.js';
 import { createId } from '../utils/id.js';
 import { fail, ok } from '../utils/http.js';
 
@@ -48,7 +61,80 @@ const answerSchema = z.object({
   response: z.string(),
 });
 
+const listeningSentenceSchema = z.object({
+  sentence: z.string().min(1),
+});
+
 export const vocabularyRouter = Router();
+
+async function generateVocabularyQuizSession() {
+  const entries = pickQuizEntries(listVocabulary());
+  if (entries.length === 0) {
+    throw new Error('No vocabulary available for learning.');
+  }
+
+  const prompt = createGenerateQuizPrompt(entries);
+  const result = await generateQuiz(prompt);
+  const questions = await Promise.all(result.questions.map(async (question) => {
+    const audioUrl = question.type === 'listening' && question.ttsText
+      ? await createAudioDataUrl(question.ttsText)
+      : undefined;
+
+    return {
+      ...question,
+      id: createId('question'),
+      audioUrl,
+    };
+  }));
+
+  return createQuizSession(questions, 'vocabulary_task');
+}
+
+async function processVocabularyTask(taskId: string) {
+  try {
+    const session = await generateVocabularyQuizSession();
+    markLearningTaskReady(taskId, {
+      quizSessionId: session.id,
+      questionCount: session.questions.length,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Quiz generation failed.';
+    markLearningTaskFailed(taskId, message);
+  }
+}
+
+async function generateListeningQuizSession() {
+  const entries = pickListeningEntries(listListeningEntries());
+  if (entries.length === 0) {
+    throw new Error('No listening sentences available for learning.');
+  }
+
+  const questions = await Promise.all(entries.map(async (entry) => {
+    const draft = createListeningQuizDraft(entry);
+    const audioUrl = await createAudioDataUrl(draft.ttsText ?? draft.sentence);
+
+    return {
+      ...draft,
+      id: createId('question'),
+      audioUrl,
+    };
+  }));
+
+  return createQuizSession(questions, 'listening_task');
+}
+
+async function processListeningTask(taskId: string) {
+  try {
+    const session = await generateListeningQuizSession();
+    markLearningTaskReady(taskId, {
+      quizSessionId: session.id,
+      questionCount: session.questions.length,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Listening quiz generation failed.';
+    markLearningTaskFailed(taskId, message);
+  }
+}
 
 vocabularyRouter.get('/', (_req, res) => ok(res, listVocabulary()));
 
@@ -59,6 +145,76 @@ vocabularyRouter.get('/quiz/:id', (req, res) => {
   }
 
   return ok(res, session);
+});
+
+vocabularyRouter.get('/tasks', (_req, res) => ok(res, {
+  tasks: listLearningTasks(),
+  mistakes: listMistakeEntries(),
+}));
+
+vocabularyRouter.get('/listening', (_req, res) => ok(res, listListeningEntries()));
+
+vocabularyRouter.post('/listening', (req, res) => {
+  const parsed = listeningSentenceSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return fail(res, 400, 'Sentence is required.');
+  }
+
+  const data = addListeningSentence(parsed.data.sentence);
+  return ok(res, data);
+});
+
+vocabularyRouter.post('/listening/:id/delete', (req, res) => {
+  const removed = removeListeningSentence(req.params.id);
+  if (!removed) {
+    return fail(res, 404, 'Listening sentence not found.');
+  }
+
+  return ok(res, { removed: true });
+});
+
+vocabularyRouter.post('/tasks/vocabulary', (_req, res) => {
+  const entries = pickQuizEntries(listVocabulary());
+  if (entries.length === 0) {
+    return fail(res, 400, 'No vocabulary available for learning.');
+  }
+
+  const task = createLearningTask('vocabulary');
+  void processVocabularyTask(task.id);
+  return ok(res, task);
+});
+
+vocabularyRouter.post('/tasks/listening', (_req, res) => {
+  const entries = pickListeningEntries(listListeningEntries());
+  if (entries.length === 0) {
+    return fail(res, 400, 'No listening sentences available for learning.');
+  }
+
+  const task = createLearningTask('listening');
+  void processListeningTask(task.id);
+  return ok(res, task);
+});
+
+vocabularyRouter.post('/tasks/mistakes/start', (_req, res) => {
+  const session = createMistakeReviewSession();
+  if (!session) {
+    return fail(res, 400, 'No mistakes available.');
+  }
+
+  return ok(res, { sessionId: session.id });
+});
+
+vocabularyRouter.post('/tasks/:id/start', (req, res) => {
+  const task = getLearningTask(req.params.id);
+  if (!task) {
+    return fail(res, 404, 'Task not found.');
+  }
+
+  if (task.status !== 'ready' || !task.quizSessionId) {
+    return fail(res, 400, 'Task is not ready yet.');
+  }
+
+  return ok(res, { sessionId: task.quizSessionId });
 });
 
 vocabularyRouter.post('/search-word', async (req, res) => {
@@ -161,30 +317,16 @@ vocabularyRouter.post('/generate-audio', async (req, res) => {
 });
 
 vocabularyRouter.post('/generate-quiz', async (_req, res) => {
-  const entries = pickQuizEntries(listVocabulary());
-  if (entries.length === 0) {
-    return fail(res, 400, 'No vocabulary available for learning.');
-  }
-
   try {
-    const prompt = createGenerateQuizPrompt(entries);
-    const result = await generateQuiz(prompt);
-    const questions = await Promise.all(result.questions.map(async (question) => {
-      const audioUrl = question.type === 'listening' && question.ttsText
-        ? await createAudioDataUrl(question.ttsText)
-        : undefined;
-
-      return {
-        ...question,
-        id: createId('question'),
-        audioUrl,
-      };
-    }));
-
-    const session = createQuizSession(questions);
+    const session = await generateVocabularyQuizSession();
     return ok(res, session);
   } catch (error) {
-    return fail(res, 500, error instanceof Error ? error.message : 'Quiz generation failed.');
+    const message = error instanceof Error ? error.message : 'Quiz generation failed.';
+    if (message === 'No vocabulary available for learning.') {
+      return fail(res, 400, message);
+    }
+
+    return fail(res, 500, message);
   }
 });
 
@@ -200,12 +342,30 @@ vocabularyRouter.post('/quiz/:id/answer', (req, res) => {
   }
 
   if (updated.completed) {
-    const answerMap = new Map(updated.questions.map((question) => [question.id, question.word]));
-    const vocabulary = applyQuizResults(updated.answers.map((item) => ({
-      word: answerMap.get(item.questionId) ?? '',
-      isCorrect: item.isCorrect,
-    })));
-    return ok(res, { session: updated, vocabulary });
+    if (updated.sourceType === 'vocabulary_task' || updated.sourceType === 'listening_task') {
+      removeLearningTaskByQuizSessionId(updated.id);
+    }
+    upsertMistakesFromSession(updated);
+    reconcileMistakesForCompletedSession(updated);
+    if (updated.sourceType === 'vocabulary_task') {
+      const answerMap = new Map(updated.questions.map((question) => [question.id, question.word]));
+      const vocabulary = applyQuizResults(updated.answers.map((item) => ({
+        word: answerMap.get(item.questionId) ?? '',
+        isCorrect: item.isCorrect,
+      })));
+      return ok(res, { session: updated, vocabulary });
+    }
+
+    if (updated.sourceType === 'listening_task') {
+      const answerMap = new Map(updated.questions.map((question) => [question.id, question.sentence]));
+      const listening = applyListeningQuizResults(updated.answers.map((item) => ({
+        sentence: answerMap.get(item.questionId) ?? '',
+        isCorrect: item.isCorrect,
+      })));
+      return ok(res, { session: updated, listening });
+    }
+
+    return ok(res, { session: updated });
   }
 
   return ok(res, { session: updated });

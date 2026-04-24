@@ -1,4 +1,4 @@
-import type { QuizSession, SearchResult, SettingsForm, VocabularyEntry } from '@/types/models';
+import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, SearchResult, SettingsForm, VocabularyEntry } from '@/types/models';
 export declare const api: {
     login(token: string): Promise<{
         token: string;
@@ -6,6 +6,14 @@ export declare const api: {
     getSettings(): Promise<SettingsForm>;
     saveSettings(payload: Omit<SettingsForm, "updatedAt">): Promise<SettingsForm>;
     getVocabulary(): Promise<VocabularyEntry[]>;
+    getListening(): Promise<ListeningEntry[]>;
+    addListeningSentence(sentence: string): Promise<{
+        created: boolean;
+        entry: ListeningEntry;
+    }>;
+    deleteListeningSentence(id: string): Promise<{
+        removed: boolean;
+    }>;
     getWord(id: string): Promise<VocabularyEntry>;
     searchWord(query: string): Promise<SearchResult>;
     saveWord(result: SearchResult): Promise<{
@@ -22,9 +30,22 @@ export declare const api: {
         audioUrl: string;
     }>;
     generateQuiz(): Promise<QuizSession>;
+    createVocabularyTask(): Promise<LearningTask>;
+    createListeningTask(): Promise<LearningTask>;
+    getTasks(): Promise<{
+        tasks: LearningTask[];
+        mistakes: MistakeEntry[];
+    }>;
+    startTask(taskId: string): Promise<{
+        sessionId: string;
+    }>;
+    startMistakeReview(): Promise<{
+        sessionId: string;
+    }>;
     getQuiz(id: string): Promise<QuizSession>;
     submitQuizAnswer(id: string, questionId: string, response: string): Promise<{
         session: QuizSession;
         vocabulary?: VocabularyEntry[];
+        listening?: ListeningEntry[];
     }>;
 };

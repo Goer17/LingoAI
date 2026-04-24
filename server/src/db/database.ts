@@ -45,11 +45,61 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS quiz_sessions (
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL,
+    source_type TEXT NOT NULL,
     current_index INTEGER NOT NULL,
     completed INTEGER NOT NULL,
     payload_json TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS learning_tasks (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL,
+    status TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    quiz_session_id TEXT,
+    question_count INTEGER NOT NULL,
+    error TEXT,
+    payload_json TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS mistake_entries (
+    id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    type TEXT NOT NULL,
+    word TEXT NOT NULL,
+    payload_json TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS listening_entries (
+    id TEXT PRIMARY KEY,
+    sentence TEXT NOT NULL,
+    normalized_sentence TEXT NOT NULL UNIQUE,
+    familiarity INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    payload_json TEXT NOT NULL
+  );
+
   CREATE INDEX IF NOT EXISTS idx_vocabulary_order
     ON vocabulary_entries (familiarity ASC, created_at DESC);
+
+  CREATE INDEX IF NOT EXISTS idx_learning_tasks_created
+    ON learning_tasks (created_at DESC);
+
+  CREATE INDEX IF NOT EXISTS idx_mistake_entries_created
+    ON mistake_entries (created_at DESC);
+
+  CREATE INDEX IF NOT EXISTS idx_listening_entries_order
+    ON listening_entries (familiarity ASC, created_at DESC);
 `);
+
+try {
+  db.exec(`
+    ALTER TABLE quiz_sessions
+    ADD COLUMN source_type TEXT NOT NULL DEFAULT 'vocabulary_task';
+  `);
+} catch {
+  // Column already exists.
+}

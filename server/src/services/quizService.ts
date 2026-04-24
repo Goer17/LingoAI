@@ -1,6 +1,6 @@
 import { quizRepository } from '../db/repositories.js';
 import { createId } from '../utils/id.js';
-import type { QuizQuestion, QuizSession, VocabularyEntry } from '../types/models.js';
+import type { QuizQuestion, QuizSession, QuizSourceType, VocabularyEntry } from '../types/models.js';
 
 export function pickQuizEntries(entries: VocabularyEntry[]) {
   return entries
@@ -9,13 +9,14 @@ export function pickQuizEntries(entries: VocabularyEntry[]) {
     .slice(0, 10);
 }
 
-export function createQuizSession(questions: QuizQuestion[]) {
+export function createQuizSession(questions: QuizQuestion[], sourceType: QuizSourceType = 'vocabulary_task') {
   const session: QuizSession = {
     id: createId('quiz'),
     createdAt: new Date().toISOString(),
     questionIds: questions.map((question) => question.id),
     questions,
     currentIndex: 0,
+    sourceType,
     answers: [],
     completed: false,
   };
@@ -25,7 +26,21 @@ export function createQuizSession(questions: QuizQuestion[]) {
 }
 
 export function getQuizSession(id: string) {
-  return quizRepository.getById(id);
+  const session = quizRepository.getById(id);
+  if (!session) {
+    return null;
+  }
+
+  const sourceType: QuizSourceType = session.sourceType === 'mistake_review'
+    ? 'mistake_review'
+    : session.sourceType === 'listening_task'
+      ? 'listening_task'
+      : 'vocabulary_task';
+
+  return {
+    ...session,
+    sourceType,
+  };
 }
 
 export function submitQuizAnswer(
@@ -47,8 +62,8 @@ export function submitQuizAnswer(
     return session;
   }
 
-  const normalizedAnswer = payload.response.trim().toLowerCase();
-  const expected = question.answer.trim().toLowerCase();
+  const normalizedAnswer = payload.response.trim().replace(/\s+/g, ' ').toLowerCase();
+  const expected = question.answer.trim().replace(/\s+/g, ' ').toLowerCase();
   const isCorrect = normalizedAnswer === expected;
 
   const nextAnswers = [

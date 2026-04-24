@@ -38,7 +38,10 @@ export function bootstrapDatabase() {
 
     const sessions = readJsonIfExists<QuizSession[]>(env.legacyQuizSessionsPath) ?? [];
     for (const session of sessions) {
-      quizRepository.save(session);
+      quizRepository.save({
+        ...session,
+        sourceType: session.sourceType ?? 'vocabulary_task',
+      });
     }
 
     metaRepository.set(LEGACY_IMPORT_MARKER, 'done');

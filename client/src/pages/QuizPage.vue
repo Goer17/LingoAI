@@ -4,13 +4,14 @@
       <p class="eyebrow">Session Complete</p>
       <h1>[{{ score }} / {{ total }}]</h1>
       <p class="subtle-copy">Familiarity has been updated based on your answers.</p>
-      <RouterLink class="button button-primary" to="/vocabulary">Back to Vocabulary</RouterLink>
+      <RouterLink class="button button-primary" :to="summaryBackTo">{{ summaryLabel }}</RouterLink>
     </section>
 
     <QuizCard
       v-else
       v-model="answer"
       :submitted-answer="submittedAnswer"
+      :submitted-listening-answers="submittedListeningAnswers"
       :feedback="feedback"
       :feedback-is-correct="feedbackIsCorrect"
       :question="displayQuestion"
@@ -27,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import type { QuizQuestion } from '@/types/models';
 import { RouterLink, useRoute } from 'vue-router';
 import QuizCard from '@/components/QuizCard.vue';
@@ -43,6 +44,9 @@ const feedbackIsCorrect = ref(false);
 const awaitingNext = ref(false);
 const frozenQuestion = ref<QuizQuestion | null>(null);
 const submittedAnswer = ref('');
+const submittedListeningAnswers = ref<string[]>([]);
+const lastAutoPlayedQuestionId = ref('');
+const autoPlayArmed = ref(true);
 
 onMounted(async () => {
   try {
@@ -63,7 +67,15 @@ const total = computed(() => store.quizSession?.questions.length ?? 0);
 const completed = computed(() => Boolean(store.quizSession?.completed));
 const showSummary = computed(() => completed.value && !awaitingNext.value);
 const score = computed(() => store.quizSession?.answers.filter((item) => item.isCorrect).length ?? 0);
-const displayQuestion = computed(() => awaitingNext.value ? frozenQuestion.value : currentQuestion.value);
+const displayQuestion = computed(() => {
+  if (awaitingNext.value || submitting.value) {
+    return frozenQuestion.value ?? currentQuestion.value;
+  }
+
+  return currentQuestion.value;
+});
+const summaryBackTo = computed(() => store.quizSession?.sourceType ? '/tasks' : '/vocabulary');
+const summaryLabel = computed(() => store.quizSession?.sourceType ? 'Back to Tasks' : 'Back to Vocabulary');
 const displayIndex = computed(() => {
   if (!awaitingNext.value) {
     return currentIndex.value;
@@ -72,22 +84,26 @@ const displayIndex = computed(() => {
   return Math.max(currentIndex.value - 1, 0);
 });
 
-async function submit() {
+async function submit(payload?: { response: string; blankAnswers: string[] }) {
   if (submitting.value) {
     return;
   }
 
   if (awaitingNext.value) {
+    autoPlayArmed.value = true;
     awaitingNext.value = false;
     frozenQuestion.value = null;
     submittedAnswer.value = '';
+    submittedListeningAnswers.value = [];
     feedback.value = '';
     answer.value = '';
     return;
   }
 
   const question = currentQuestion.value;
-  const response = answer.value.trim();
+  const response = question?.type === 'listening' && payload?.response
+    ? payload.response.trim()
+    : answer.value.trim();
   if (!question || !response) {
     return;
   }
@@ -95,11 +111,13 @@ async function submit() {
   error.value = '';
   feedback.value = '';
   submitting.value = true;
+  autoPlayArmed.value = false;
+  frozenQuestion.value = question;
   try {
     const data = await store.submitQuizAnswer(question.id, response);
     const answerRecord = data.session.answers.find((item) => item.questionId === question.id);
-    frozenQuestion.value = question;
     submittedAnswer.value = response;
+    submittedListeningAnswers.value = payload?.blankAnswers ? [...payload.blankAnswers] : [];
     awaitingNext.value = true;
     const nextHint = data.session.completed
       ? 'Press Enter again to finish.'
@@ -113,6 +131,8 @@ async function submit() {
       feedback.value = `Incorrect. Correct answer: ${question.answer}. ${nextHint}`;
     }
   } catch (err) {
+    frozenQuestion.value = null;
+    submittedListeningAnswers.value = [];
     error.value = err instanceof Error ? err.message : 'Failed to submit answer.';
   } finally {
     submitting.value = false;
@@ -131,4 +151,27 @@ async function playAudio() {
     error.value = err instanceof Error ? err.message : 'Audio playback failed.';
   }
 }
+
+watch(
+  () => [displayQuestion.value?.id, awaitingNext.value] as const,
+  async ([questionId, waiting]) => {
+    const question = displayQuestion.value;
+    if (!questionId || !question || waiting || !autoPlayArmed.value || question.type !== 'listening' || !question.audioUrl) {
+      return;
+    }
+
+    if (lastAutoPlayedQuestionId.value === questionId) {
+      return;
+    }
+
+    lastAutoPlayedQuestionId.value = questionId;
+    try {
+      const audio = new Audio(question.audioUrl);
+      await audio.play();
+    } catch {
+      // Browser autoplay policies can block playback.
+    }
+  },
+  { immediate: true },
+);
 </script>

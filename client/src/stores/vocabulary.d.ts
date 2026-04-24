@@ -1,4 +1,4 @@
-import type { QuizSession, SearchResult, VocabularyEntry } from '@/types/models';
+import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, SearchResult, VocabularyEntry } from '@/types/models';
 export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabulary", Pick<{
     items: import("vue").Ref<{
         id: string;
@@ -117,8 +117,14 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
+            blanks?: {
+                start: number;
+                end: number;
+                answer: string;
+            }[] | undefined;
         }[];
         currentIndex: number;
+        sourceType: import("@/types/models").QuizSourceType;
         answers: {
             questionId: string;
             response: string;
@@ -137,8 +143,14 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
+            blanks?: {
+                start: number;
+                end: number;
+                answer: string;
+            }[] | undefined;
         }[];
         currentIndex: number;
+        sourceType: import("@/types/models").QuizSourceType;
         answers: {
             questionId: string;
             response: string;
@@ -146,6 +158,71 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         }[];
         completed: boolean;
     } | null>;
+    tasks: import("vue").Ref<{
+        id: string;
+        type: import("@/types/models").LearningTaskType;
+        status: import("@/types/models").LearningTaskStatus;
+        createdAt: string;
+        updatedAt: string;
+        quizSessionId: string | null;
+        questionCount: number;
+        error: string | null;
+    }[], LearningTask[] | {
+        id: string;
+        type: import("@/types/models").LearningTaskType;
+        status: import("@/types/models").LearningTaskStatus;
+        createdAt: string;
+        updatedAt: string;
+        quizSessionId: string | null;
+        questionCount: number;
+        error: string | null;
+    }[]>;
+    mistakes: import("vue").Ref<{
+        id: string;
+        createdAt: string;
+        updatedAt: string;
+        type: import("@/types/models").QuizType;
+        word: string;
+        sentence: string;
+        answer: string;
+        ttsText?: string | undefined;
+        audioUrl?: string | undefined;
+        blanks?: {
+            start: number;
+            end: number;
+            answer: string;
+        }[] | undefined;
+    }[], MistakeEntry[] | {
+        id: string;
+        createdAt: string;
+        updatedAt: string;
+        type: import("@/types/models").QuizType;
+        word: string;
+        sentence: string;
+        answer: string;
+        ttsText?: string | undefined;
+        audioUrl?: string | undefined;
+        blanks?: {
+            start: number;
+            end: number;
+            answer: string;
+        }[] | undefined;
+    }[]>;
+    tasksLoading: import("vue").Ref<boolean, boolean>;
+    listeningItems: import("vue").Ref<{
+        id: string;
+        sentence: string;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+    }[], ListeningEntry[] | {
+        id: string;
+        sentence: string;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+    }[]>;
+    listeningLoading: import("vue").Ref<boolean, boolean>;
     fetchVocabulary: () => Promise<void>;
     selectWord: (id: string) => Promise<void>;
     searchWord: (query: string) => Promise<void>;
@@ -168,8 +245,14 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
+            blanks?: {
+                start: number;
+                end: number;
+                answer: string;
+            }[] | undefined;
         }[];
         currentIndex: number;
+        sourceType: import("@/types/models").QuizSourceType;
         answers: {
             questionId: string;
             response: string;
@@ -177,12 +260,24 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         }[];
         completed: boolean;
     }>;
+    fetchTasks: () => Promise<void>;
+    createVocabularyTask: () => Promise<LearningTask>;
+    createListeningTask: () => Promise<LearningTask>;
+    startTask: (taskId: string) => Promise<string>;
+    startMistakeReview: () => Promise<string>;
+    fetchListening: () => Promise<void>;
+    addListeningSentence: (sentence: string) => Promise<{
+        created: boolean;
+        entry: ListeningEntry;
+    }>;
+    deleteListeningSentence: (id: string) => Promise<void>;
     loadQuiz: (id: string) => Promise<void>;
     submitQuizAnswer: (questionId: string, response: string) => Promise<{
         session: QuizSession;
         vocabulary?: VocabularyEntry[];
+        listening?: ListeningEntry[];
     }>;
-}, "loading" | "items" | "selectedId" | "searchResult" | "searching" | "savingWord" | "quizSession">, Pick<{
+}, "items" | "selectedId" | "searchResult" | "loading" | "searching" | "savingWord" | "quizSession" | "tasks" | "mistakes" | "tasksLoading" | "listeningItems" | "listeningLoading">, Pick<{
     items: import("vue").Ref<{
         id: string;
         text: string;
@@ -300,8 +395,14 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
+            blanks?: {
+                start: number;
+                end: number;
+                answer: string;
+            }[] | undefined;
         }[];
         currentIndex: number;
+        sourceType: import("@/types/models").QuizSourceType;
         answers: {
             questionId: string;
             response: string;
@@ -320,8 +421,14 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
+            blanks?: {
+                start: number;
+                end: number;
+                answer: string;
+            }[] | undefined;
         }[];
         currentIndex: number;
+        sourceType: import("@/types/models").QuizSourceType;
         answers: {
             questionId: string;
             response: string;
@@ -329,6 +436,71 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         }[];
         completed: boolean;
     } | null>;
+    tasks: import("vue").Ref<{
+        id: string;
+        type: import("@/types/models").LearningTaskType;
+        status: import("@/types/models").LearningTaskStatus;
+        createdAt: string;
+        updatedAt: string;
+        quizSessionId: string | null;
+        questionCount: number;
+        error: string | null;
+    }[], LearningTask[] | {
+        id: string;
+        type: import("@/types/models").LearningTaskType;
+        status: import("@/types/models").LearningTaskStatus;
+        createdAt: string;
+        updatedAt: string;
+        quizSessionId: string | null;
+        questionCount: number;
+        error: string | null;
+    }[]>;
+    mistakes: import("vue").Ref<{
+        id: string;
+        createdAt: string;
+        updatedAt: string;
+        type: import("@/types/models").QuizType;
+        word: string;
+        sentence: string;
+        answer: string;
+        ttsText?: string | undefined;
+        audioUrl?: string | undefined;
+        blanks?: {
+            start: number;
+            end: number;
+            answer: string;
+        }[] | undefined;
+    }[], MistakeEntry[] | {
+        id: string;
+        createdAt: string;
+        updatedAt: string;
+        type: import("@/types/models").QuizType;
+        word: string;
+        sentence: string;
+        answer: string;
+        ttsText?: string | undefined;
+        audioUrl?: string | undefined;
+        blanks?: {
+            start: number;
+            end: number;
+            answer: string;
+        }[] | undefined;
+    }[]>;
+    tasksLoading: import("vue").Ref<boolean, boolean>;
+    listeningItems: import("vue").Ref<{
+        id: string;
+        sentence: string;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+    }[], ListeningEntry[] | {
+        id: string;
+        sentence: string;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+    }[]>;
+    listeningLoading: import("vue").Ref<boolean, boolean>;
     fetchVocabulary: () => Promise<void>;
     selectWord: (id: string) => Promise<void>;
     searchWord: (query: string) => Promise<void>;
@@ -351,8 +523,14 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
+            blanks?: {
+                start: number;
+                end: number;
+                answer: string;
+            }[] | undefined;
         }[];
         currentIndex: number;
+        sourceType: import("@/types/models").QuizSourceType;
         answers: {
             questionId: string;
             response: string;
@@ -360,10 +538,22 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         }[];
         completed: boolean;
     }>;
+    fetchTasks: () => Promise<void>;
+    createVocabularyTask: () => Promise<LearningTask>;
+    createListeningTask: () => Promise<LearningTask>;
+    startTask: (taskId: string) => Promise<string>;
+    startMistakeReview: () => Promise<string>;
+    fetchListening: () => Promise<void>;
+    addListeningSentence: (sentence: string) => Promise<{
+        created: boolean;
+        entry: ListeningEntry;
+    }>;
+    deleteListeningSentence: (id: string) => Promise<void>;
     loadQuiz: (id: string) => Promise<void>;
     submitQuizAnswer: (questionId: string, response: string) => Promise<{
         session: QuizSession;
         vocabulary?: VocabularyEntry[];
+        listening?: ListeningEntry[];
     }>;
 }, "selectedWord">, Pick<{
     items: import("vue").Ref<{
@@ -483,8 +673,14 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
+            blanks?: {
+                start: number;
+                end: number;
+                answer: string;
+            }[] | undefined;
         }[];
         currentIndex: number;
+        sourceType: import("@/types/models").QuizSourceType;
         answers: {
             questionId: string;
             response: string;
@@ -503,8 +699,14 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
+            blanks?: {
+                start: number;
+                end: number;
+                answer: string;
+            }[] | undefined;
         }[];
         currentIndex: number;
+        sourceType: import("@/types/models").QuizSourceType;
         answers: {
             questionId: string;
             response: string;
@@ -512,6 +714,71 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         }[];
         completed: boolean;
     } | null>;
+    tasks: import("vue").Ref<{
+        id: string;
+        type: import("@/types/models").LearningTaskType;
+        status: import("@/types/models").LearningTaskStatus;
+        createdAt: string;
+        updatedAt: string;
+        quizSessionId: string | null;
+        questionCount: number;
+        error: string | null;
+    }[], LearningTask[] | {
+        id: string;
+        type: import("@/types/models").LearningTaskType;
+        status: import("@/types/models").LearningTaskStatus;
+        createdAt: string;
+        updatedAt: string;
+        quizSessionId: string | null;
+        questionCount: number;
+        error: string | null;
+    }[]>;
+    mistakes: import("vue").Ref<{
+        id: string;
+        createdAt: string;
+        updatedAt: string;
+        type: import("@/types/models").QuizType;
+        word: string;
+        sentence: string;
+        answer: string;
+        ttsText?: string | undefined;
+        audioUrl?: string | undefined;
+        blanks?: {
+            start: number;
+            end: number;
+            answer: string;
+        }[] | undefined;
+    }[], MistakeEntry[] | {
+        id: string;
+        createdAt: string;
+        updatedAt: string;
+        type: import("@/types/models").QuizType;
+        word: string;
+        sentence: string;
+        answer: string;
+        ttsText?: string | undefined;
+        audioUrl?: string | undefined;
+        blanks?: {
+            start: number;
+            end: number;
+            answer: string;
+        }[] | undefined;
+    }[]>;
+    tasksLoading: import("vue").Ref<boolean, boolean>;
+    listeningItems: import("vue").Ref<{
+        id: string;
+        sentence: string;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+    }[], ListeningEntry[] | {
+        id: string;
+        sentence: string;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+    }[]>;
+    listeningLoading: import("vue").Ref<boolean, boolean>;
     fetchVocabulary: () => Promise<void>;
     selectWord: (id: string) => Promise<void>;
     searchWord: (query: string) => Promise<void>;
@@ -534,8 +801,14 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
+            blanks?: {
+                start: number;
+                end: number;
+                answer: string;
+            }[] | undefined;
         }[];
         currentIndex: number;
+        sourceType: import("@/types/models").QuizSourceType;
         answers: {
             questionId: string;
             response: string;
@@ -543,9 +816,21 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         }[];
         completed: boolean;
     }>;
+    fetchTasks: () => Promise<void>;
+    createVocabularyTask: () => Promise<LearningTask>;
+    createListeningTask: () => Promise<LearningTask>;
+    startTask: (taskId: string) => Promise<string>;
+    startMistakeReview: () => Promise<string>;
+    fetchListening: () => Promise<void>;
+    addListeningSentence: (sentence: string) => Promise<{
+        created: boolean;
+        entry: ListeningEntry;
+    }>;
+    deleteListeningSentence: (id: string) => Promise<void>;
     loadQuiz: (id: string) => Promise<void>;
     submitQuizAnswer: (questionId: string, response: string) => Promise<{
         session: QuizSession;
         vocabulary?: VocabularyEntry[];
+        listening?: ListeningEntry[];
     }>;
-}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "generateQuiz" | "loadQuiz" | "submitQuizAnswer">>;
+}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "startTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "submitQuizAnswer">>;

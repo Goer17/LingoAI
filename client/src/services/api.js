@@ -12,6 +12,15 @@ export const api = {
     getVocabulary() {
         return unwrap(http.get('/vocabulary'));
     },
+    getListening() {
+        return unwrap(http.get('/vocabulary/listening'));
+    },
+    addListeningSentence(sentence) {
+        return unwrap(http.post('/vocabulary/listening', { sentence }));
+    },
+    deleteListeningSentence(id) {
+        return unwrap(http.post(`/vocabulary/listening/${id}/delete`));
+    },
     getWord(id) {
         return unwrap(http.get(`/vocabulary/${id}`));
     },
@@ -35,6 +44,21 @@ export const api = {
     },
     generateQuiz() {
         return unwrap(http.post('/vocabulary/generate-quiz'));
+    },
+    createVocabularyTask() {
+        return unwrap(http.post('/vocabulary/tasks/vocabulary'));
+    },
+    createListeningTask() {
+        return unwrap(http.post('/vocabulary/tasks/listening'));
+    },
+    getTasks() {
+        return unwrap(http.get('/vocabulary/tasks'));
+    },
+    startTask(taskId) {
+        return unwrap(http.post(`/vocabulary/tasks/${taskId}/start`));
+    },
+    startMistakeReview() {
+        return unwrap(http.post('/vocabulary/tasks/mistakes/start'));
     },
     getQuiz(id) {
         return unwrap(http.get(`/vocabulary/quiz/${id}`));

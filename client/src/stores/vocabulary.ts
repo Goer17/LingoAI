@@ -2,7 +2,7 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { api } from '@/services/api';
 import { getAudioUrl } from '@/utils/audioCache';
-import type { QuizSession, SearchResult, VocabularyEntry } from '@/types/models';
+import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, SearchResult, VocabularyEntry } from '@/types/models';
 
 export const useVocabularyStore = defineStore('vocabulary', () => {
   const items = ref<VocabularyEntry[]>([]);
@@ -12,6 +12,11 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
   const searching = ref(false);
   const savingWord = ref(false);
   const quizSession = ref<QuizSession | null>(null);
+  const tasks = ref<LearningTask[]>([]);
+  const mistakes = ref<MistakeEntry[]>([]);
+  const tasksLoading = ref(false);
+  const listeningItems = ref<ListeningEntry[]>([]);
+  const listeningLoading = ref(false);
 
   const selectedWord = computed(() => items.value.find((item) => item.id === selectedId.value) ?? null);
 
@@ -96,6 +101,59 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     return quizSession.value;
   }
 
+  async function fetchTasks() {
+    tasksLoading.value = true;
+    try {
+      const data = await api.getTasks();
+      tasks.value = data.tasks;
+      mistakes.value = data.mistakes;
+    } finally {
+      tasksLoading.value = false;
+    }
+  }
+
+  async function createVocabularyTask() {
+    const task = await api.createVocabularyTask();
+    tasks.value = [task, ...tasks.value.filter((item) => item.id !== task.id)];
+    return task;
+  }
+
+  async function startTask(taskId: string) {
+    const data = await api.startTask(taskId);
+    return data.sessionId;
+  }
+
+  async function startMistakeReview() {
+    const data = await api.startMistakeReview();
+    return data.sessionId;
+  }
+
+  async function fetchListening() {
+    listeningLoading.value = true;
+    try {
+      listeningItems.value = await api.getListening();
+    } finally {
+      listeningLoading.value = false;
+    }
+  }
+
+  async function addListeningSentence(sentence: string) {
+    const data = await api.addListeningSentence(sentence);
+    listeningItems.value = await api.getListening();
+    return data;
+  }
+
+  async function deleteListeningSentence(id: string) {
+    await api.deleteListeningSentence(id);
+    listeningItems.value = listeningItems.value.filter((item) => item.id !== id);
+  }
+
+  async function createListeningTask() {
+    const task = await api.createListeningTask();
+    tasks.value = [task, ...tasks.value.filter((item) => item.id !== task.id)];
+    return task;
+  }
+
   async function loadQuiz(id: string) {
     quizSession.value = await api.getQuiz(id);
   }
@@ -110,6 +168,9 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     if (data.vocabulary) {
       items.value = data.vocabulary;
     }
+    if (data.listening) {
+      listeningItems.value = data.listening;
+    }
     return data;
   }
 
@@ -122,6 +183,11 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     searching,
     savingWord,
     quizSession,
+    tasks,
+    mistakes,
+    tasksLoading,
+    listeningItems,
+    listeningLoading,
     fetchVocabulary,
     selectWord,
     searchWord,
@@ -130,6 +196,14 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     sendChatMessage,
     clearChatHistory,
     generateQuiz,
+    fetchTasks,
+    createVocabularyTask,
+    createListeningTask,
+    startTask,
+    startMistakeReview,
+    fetchListening,
+    addListeningSentence,
+    deleteListeningSentence,
     loadQuiz,
     submitQuizAnswer,
   };
