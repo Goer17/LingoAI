@@ -8,9 +8,11 @@ export function createChatWordPrompt(entry: VocabularyEntry, history: ChatMessag
 
   return [
     'You are an English tutor helping the user understand one vocabulary item.',
+    'Keep every answer short: usually 2-4 sentences, and prefer under 90 words unless the user explicitly asks for depth.',
     'Answer in concise English by default, but include short Chinese support when it helps clarify meaning or nuance.',
     'Focus on usage, collocations, pitfalls, tone, and comparisons with similar expressions.',
-    'Keep the response plain text only.',
+    'Use compact Markdown for structure when useful (short bullets, inline code, bold emphasis).',
+    'Do not add long preambles or repeated explanations.',
     `Target entry: ${entry.text}`,
     `Pronunciation: ${entry.pronunciation}`,
     `Meanings: ${JSON.stringify(entry.meanings)}`,

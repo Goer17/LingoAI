@@ -1,5 +1,8 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { getSettings } from './settingsService.js';
 import { generateAudioBase64 } from './openaiService.js';
+import { env } from '../config/env.js';
 
 const AUDIO_CACHE_LIMIT = 2 ** 10;
 
@@ -36,6 +39,7 @@ class LruAudioCache {
 }
 
 const audioDataUrlCache = new LruAudioCache();
+const MEDIA_ROUTE_PREFIX = '/api/media';
 
 function getCacheKey(input: string) {
   const settings = getSettings();
@@ -57,4 +61,45 @@ export async function createAudioDataUrl(input: string) {
   const audioUrl = `data:audio/mp3;base64,${base64}`;
   audioDataUrlCache.set(key, audioUrl);
   return audioUrl;
+}
+
+function ensureAudioDirectory() {
+  fs.mkdirSync(env.audioDirectory, { recursive: true });
+}
+
+function getAudioFilePath(fileName: string) {
+  return path.join(env.audioDirectory, path.basename(fileName));
+}
+
+export function getMediaUrl(fileName: string) {
+  return `${MEDIA_ROUTE_PREFIX}/${encodeURIComponent(path.basename(fileName))}`;
+}
+
+export function audioFileExists(fileName: string) {
+  return fs.existsSync(getAudioFilePath(fileName));
+}
+
+export async function createOrUpdateAudioFile(fileName: string, input: string) {
+  ensureAudioDirectory();
+  const absolutePath = getAudioFilePath(fileName);
+  if (fs.existsSync(absolutePath)) {
+    return absolutePath;
+  }
+
+  const base64 = await generateAudioBase64(input);
+  fs.writeFileSync(absolutePath, Buffer.from(base64, 'base64'));
+  return absolutePath;
+}
+
+export function deleteAudioFile(fileName?: string) {
+  if (!fileName) {
+    return;
+  }
+
+  const absolutePath = getAudioFilePath(fileName);
+  if (!fs.existsSync(absolutePath)) {
+    return;
+  }
+
+  fs.unlinkSync(absolutePath);
 }

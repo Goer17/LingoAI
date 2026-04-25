@@ -5,13 +5,13 @@ type __VLS_Props = {
     loading: boolean;
 };
 declare const _default: import("vue").DefineComponent<__VLS_Props, {}, {}, {}, {}, import("vue").ComponentOptionsMixin, import("vue").ComponentOptionsMixin, {
-    "play-audio": (text: string) => any;
+    "play-audio": () => any;
     "toggle-translation": () => any;
     "save-note": (note: string) => any;
     "send-chat": (message: string) => any;
     "clear-chat": () => any;
 }, string, import("vue").PublicProps, Readonly<__VLS_Props> & Readonly<{
-    "onPlay-audio"?: ((text: string) => any) | undefined;
+    "onPlay-audio"?: (() => any) | undefined;
     "onToggle-translation"?: (() => any) | undefined;
     "onSave-note"?: ((note: string) => any) | undefined;
     "onSend-chat"?: ((message: string) => any) | undefined;

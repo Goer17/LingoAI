@@ -21,10 +21,19 @@ export declare const api: {
         entry: VocabularyEntry;
     }>;
     updateNote(id: string, note: string): Promise<VocabularyEntry>;
+    ensureWordAudio(id: string): Promise<{
+        audioUrl: string;
+        audioFile: string;
+    }>;
+    ensureListeningAudio(id: string): Promise<{
+        audioUrl: string;
+        audioFile: string;
+    }>;
     chatWord(id: string, message: string): Promise<{
         reply: string;
         entry: VocabularyEntry | null;
     }>;
+    streamWordChat(id: string, message: string, onDelta: (chunk: string) => void): Promise<string>;
     clearWordChat(id: string): Promise<VocabularyEntry>;
     generateAudio(input: string): Promise<{
         audioUrl: string;

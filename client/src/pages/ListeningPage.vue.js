@@ -1,7 +1,7 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useVocabularyStore } from '@/stores/vocabulary';
-import { getAudioUrl } from '@/utils/audioCache';
+import { getStoredMediaAudioUrl } from '@/utils/audioCache';
 const store = useVocabularyStore();
 const router = useRouter();
 const sentenceInput = ref('');
@@ -37,10 +37,11 @@ async function handleAddSentence() {
         adding.value = false;
     }
 }
-async function playSentence(sentence) {
+async function playSentence(id, audioFile) {
     error.value = '';
     try {
-        const audioUrl = await getAudioUrl(sentence);
+        const directUrl = getStoredMediaAudioUrl(audioFile);
+        const audioUrl = directUrl || await store.ensureListeningAudio(id);
         const audio = new Audio(audioUrl);
         await audio.play();
     }
@@ -148,7 +149,7 @@ else {
             ...{ onClick: (...[$event]) => {
                     if (!!(__VLS_ctx.store.listeningItems.length === 0))
                         return;
-                    __VLS_ctx.playSentence(item.sentence);
+                    __VLS_ctx.playSentence(item.id, item.audioFile);
                 } },
             ...{ class: "icon-button" },
             type: "button",

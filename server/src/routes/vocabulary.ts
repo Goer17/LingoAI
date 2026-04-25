@@ -3,10 +3,10 @@ import { z } from 'zod';
 import { createChatWordPrompt } from '../prompts/chatWordPrompt.js';
 import { createGenerateQuizPrompt } from '../prompts/generateQuizPrompt.js';
 import { createSearchWordPrompt } from '../prompts/searchWordPrompt.js';
-import { createAudioDataUrl } from '../services/audioService.js';
-import { askWordChat, generateQuiz, searchWord } from '../services/openaiService.js';
-import { addListeningSentence, applyListeningQuizResults, createListeningQuizDraft, listListeningEntries, pickListeningEntries, removeListeningSentence } from '../services/listeningService.js';
-import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, updateWordNote } from '../services/vocabularyService.js';
+import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, getMediaUrl } from '../services/audioService.js';
+import { askWordChat, generateQuiz, searchWord, streamWordChat } from '../services/openaiService.js';
+import { addListeningSentence, applyListeningQuizResults, createListeningQuizDraft, getListeningEntryById, listListeningEntries, pickListeningEntries, removeListeningSentence, setListeningAudioFile } from '../services/listeningService.js';
+import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
 import { createQuizSession, getQuizSession, pickQuizEntries, submitQuizAnswer } from '../services/quizService.js';
 import {
   createLearningTask,
@@ -173,6 +173,25 @@ vocabularyRouter.post('/listening/:id/delete', (req, res) => {
   return ok(res, { removed: true });
 });
 
+vocabularyRouter.post('/listening/:id/audio', async (req, res) => {
+  const entry = getListeningEntryById(req.params.id);
+  if (!entry) {
+    return fail(res, 404, 'Listening sentence not found.');
+  }
+
+  const fileName = entry.audioFile ?? `listening-${entry.id}.mp3`;
+  try {
+    if (!entry.audioFile || !audioFileExists(entry.audioFile)) {
+      await createOrUpdateAudioFile(fileName, entry.sentence);
+      setListeningAudioFile(entry.id, fileName);
+    }
+
+    return ok(res, { audioUrl: getMediaUrl(fileName), audioFile: fileName });
+  } catch (error) {
+    return fail(res, 500, error instanceof Error ? error.message : 'Audio generation failed.');
+  }
+});
+
 vocabularyRouter.post('/tasks/vocabulary', (_req, res) => {
   const entries = pickQuizEntries(listVocabulary());
   if (entries.length === 0) {
@@ -265,6 +284,25 @@ vocabularyRouter.post('/:id/note', (req, res) => {
   return ok(res, updated);
 });
 
+vocabularyRouter.post('/:id/audio', async (req, res) => {
+  const entry = getWordById(req.params.id);
+  if (!entry) {
+    return fail(res, 404, 'Word not found.');
+  }
+
+  const fileName = entry.audioFile ?? `word-${entry.id}.mp3`;
+  try {
+    if (!entry.audioFile || !audioFileExists(entry.audioFile)) {
+      await createOrUpdateAudioFile(fileName, entry.ttsText);
+      setWordAudioFile(entry.id, fileName);
+    }
+
+    return ok(res, { audioUrl: getMediaUrl(fileName), audioFile: fileName });
+  } catch (error) {
+    return fail(res, 500, error instanceof Error ? error.message : 'Audio generation failed.');
+  }
+});
+
 vocabularyRouter.post('/:id/chat-word', async (req, res) => {
   const parsed = chatSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -290,6 +328,55 @@ vocabularyRouter.post('/:id/chat-word', async (req, res) => {
     return ok(res, { reply, entry: updated });
   } catch (error) {
     return fail(res, 500, error instanceof Error ? error.message : 'Chat failed.');
+  }
+});
+
+vocabularyRouter.post('/:id/chat-word/stream', async (req, res) => {
+  const parsed = chatSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return fail(res, 400, 'Message is required.');
+  }
+
+  const entry = getWordById(req.params.id);
+  if (!entry) {
+    return fail(res, 404, 'Word not found.');
+  }
+
+  appendChatHistory(entry.id, 'user', parsed.data.message);
+
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const refreshedEntry = getWordById(entry.id);
+    if (!refreshedEntry) {
+      res.write(`data: ${JSON.stringify({ type: 'error', error: 'Word not found.' })}\n\n`);
+      res.end();
+      return;
+    }
+
+    const prompt = createChatWordPrompt(refreshedEntry, refreshedEntry.chatHistory, parsed.data.message);
+    const reply = await streamWordChat(prompt, (chunk) => {
+      if (res.writableEnded) {
+        return;
+      }
+
+      res.write(`data: ${JSON.stringify({ type: 'delta', content: chunk })}\n\n`);
+    });
+
+    appendChatHistory(entry.id, 'assistant', reply);
+    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Chat failed.';
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify({ type: 'error', error: message })}\n\n`);
+    }
+  } finally {
+    if (!res.writableEnded) {
+      res.end();
+    }
   }
 });
 

@@ -36,9 +36,21 @@
             <span
               v-else
               class="inline-blank-input inline-blank-readonly"
+              :class="getBlankReviewClass(segment.blankIndex)"
               :style="{ width: getBlankWidth(segment.blank.answer) }"
             >
-              {{ displayListeningAnswers[segment.blankIndex] ?? '' }}
+              <template v-if="showListeningCorrection && isIncorrectBlank(segment.blankIndex)">
+                <del>{{ displayListeningAnswers[segment.blankIndex] ?? '' }}</del>
+              </template>
+              <template v-else>
+                {{ displayListeningAnswers[segment.blankIndex] ?? '' }}
+              </template>
+            </span>
+            <span
+              v-if="showListeningCorrection && isIncorrectBlank(segment.blankIndex)"
+              class="inline-blank-correct"
+            >
+              ({{ segment.blank.answer }})
             </span>
           </template>
         </template>
@@ -128,6 +140,11 @@ const displayListeningAnswers = computed(() => {
 
   return listeningAnswers.value;
 });
+const showListeningCorrection = computed(() => (
+  props.awaitingNext
+  && props.question?.type === 'listening'
+  && !props.feedbackIsCorrect
+));
 
 const listeningSegments = computed(() => {
   const question = props.question;
@@ -302,5 +319,26 @@ function handleSubmit() {
 
 function getBlankWidth(answer: string) {
   return `${Math.max(6, answer.length + 3)}ch`;
+}
+
+function isIncorrectBlank(index: number) {
+  if (!showListeningCorrection.value || !props.question?.blanks?.[index]) {
+    return false;
+  }
+
+  return normalizeComparison(displayListeningAnswers.value[index] ?? '')
+    !== normalizeComparison(props.question.blanks[index].answer);
+}
+
+function normalizeComparison(value: string) {
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function getBlankReviewClass(index: number) {
+  if (!props.awaitingNext || props.question?.type !== 'listening') {
+    return '';
+  }
+
+  return isIncorrectBlank(index) ? 'inline-blank-review-wrong' : 'inline-blank-review-correct';
 }
 </script>

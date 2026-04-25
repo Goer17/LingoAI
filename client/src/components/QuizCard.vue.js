@@ -26,6 +26,9 @@ const displayListeningAnswers = computed(() => {
     }
     return listeningAnswers.value;
 });
+const showListeningCorrection = computed(() => (props.awaitingNext
+    && props.question?.type === 'listening'
+    && !props.feedbackIsCorrect));
 const listeningSegments = computed(() => {
     const question = props.question;
     if (!question || !showInlineListeningBlanks.value || !question.blanks) {
@@ -160,6 +163,22 @@ function handleSubmit() {
 function getBlankWidth(answer) {
     return `${Math.max(6, answer.length + 3)}ch`;
 }
+function isIncorrectBlank(index) {
+    if (!showListeningCorrection.value || !props.question?.blanks?.[index]) {
+        return false;
+    }
+    return normalizeComparison(displayListeningAnswers.value[index] ?? '')
+        !== normalizeComparison(props.question.blanks[index].answer);
+}
+function normalizeComparison(value) {
+    return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+function getBlankReviewClass(index) {
+    if (!props.awaitingNext || props.question?.type !== 'listening') {
+        return '';
+    }
+    return isIncorrectBlank(index) ? 'inline-blank-review-wrong' : 'inline-blank-review-correct';
+}
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_defaults = {};
 const __VLS_modelEmit = defineEmits();
@@ -243,9 +262,22 @@ if (__VLS_ctx.question) {
                 else {
                     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                         ...{ class: "inline-blank-input inline-blank-readonly" },
+                        ...{ class: (__VLS_ctx.getBlankReviewClass(segment.blankIndex)) },
                         ...{ style: ({ width: __VLS_ctx.getBlankWidth(segment.blank.answer) }) },
                     });
-                    (__VLS_ctx.displayListeningAnswers[segment.blankIndex] ?? '');
+                    if (__VLS_ctx.showListeningCorrection && __VLS_ctx.isIncorrectBlank(segment.blankIndex)) {
+                        __VLS_asFunctionalElement(__VLS_intrinsicElements.del, __VLS_intrinsicElements.del)({});
+                        (__VLS_ctx.displayListeningAnswers[segment.blankIndex] ?? '');
+                    }
+                    else {
+                        (__VLS_ctx.displayListeningAnswers[segment.blankIndex] ?? '');
+                    }
+                }
+                if (__VLS_ctx.showListeningCorrection && __VLS_ctx.isIncorrectBlank(segment.blankIndex)) {
+                    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                        ...{ class: "inline-blank-correct" },
+                    });
+                    (segment.blank.answer);
                 }
             }
         }
@@ -301,6 +333,7 @@ if (__VLS_ctx.question) {
 /** @type {__VLS_StyleScopedClasses['inline-blank-input']} */ ;
 /** @type {__VLS_StyleScopedClasses['inline-blank-input']} */ ;
 /** @type {__VLS_StyleScopedClasses['inline-blank-readonly']} */ ;
+/** @type {__VLS_StyleScopedClasses['inline-blank-correct']} */ ;
 /** @type {__VLS_StyleScopedClasses['sentence-box']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
@@ -313,6 +346,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             showInlineListeningBlanks: showInlineListeningBlanks,
             listeningAnswers: listeningAnswers,
             displayListeningAnswers: displayListeningAnswers,
+            showListeningCorrection: showListeningCorrection,
             listeningSegments: listeningSegments,
             submitLabel: submitLabel,
             submitDisabled: submitDisabled,
@@ -323,6 +357,8 @@ const __VLS_self = (await import('vue')).defineComponent({
             handleBlankKeydown: handleBlankKeydown,
             handleSubmit: handleSubmit,
             getBlankWidth: getBlankWidth,
+            isIncorrectBlank: isIncorrectBlank,
+            getBlankReviewClass: getBlankReviewClass,
         };
     },
     __typeEmits: {},

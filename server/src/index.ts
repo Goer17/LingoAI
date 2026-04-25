@@ -15,8 +15,9 @@ const app = express();
 
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(express.json({ limit: '4mb' }));
+app.use('/api/media', express.static(env.audioDirectory));
 app.use((req, res, next) => {
-  if (req.path === '/api/auth/login' || req.path === '/api/health') {
+  if (req.path === '/api/auth/login' || req.path === '/api/health' || req.path.startsWith('/api/media/')) {
     return next();
   }
 

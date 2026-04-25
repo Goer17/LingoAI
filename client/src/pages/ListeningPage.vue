@@ -36,7 +36,7 @@
             <p>{{ item.sentence }}</p>
             <p class="muted-text">Familiarity: {{ item.familiarity }}</p>
           </div>
-          <button class="icon-button" type="button" aria-label="Play sentence" title="Play sentence" @click="playSentence(item.sentence)">
+          <button class="icon-button" type="button" aria-label="Play sentence" title="Play sentence" @click="playSentence(item.id, item.audioFile)">
             🔊
           </button>
         </article>
@@ -60,7 +60,7 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useVocabularyStore } from '@/stores/vocabulary';
-import { getAudioUrl } from '@/utils/audioCache';
+import { getStoredMediaAudioUrl } from '@/utils/audioCache';
 
 const store = useVocabularyStore();
 const router = useRouter();
@@ -98,10 +98,11 @@ async function handleAddSentence() {
   }
 }
 
-async function playSentence(sentence: string) {
+async function playSentence(id: string, audioFile?: string) {
   error.value = '';
   try {
-    const audioUrl = await getAudioUrl(sentence);
+    const directUrl = getStoredMediaAudioUrl(audioFile);
+    const audioUrl = directUrl || await store.ensureListeningAudio(id);
     const audio = new Audio(audioUrl);
     await audio.play();
   } catch (err) {

@@ -11,7 +11,7 @@
       :saving="store.savingWord"
       @save="handleSaveWord"
       @toggle-translation="showChinese = !showChinese"
-      @play-audio="playAudio"
+      @play-audio="playSearchAudio"
     />
 
     <div class="workspace-grid">
@@ -21,7 +21,7 @@
         :show-chinese="showChinese"
         :loading="chatLoading"
         @toggle-translation="showChinese = !showChinese"
-        @play-audio="playAudio"
+        @play-audio="playWordAudio"
         @save-note="handleSaveNote"
         @send-chat="handleSendChat"
         @clear-chat="handleClearChat"
@@ -49,7 +49,7 @@ import SearchResultCard from '@/components/SearchResultCard.vue';
 import WordDetailPanel from '@/components/WordDetailPanel.vue';
 import WordList from '@/components/WordList.vue';
 import { useVocabularyStore } from '@/stores/vocabulary';
-import { getAudioUrl } from '@/utils/audioCache';
+import { getAudioUrl, getStoredMediaAudioUrl } from '@/utils/audioCache';
 
 const store = useVocabularyStore();
 const router = useRouter();
@@ -121,10 +121,27 @@ async function handleClearChat() {
   }
 }
 
-async function playAudio(input: string) {
+async function playSearchAudio(input: string) {
   error.value = '';
   try {
     const audioUrl = await getAudioUrl(input);
+    const audio = new Audio(audioUrl);
+    await audio.play();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Audio playback failed.';
+  }
+}
+
+async function playWordAudio() {
+  error.value = '';
+  const word = store.selectedWord;
+  if (!word) {
+    return;
+  }
+
+  try {
+    const directUrl = getStoredMediaAudioUrl(word.audioFile);
+    const audioUrl = directUrl || await store.ensureWordAudio(word.id);
     const audio = new Audio(audioUrl);
     await audio.play();
   } catch (err) {

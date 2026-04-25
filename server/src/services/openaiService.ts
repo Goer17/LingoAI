@@ -99,6 +99,42 @@ export async function askWordChat(prompt: string): Promise<string> {
   return content;
 }
 
+export async function streamWordChat(
+  prompt: string,
+  onDelta: (chunk: string) => void,
+): Promise<string> {
+  const { client, settings } = getClient();
+  const stream = await client.chat.completions.create({
+    model: settings.languageModel,
+    temperature: 0.6,
+    stream: true,
+    messages: [
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+  });
+
+  let fullText = '';
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content ?? '';
+    if (!delta) {
+      continue;
+    }
+
+    fullText += delta;
+    onDelta(delta);
+  }
+
+  const output = fullText.trim();
+  if (!output) {
+    throw new Error('The language model returned an empty reply.');
+  }
+
+  return output;
+}
+
 export async function generateAudioBase64(input: string): Promise<string> {
   const { client, settings } = getClient();
   const response = await client.audio.speech.create({

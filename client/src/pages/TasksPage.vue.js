@@ -30,6 +30,12 @@ function formatTaskType(type) {
         .map((item) => item.charAt(0).toUpperCase() + item.slice(1))
         .join(' ');
 }
+function truncateText(value, maxLength) {
+    if (value.length <= maxLength) {
+        return value;
+    }
+    return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
+}
 async function refresh() {
     error.value = '';
     try {
@@ -212,12 +218,15 @@ else {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "inline-heading" },
         });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
-        (item.word);
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({
+            title: (item.word),
+        });
+        (__VLS_ctx.truncateText(item.word, 36));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
             ...{ class: "muted-text" },
+            title: (item.answer),
         });
-        (item.answer);
+        (__VLS_ctx.truncateText(item.answer, 56));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
             ...{ class: "muted-text" },
         });
@@ -275,6 +284,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             startingMistakeReview: startingMistakeReview,
             formatDate: formatDate,
             formatTaskType: formatTaskType,
+            truncateText: truncateText,
             refresh: refresh,
             startTask: startTask,
             startMistakeReview: startMistakeReview,

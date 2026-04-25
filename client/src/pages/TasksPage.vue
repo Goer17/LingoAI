@@ -66,9 +66,9 @@
             <span class="count-chip mistake-type-chip">{{ item.type === 'fill_blank' ? 'fill' : 'listening' }}</span>
             <div class="task-main">
               <div class="inline-heading">
-                <strong>{{ item.word }}</strong>
+                <strong :title="item.word">{{ truncateText(item.word, 36) }}</strong>
               </div>
-              <p class="muted-text">Answer: {{ item.answer }}</p>
+              <p class="muted-text" :title="item.answer">Answer: {{ truncateText(item.answer, 56) }}</p>
               <p class="muted-text">Updated: {{ formatDate(item.updatedAt) }}</p>
             </div>
           </article>
@@ -115,6 +115,14 @@ function formatTaskType(type: string) {
     .split('_')
     .map((item) => item.charAt(0).toUpperCase() + item.slice(1))
     .join(' ');
+}
+
+function truncateText(value: string, maxLength: number) {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
 }
 
 async function refresh() {

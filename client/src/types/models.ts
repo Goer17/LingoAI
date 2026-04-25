@@ -31,6 +31,7 @@ export interface VocabularyEntry {
   meanings: Meaning[];
   derivatives: string[];
   ttsText: string;
+  audioFile?: string;
   chatHistory: ChatMessage[];
 }
 
@@ -113,4 +114,5 @@ export interface ListeningEntry {
   familiarity: number;
   createdAt: string;
   updatedAt: string;
+  audioFile?: string;
 }

@@ -1,6 +1,7 @@
 import { vocabularyRepository } from '../db/repositories.js';
 import { createId } from '../utils/id.js';
 import type { SearchResult, VocabularyEntry } from '../types/models.js';
+import { deleteAudioFile } from './audioService.js';
 
 export function listVocabulary() {
   return vocabularyRepository.list();
@@ -33,6 +34,7 @@ export function addWord(result: SearchResult) {
     meanings: result.meanings,
     derivatives: result.derivatives,
     ttsText: result.ttsText,
+    audioFile: undefined,
     chatHistory: [],
   };
 
@@ -110,7 +112,7 @@ export function applyQuizResults(results: Array<{ word: string; isCorrect: boole
       : Math.max(0, item.familiarity - 1);
 
     if (familiarity > 20) {
-      vocabularyRepository.remove(item.id);
+      removeWord(item.id);
       continue;
     }
 
@@ -122,4 +124,30 @@ export function applyQuizResults(results: Array<{ word: string; isCorrect: boole
   }
 
   return vocabularyRepository.list();
+}
+
+export function setWordAudioFile(id: string, audioFile: string) {
+  const current = getWordById(id);
+  if (!current) {
+    return null;
+  }
+
+  const updated: VocabularyEntry = {
+    ...current,
+    audioFile,
+    updatedAt: new Date().toISOString(),
+  };
+  vocabularyRepository.save(updated);
+  return updated;
+}
+
+export function removeWord(id: string) {
+  const current = getWordById(id);
+  if (!current) {
+    return false;
+  }
+
+  deleteAudioFile(current.audioFile);
+  vocabularyRepository.remove(id);
+  return true;
 }

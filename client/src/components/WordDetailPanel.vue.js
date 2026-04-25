@@ -1,5 +1,6 @@
-import { ref } from 'vue';
+import { nextTick, ref, watch } from 'vue';
 const draft = ref('');
+const chatHistoryRef = ref(null);
 const props = defineProps();
 const emit = defineEmits();
 function submit() {
@@ -15,6 +16,102 @@ function handleNoteChange(event) {
         return;
     }
     emit('save-note', target.value);
+}
+watch(() => {
+    const history = props.word?.chatHistory ?? [];
+    const last = history[history.length - 1];
+    return `${history.length}:${last?.id ?? ''}:${last?.content.length ?? 0}`;
+}, async () => {
+    await nextTick();
+    if (!chatHistoryRef.value) {
+        return;
+    }
+    chatHistoryRef.value.scrollTop = chatHistoryRef.value.scrollHeight;
+});
+function renderMarkdown(content) {
+    const normalized = escapeHtml(content).replace(/\r\n/g, '\n');
+    const codeBlocks = [];
+    const withCodeTokens = normalized.replace(/```([a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g, (_match, lang, block) => {
+        const token = `@@CODEBLOCK_${codeBlocks.length}@@`;
+        const langAttr = lang ? ` data-lang="${lang}"` : '';
+        codeBlocks.push(`<pre class="md-pre"${langAttr}><code>${block}</code></pre>`);
+        return token;
+    });
+    const lines = withCodeTokens.split('\n');
+    const parts = [];
+    let listType = null;
+    function closeListIfNeeded() {
+        if (!listType) {
+            return;
+        }
+        parts.push(`</${listType}>`);
+        listType = null;
+    }
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) {
+            closeListIfNeeded();
+            continue;
+        }
+        if (/^@@CODEBLOCK_\d+@@$/.test(trimmed)) {
+            closeListIfNeeded();
+            parts.push(trimmed);
+            continue;
+        }
+        const heading = trimmed.match(/^(#{1,6})\s+(.+)$/);
+        if (heading) {
+            closeListIfNeeded();
+            const level = heading[1].length;
+            parts.push(`<h${level}>${renderInlineMarkdown(heading[2])}</h${level}>`);
+            continue;
+        }
+        const unordered = trimmed.match(/^[-*+]\s+(.+)$/);
+        if (unordered) {
+            if (listType !== 'ul') {
+                closeListIfNeeded();
+                listType = 'ul';
+                parts.push('<ul>');
+            }
+            parts.push(`<li>${renderInlineMarkdown(unordered[1])}</li>`);
+            continue;
+        }
+        const ordered = trimmed.match(/^\d+\.\s+(.+)$/);
+        if (ordered) {
+            if (listType !== 'ol') {
+                closeListIfNeeded();
+                listType = 'ol';
+                parts.push('<ol>');
+            }
+            parts.push(`<li>${renderInlineMarkdown(ordered[1])}</li>`);
+            continue;
+        }
+        const quote = trimmed.match(/^>\s?(.+)$/);
+        if (quote) {
+            closeListIfNeeded();
+            parts.push(`<blockquote>${renderInlineMarkdown(quote[1])}</blockquote>`);
+            continue;
+        }
+        closeListIfNeeded();
+        parts.push(`<p>${renderInlineMarkdown(trimmed)}</p>`);
+    }
+    closeListIfNeeded();
+    return parts.join('').replace(/@@CODEBLOCK_(\d+)@@/g, (_match, index) => codeBlocks[Number(index)] ?? '');
+}
+function renderInlineMarkdown(text) {
+    return text
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/~~([^~]+)~~/g, '<del>$1</del>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+}
+function escapeHtml(value) {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll('\'', '&#39;');
 }
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
@@ -49,7 +146,7 @@ if (__VLS_ctx.word) {
         ...{ onClick: (...[$event]) => {
                 if (!(__VLS_ctx.word))
                     return;
-                __VLS_ctx.$emit('play-audio', __VLS_ctx.word.ttsText);
+                __VLS_ctx.$emit('play-audio');
             } },
         ...{ class: "icon-button" },
         type: "button",
@@ -132,8 +229,10 @@ if (__VLS_ctx.word) {
         disabled: (__VLS_ctx.loading || __VLS_ctx.word.chatHistory.length === 0),
     });
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ref: "chatHistoryRef",
         ...{ class: "chat-history" },
     });
+    /** @type {typeof __VLS_ctx.chatHistoryRef} */ ;
     for (const [message] of __VLS_getVForSourceType((__VLS_ctx.word.chatHistory))) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             key: (message.id),
@@ -144,8 +243,10 @@ if (__VLS_ctx.word) {
             ...{ class: "chat-role" },
         });
         (message.role);
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({});
-        (message.content);
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div)({
+            ...{ class: "chat-content markdown-content" },
+        });
+        __VLS_asFunctionalDirective(__VLS_directives.vHtml)(null, { ...__VLS_directiveBindingRestFields, value: (__VLS_ctx.renderMarkdown(message.content)) }, null, null);
     }
     if (__VLS_ctx.word.chatHistory.length === 0) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
@@ -207,6 +308,8 @@ else {
 /** @type {__VLS_StyleScopedClasses['chat-history']} */ ;
 /** @type {__VLS_StyleScopedClasses['chat-bubble']} */ ;
 /** @type {__VLS_StyleScopedClasses['chat-role']} */ ;
+/** @type {__VLS_StyleScopedClasses['chat-content']} */ ;
+/** @type {__VLS_StyleScopedClasses['markdown-content']} */ ;
 /** @type {__VLS_StyleScopedClasses['empty-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['chat-form']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
@@ -219,8 +322,10 @@ const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
             draft: draft,
+            chatHistoryRef: chatHistoryRef,
             submit: submit,
             handleNoteChange: handleNoteChange,
+            renderMarkdown: renderMarkdown,
         };
     },
     __typeEmits: {},

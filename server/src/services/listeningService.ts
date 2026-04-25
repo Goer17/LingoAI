@@ -1,6 +1,7 @@
 import { listeningRepository } from '../db/repositories.js';
 import type { ListeningEntry, QuizDraftQuestion } from '../types/models.js';
 import { createId } from '../utils/id.js';
+import { deleteAudioFile } from './audioService.js';
 
 function normalizeSentence(sentence: string) {
   return sentence.trim().replace(/\s+/g, ' ').toLowerCase();
@@ -28,6 +29,7 @@ export function addListeningSentence(sentence: string) {
     familiarity: 0,
     createdAt: now,
     updatedAt: now,
+    audioFile: undefined,
   };
 
   listeningRepository.save(entry);
@@ -40,6 +42,7 @@ export function removeListeningSentence(id: string) {
     return false;
   }
 
+  deleteAudioFile(existing.audioFile);
   listeningRepository.remove(id);
   return true;
 }
@@ -65,6 +68,7 @@ export function applyListeningQuizResults(results: Array<{ sentence: string; isC
       : Math.max(0, item.familiarity - 1);
 
     if (familiarity > 20) {
+      deleteAudioFile(item.audioFile);
       listeningRepository.remove(item.id);
       continue;
     }
@@ -77,6 +81,21 @@ export function applyListeningQuizResults(results: Array<{ sentence: string; isC
   }
 
   return listeningRepository.list();
+}
+
+export function setListeningAudioFile(id: string, audioFile: string) {
+  const current = getListeningEntryById(id);
+  if (!current) {
+    return null;
+  }
+
+  const updated: ListeningEntry = {
+    ...current,
+    audioFile,
+    updatedAt: new Date().toISOString(),
+  };
+  listeningRepository.save(updated);
+  return updated;
 }
 
 type WordMatch = {

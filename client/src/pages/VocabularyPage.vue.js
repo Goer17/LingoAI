@@ -5,7 +5,7 @@ import SearchResultCard from '@/components/SearchResultCard.vue';
 import WordDetailPanel from '@/components/WordDetailPanel.vue';
 import WordList from '@/components/WordList.vue';
 import { useVocabularyStore } from '@/stores/vocabulary';
-import { getAudioUrl } from '@/utils/audioCache';
+import { getAudioUrl, getStoredMediaAudioUrl } from '@/utils/audioCache';
 const store = useVocabularyStore();
 const router = useRouter();
 const query = ref('');
@@ -76,10 +76,26 @@ async function handleClearChat() {
         error.value = err instanceof Error ? err.message : 'Failed to clear chat.';
     }
 }
-async function playAudio(input) {
+async function playSearchAudio(input) {
     error.value = '';
     try {
         const audioUrl = await getAudioUrl(input);
+        const audio = new Audio(audioUrl);
+        await audio.play();
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Audio playback failed.';
+    }
+}
+async function playWordAudio() {
+    error.value = '';
+    const word = store.selectedWord;
+    if (!word) {
+        return;
+    }
+    try {
+        const directUrl = getStoredMediaAudioUrl(word.audioFile);
+        const audioUrl = directUrl || await store.ensureWordAudio(word.id);
         const audio = new Audio(audioUrl);
         await audio.play();
     }
@@ -169,7 +185,7 @@ const __VLS_14 = {
     }
 };
 const __VLS_15 = {
-    onPlayAudio: (__VLS_ctx.playAudio)
+    onPlayAudio: (__VLS_ctx.playSearchAudio)
 };
 var __VLS_9;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -225,7 +241,7 @@ const __VLS_29 = {
     }
 };
 const __VLS_30 = {
-    onPlayAudio: (__VLS_ctx.playAudio)
+    onPlayAudio: (__VLS_ctx.playWordAudio)
 };
 const __VLS_31 = {
     onSaveNote: (__VLS_ctx.handleSaveNote)
@@ -284,7 +300,8 @@ const __VLS_self = (await import('vue')).defineComponent({
             handleSaveNote: handleSaveNote,
             handleSendChat: handleSendChat,
             handleClearChat: handleClearChat,
-            playAudio: playAudio,
+            playSearchAudio: playSearchAudio,
+            playWordAudio: playWordAudio,
             startLearning: startLearning,
         };
     },

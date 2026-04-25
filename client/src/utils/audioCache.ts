@@ -35,6 +35,7 @@ class LruAudioCache {
 }
 
 const audioUrlCache = new LruAudioCache();
+const mediaUrlCache = new LruAudioCache();
 
 export async function getAudioUrl(input: string) {
   const normalizedInput = input.trim();
@@ -46,4 +47,19 @@ export async function getAudioUrl(input: string) {
   const { audioUrl } = await api.generateAudio(normalizedInput);
   audioUrlCache.set(normalizedInput, audioUrl);
   return audioUrl;
+}
+
+export function getStoredMediaAudioUrl(audioFile?: string) {
+  if (!audioFile) {
+    return '';
+  }
+
+  const cached = mediaUrlCache.get(audioFile);
+  if (cached) {
+    return cached;
+  }
+
+  const mediaUrl = `/api/media/${encodeURIComponent(audioFile)}`;
+  mediaUrlCache.set(audioFile, mediaUrl);
+  return mediaUrl;
 }

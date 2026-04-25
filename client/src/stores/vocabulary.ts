@@ -20,6 +20,10 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
 
   const selectedWord = computed(() => items.value.find((item) => item.id === selectedId.value) ?? null);
 
+  function updateWord(id: string, updater: (entry: VocabularyEntry) => VocabularyEntry) {
+    items.value = items.value.map((item) => (item.id === id ? updater(item) : item));
+  }
+
   async function fetchVocabulary() {
     loading.value = true;
     try {
@@ -79,11 +83,58 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
       throw new Error('No word selected.');
     }
 
-    const data = await api.chatWord(selectedId.value, message);
-    if (data.entry) {
-      items.value = items.value.map((item) => (item.id === data.entry!.id ? data.entry! : item));
+    const userMessageId = createClientMessageId('chat-user');
+    const assistantMessageId = createClientMessageId('chat-assistant');
+    const now = new Date().toISOString();
+    const currentWordId = selectedId.value;
+
+    updateWord(currentWordId, (entry) => ({
+      ...entry,
+      updatedAt: now,
+      chatHistory: [
+        ...entry.chatHistory,
+        {
+          id: userMessageId,
+          role: 'user',
+          content: message,
+          createdAt: now,
+        },
+        {
+          id: assistantMessageId,
+          role: 'assistant',
+          content: '',
+          createdAt: now,
+        },
+      ],
+    }));
+
+    try {
+      const reply = await api.streamWordChat(currentWordId, message, (chunk) => {
+        updateWord(currentWordId, (entry) => ({
+          ...entry,
+          chatHistory: entry.chatHistory.map((item) => (
+            item.id === assistantMessageId
+              ? { ...item, content: item.content + chunk }
+              : item
+          )),
+          updatedAt: new Date().toISOString(),
+        }));
+      });
+
+      return reply;
+    } catch (error) {
+      updateWord(currentWordId, (entry) => ({
+        ...entry,
+        chatHistory: entry.chatHistory.map((item) => (
+          item.id === assistantMessageId
+            ? { ...item, content: error instanceof Error ? error.message : 'Chat failed.' }
+            : item
+        )),
+        updatedAt: new Date().toISOString(),
+      }));
+
+      throw error;
     }
-    return data.reply;
   }
 
   async function clearChatHistory() {
@@ -154,6 +205,26 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     return task;
   }
 
+  async function ensureWordAudio(id: string) {
+    const data = await api.ensureWordAudio(id);
+    updateWord(id, (entry) => ({
+      ...entry,
+      audioFile: data.audioFile,
+      updatedAt: new Date().toISOString(),
+    }));
+    return data.audioUrl;
+  }
+
+  async function ensureListeningAudio(id: string) {
+    const data = await api.ensureListeningAudio(id);
+    listeningItems.value = listeningItems.value.map((item) => (
+      item.id === id
+        ? { ...item, audioFile: data.audioFile, updatedAt: new Date().toISOString() }
+        : item
+    ));
+    return data.audioUrl;
+  }
+
   async function loadQuiz(id: string) {
     quizSession.value = await api.getQuiz(id);
   }
@@ -199,6 +270,8 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     fetchTasks,
     createVocabularyTask,
     createListeningTask,
+    ensureWordAudio,
+    ensureListeningAudio,
     startTask,
     startMistakeReview,
     fetchListening,
@@ -208,3 +281,11 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     submitQuizAnswer,
   };
 });
+
+function createClientMessageId(prefix: string) {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
