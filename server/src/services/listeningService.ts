@@ -98,6 +98,34 @@ export function setListeningAudioFile(id: string, audioFile: string) {
   return updated;
 }
 
+export function rewardListeningFamiliarity(sentences: string[]) {
+  if (sentences.length === 0) {
+    return listeningRepository.list();
+  }
+
+  const targetSet = new Set(sentences.map((item) => normalizeSentence(item)).filter(Boolean));
+  for (const item of listeningRepository.list()) {
+    if (!targetSet.has(normalizeSentence(item.sentence))) {
+      continue;
+    }
+
+    const familiarity = item.familiarity + 1;
+    if (familiarity > 20) {
+      deleteAudioFile(item.audioFile);
+      listeningRepository.remove(item.id);
+      continue;
+    }
+
+    listeningRepository.save({
+      ...item,
+      familiarity,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  return listeningRepository.list();
+}
+
 type WordMatch = {
   text: string;
   index: number;

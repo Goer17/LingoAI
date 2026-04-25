@@ -5,8 +5,8 @@ import { createGenerateQuizPrompt } from '../prompts/generateQuizPrompt.js';
 import { createSearchWordPrompt } from '../prompts/searchWordPrompt.js';
 import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, getMediaUrl } from '../services/audioService.js';
 import { askWordChat, generateQuiz, searchWord, streamWordChat } from '../services/openaiService.js';
-import { addListeningSentence, applyListeningQuizResults, createListeningQuizDraft, getListeningEntryById, listListeningEntries, pickListeningEntries, removeListeningSentence, setListeningAudioFile } from '../services/listeningService.js';
-import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
+import { addListeningSentence, applyListeningQuizResults, createListeningQuizDraft, getListeningEntryById, listListeningEntries, pickListeningEntries, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile } from '../services/listeningService.js';
+import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
 import { createQuizSession, getQuizSession, pickQuizEntries, submitQuizAnswer } from '../services/quizService.js';
 import {
   createLearningTask,
@@ -450,6 +450,26 @@ vocabularyRouter.post('/quiz/:id/answer', (req, res) => {
         isCorrect: item.isCorrect,
       })));
       return ok(res, { session: updated, listening });
+    }
+
+    if (updated.sourceType === 'mistake_review') {
+      const solvedQuestions = updated.answers
+        .filter((item) => item.isCorrect)
+        .map((item) => updated.questions.find((question) => question.id === item.questionId))
+        .filter((question): question is (typeof updated.questions)[number] => Boolean(question));
+
+      const vocabulary = rewardVocabularyFamiliarity(
+        solvedQuestions
+          .filter((question) => question.type === 'fill_blank')
+          .map((question) => question.word),
+      );
+      const listening = rewardListeningFamiliarity(
+        solvedQuestions
+          .filter((question) => question.type === 'listening')
+          .map((question) => question.sentence),
+      );
+
+      return ok(res, { session: updated, vocabulary, listening });
     }
 
     return ok(res, { session: updated });

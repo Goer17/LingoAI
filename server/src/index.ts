@@ -35,6 +35,6 @@ app.use('/api/auth', authRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/vocabulary', vocabularyRouter);
 
-app.listen(env.port, () => {
-  console.log(`LingoAI server listening on http://localhost:${env.port}`);
+app.listen(env.port, env.host, () => {
+  console.log(`LingoAI server listening on http://${env.host}:${env.port}`);
 });

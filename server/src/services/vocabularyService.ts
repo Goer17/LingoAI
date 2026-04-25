@@ -151,3 +151,30 @@ export function removeWord(id: string) {
   vocabularyRepository.remove(id);
   return true;
 }
+
+export function rewardVocabularyFamiliarity(words: string[]) {
+  if (words.length === 0) {
+    return vocabularyRepository.list();
+  }
+
+  const targetSet = new Set(words.map((item) => item.trim().toLowerCase()).filter(Boolean));
+  for (const item of vocabularyRepository.list()) {
+    if (!targetSet.has(item.text.trim().toLowerCase())) {
+      continue;
+    }
+
+    const familiarity = item.familiarity + 1;
+    if (familiarity > 20) {
+      removeWord(item.id);
+      continue;
+    }
+
+    vocabularyRepository.save({
+      ...item,
+      familiarity,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  return vocabularyRepository.list();
+}
