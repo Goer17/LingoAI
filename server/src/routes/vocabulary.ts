@@ -31,6 +31,7 @@ const saveSchema = z.object({
   result: z.object({
     text: z.string().min(1),
     type: z.enum(['word', 'phrase']),
+    found: z.literal(true),
     pronunciation: z.string().min(1),
     meanings: z.array(z.object({
       partOfSpeech: z.string().min(1),
@@ -41,6 +42,7 @@ const saveSchema = z.object({
     })).min(1),
     derivatives: z.array(z.string()),
     ttsText: z.string().min(1),
+    notFoundMessage: z.string().optional(),
   }),
 });
 

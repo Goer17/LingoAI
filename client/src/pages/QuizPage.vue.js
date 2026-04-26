@@ -1,7 +1,9 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import QuizCard from '@/components/QuizCard.vue';
+import SearchResultCard from '@/components/SearchResultCard.vue';
 import { useVocabularyStore } from '@/stores/vocabulary';
+import { getAudioUrl } from '@/utils/audioCache';
 const route = useRoute();
 const store = useVocabularyStore();
 const answer = ref('');
@@ -15,9 +17,13 @@ const submittedAnswer = ref('');
 const submittedListeningAnswers = ref([]);
 const lastAutoPlayedQuestionId = ref('');
 const autoPlayArmed = ref(true);
+const showChinese = ref(false);
 onMounted(async () => {
     try {
         await store.loadQuiz(String(route.params.id));
+        if (store.items.length === 0) {
+            await store.fetchVocabulary().catch(() => undefined);
+        }
     }
     catch (err) {
         error.value = err instanceof Error ? err.message : 'Failed to load quiz.';
@@ -47,6 +53,28 @@ const displayIndex = computed(() => {
         return currentIndex.value;
     }
     return Math.max(currentIndex.value - 1, 0);
+});
+const answerWordResult = computed(() => {
+    if (!awaitingNext.value || !displayQuestion.value?.word) {
+        return null;
+    }
+    const target = displayQuestion.value.word.trim().toLowerCase();
+    if (!target) {
+        return null;
+    }
+    const entry = store.items.find((item) => item.text.trim().toLowerCase() === target);
+    if (!entry) {
+        return null;
+    }
+    return {
+        text: entry.text,
+        type: entry.type,
+        found: true,
+        pronunciation: entry.pronunciation,
+        meanings: entry.meanings,
+        derivatives: entry.derivatives,
+        ttsText: entry.ttsText,
+    };
 });
 async function submit(payload) {
     if (submitting.value) {
@@ -107,6 +135,17 @@ async function playAudio() {
     }
     const audio = new Audio(displayQuestion.value.audioUrl);
     try {
+        await audio.play();
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Audio playback failed.';
+    }
+}
+async function playAnswerWordAudio(input) {
+    error.value = '';
+    try {
+        const audioUrl = await getAudioUrl(input);
+        const audio = new Audio(audioUrl);
         await audio.play();
     }
     catch (err) {
@@ -207,6 +246,42 @@ else {
     };
     var __VLS_6;
 }
+if (__VLS_ctx.answerWordResult) {
+    /** @type {[typeof SearchResultCard, ]} */ ;
+    // @ts-ignore
+    const __VLS_12 = __VLS_asFunctionalComponent(SearchResultCard, new SearchResultCard({
+        ...{ 'onToggleTranslation': {} },
+        ...{ 'onPlayAudio': {} },
+        ...{ class: "quiz-answer-card" },
+        result: (__VLS_ctx.answerWordResult),
+        showChinese: (__VLS_ctx.showChinese),
+        saving: (false),
+        allowSave: (false),
+    }));
+    const __VLS_13 = __VLS_12({
+        ...{ 'onToggleTranslation': {} },
+        ...{ 'onPlayAudio': {} },
+        ...{ class: "quiz-answer-card" },
+        result: (__VLS_ctx.answerWordResult),
+        showChinese: (__VLS_ctx.showChinese),
+        saving: (false),
+        allowSave: (false),
+    }, ...__VLS_functionalComponentArgsRest(__VLS_12));
+    let __VLS_15;
+    let __VLS_16;
+    let __VLS_17;
+    const __VLS_18 = {
+        onToggleTranslation: (...[$event]) => {
+            if (!(__VLS_ctx.answerWordResult))
+                return;
+            __VLS_ctx.showChinese = !__VLS_ctx.showChinese;
+        }
+    };
+    const __VLS_19 = {
+        onPlayAudio: (__VLS_ctx.playAnswerWordAudio)
+    };
+    var __VLS_14;
+}
 if (__VLS_ctx.error) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
         ...{ class: "error-text quiz-error" },
@@ -220,6 +295,7 @@ if (__VLS_ctx.error) {
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
+/** @type {__VLS_StyleScopedClasses['quiz-answer-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['error-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-error']} */ ;
 var __VLS_dollars;
@@ -228,6 +304,7 @@ const __VLS_self = (await import('vue')).defineComponent({
         return {
             RouterLink: RouterLink,
             QuizCard: QuizCard,
+            SearchResultCard: SearchResultCard,
             answer: answer,
             error: error,
             submitting: submitting,
@@ -236,6 +313,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             awaitingNext: awaitingNext,
             submittedAnswer: submittedAnswer,
             submittedListeningAnswers: submittedListeningAnswers,
+            showChinese: showChinese,
             total: total,
             showSummary: showSummary,
             score: score,
@@ -243,8 +321,10 @@ const __VLS_self = (await import('vue')).defineComponent({
             summaryBackTo: summaryBackTo,
             summaryLabel: summaryLabel,
             displayIndex: displayIndex,
+            answerWordResult: answerWordResult,
             submit: submit,
             playAudio: playAudio,
+            playAnswerWordAudio: playAnswerWordAudio,
         };
     },
 });

@@ -643,6 +643,10 @@ textarea:focus {
   padding: 1.5rem;
 }
 
+.quiz-answer-card {
+  width: min(760px, 100%);
+}
+
 .quiz-meta {
   margin-bottom: 1rem;
   color: var(--muted);
@@ -675,14 +679,15 @@ textarea:focus {
   display: inline-block;
   vertical-align: baseline;
   margin: 0 0.15rem;
-  padding: 0.25rem 0.35rem;
+  padding: 0.16rem 0.35rem;
+  line-height: 1.2;
   border-radius: 8px;
   text-align: center;
   background: #fff;
 }
 
 .inline-blank-readonly {
-  line-height: 1.4;
+  line-height: 1.2;
 }
 
 .inline-blank-review-correct {

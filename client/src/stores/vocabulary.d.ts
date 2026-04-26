@@ -81,6 +81,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     searchResult: import("vue").Ref<{
         text: string;
         type: import("@/types/models").WordType;
+        found: boolean;
         pronunciation: string;
         meanings: {
             partOfSpeech: string;
@@ -91,9 +92,11 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         }[];
         derivatives: string[];
         ttsText: string;
+        notFoundMessage?: string | undefined;
     } | null, SearchResult | {
         text: string;
         type: import("@/types/models").WordType;
+        found: boolean;
         pronunciation: string;
         meanings: {
             partOfSpeech: string;
@@ -104,6 +107,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         }[];
         derivatives: string[];
         ttsText: string;
+        notFoundMessage?: string | undefined;
     } | null>;
     loading: import("vue").Ref<boolean, boolean>;
     searching: import("vue").Ref<boolean, boolean>;
@@ -366,6 +370,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     searchResult: import("vue").Ref<{
         text: string;
         type: import("@/types/models").WordType;
+        found: boolean;
         pronunciation: string;
         meanings: {
             partOfSpeech: string;
@@ -376,9 +381,11 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         }[];
         derivatives: string[];
         ttsText: string;
+        notFoundMessage?: string | undefined;
     } | null, SearchResult | {
         text: string;
         type: import("@/types/models").WordType;
+        found: boolean;
         pronunciation: string;
         meanings: {
             partOfSpeech: string;
@@ -389,6 +396,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         }[];
         derivatives: string[];
         ttsText: string;
+        notFoundMessage?: string | undefined;
     } | null>;
     loading: import("vue").Ref<boolean, boolean>;
     searching: import("vue").Ref<boolean, boolean>;
@@ -651,6 +659,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     searchResult: import("vue").Ref<{
         text: string;
         type: import("@/types/models").WordType;
+        found: boolean;
         pronunciation: string;
         meanings: {
             partOfSpeech: string;
@@ -661,9 +670,11 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         }[];
         derivatives: string[];
         ttsText: string;
+        notFoundMessage?: string | undefined;
     } | null, SearchResult | {
         text: string;
         type: import("@/types/models").WordType;
+        found: boolean;
         pronunciation: string;
         meanings: {
             partOfSpeech: string;
@@ -674,6 +685,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         }[];
         derivatives: string[];
         ttsText: string;
+        notFoundMessage?: string | undefined;
     } | null>;
     loading: import("vue").Ref<boolean, boolean>;
     searching: import("vue").Ref<boolean, boolean>;

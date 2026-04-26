@@ -3,20 +3,37 @@ import { z } from 'zod';
 import { getSettings } from './settingsService.js';
 import type { QuizDraftQuestion, SearchResult } from '../types/models.js';
 
-const searchResultSchema = z.object({
+const meaningSchema = z.object({
+  partOfSpeech: z.string().min(1),
+  englishMeaning: z.string().min(1),
+  chineseMeaning: z.string().min(1),
+  example: z.string().min(1),
+  exampleTranslation: z.string().min(1),
+});
+
+const foundSearchResultSchema = z.object({
   text: z.string().min(1),
   type: z.enum(['word', 'phrase']),
+  found: z.literal(true),
   pronunciation: z.string().min(1),
-  meanings: z.array(z.object({
-    partOfSpeech: z.string().min(1),
-    englishMeaning: z.string().min(1),
-    chineseMeaning: z.string().min(1),
-    example: z.string().min(1),
-    exampleTranslation: z.string().min(1),
-  })).min(1),
+  meanings: z.array(meaningSchema).min(1),
   derivatives: z.array(z.string()),
   ttsText: z.string().min(1),
+  notFoundMessage: z.string().optional(),
 });
+
+const notFoundSearchResultSchema = z.object({
+  text: z.string().min(1),
+  type: z.enum(['word', 'phrase']),
+  found: z.literal(false),
+  pronunciation: z.string().min(1),
+  meanings: z.array(meaningSchema).length(0),
+  derivatives: z.array(z.string()).length(0),
+  ttsText: z.string().min(1),
+  notFoundMessage: z.string().min(1),
+});
+
+const searchResultSchema = z.union([foundSearchResultSchema, notFoundSearchResultSchema]);
 
 const quizSchema = z.object({
   questions: z.array(z.object({

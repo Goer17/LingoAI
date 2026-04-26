@@ -46,6 +46,7 @@
 - Use a consistent convention going forward, e.g. Conventional Commits:
   - `feat(vocabulary): add quiz retry endpoint`
   - `fix(client): handle expired token redirect`
+- Before every `git push`, prefix the command with `GIT_SSH_COMMAND="ssh -v"` (example: `GIT_SSH_COMMAND="ssh -v" git push origin <branch>`).
 - PRs should include:
   - concise summary of user-visible/backend behavior changes
   - linked issue/task (if available)

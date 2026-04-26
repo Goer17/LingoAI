@@ -57,6 +57,9 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     if (!searchResult.value) {
       throw new Error('No search result available.');
     }
+    if (!searchResult.value.found) {
+      throw new Error('Cannot save because the word was not found.');
+    }
 
     savingWord.value = true;
     try {

@@ -22,6 +22,16 @@
       @submit="submit"
       @play-audio="playAudio"
     />
+    <SearchResultCard
+      v-if="answerWordResult"
+      class="quiz-answer-card"
+      :result="answerWordResult"
+      :show-chinese="showChinese"
+      :saving="false"
+      :allow-save="false"
+      @toggle-translation="showChinese = !showChinese"
+      @play-audio="playAnswerWordAudio"
+    />
 
     <p v-if="error" class="error-text quiz-error">{{ error }}</p>
   </div>
@@ -29,10 +39,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import type { QuizQuestion } from '@/types/models';
+import type { QuizQuestion, SearchResult } from '@/types/models';
 import { RouterLink, useRoute } from 'vue-router';
 import QuizCard from '@/components/QuizCard.vue';
+import SearchResultCard from '@/components/SearchResultCard.vue';
 import { useVocabularyStore } from '@/stores/vocabulary';
+import { getAudioUrl } from '@/utils/audioCache';
 
 const route = useRoute();
 const store = useVocabularyStore();
@@ -47,10 +59,14 @@ const submittedAnswer = ref('');
 const submittedListeningAnswers = ref<string[]>([]);
 const lastAutoPlayedQuestionId = ref('');
 const autoPlayArmed = ref(true);
+const showChinese = ref(false);
 
 onMounted(async () => {
   try {
     await store.loadQuiz(String(route.params.id));
+    if (store.items.length === 0) {
+      await store.fetchVocabulary().catch(() => undefined);
+    }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load quiz.';
   }
@@ -82,6 +98,31 @@ const displayIndex = computed(() => {
   }
 
   return Math.max(currentIndex.value - 1, 0);
+});
+const answerWordResult = computed<SearchResult | null>(() => {
+  if (!awaitingNext.value || !displayQuestion.value?.word) {
+    return null;
+  }
+
+  const target = displayQuestion.value.word.trim().toLowerCase();
+  if (!target) {
+    return null;
+  }
+
+  const entry = store.items.find((item) => item.text.trim().toLowerCase() === target);
+  if (!entry) {
+    return null;
+  }
+
+  return {
+    text: entry.text,
+    type: entry.type,
+    found: true,
+    pronunciation: entry.pronunciation,
+    meanings: entry.meanings,
+    derivatives: entry.derivatives,
+    ttsText: entry.ttsText,
+  };
 });
 
 async function submit(payload?: { response: string; blankAnswers: string[] }) {
@@ -146,6 +187,17 @@ async function playAudio() {
 
   const audio = new Audio(displayQuestion.value.audioUrl);
   try {
+    await audio.play();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Audio playback failed.';
+  }
+}
+
+async function playAnswerWordAudio(input: string) {
+  error.value = '';
+  try {
+    const audioUrl = await getAudioUrl(input);
+    const audio = new Audio(audioUrl);
     await audio.play();
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Audio playback failed.';

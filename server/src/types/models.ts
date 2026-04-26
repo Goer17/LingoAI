@@ -112,10 +112,12 @@ export interface MistakeEntry {
 export interface SearchResult {
   text: string;
   type: WordType;
+  found: boolean;
   pronunciation: string;
   meanings: Meaning[];
   derivatives: string[];
   ttsText: string;
+  notFoundMessage?: string;
 }
 
 export interface ListeningEntry {
