@@ -53,6 +53,7 @@ export interface QuizQuestion {
     type: QuizType;
     word: string;
     sentence: string;
+    maskedSentence?: string;
     answer: string;
     ttsText?: string;
     audioUrl?: string;

@@ -48,6 +48,7 @@ export interface QuizQuestion {
   type: QuizType;
   word: string;
   sentence: string;
+  maskedSentence?: string;
   answer: string;
   ttsText?: string;
   audioUrl?: string;
@@ -65,6 +66,7 @@ export interface QuizDraftQuestion {
   type: QuizType;
   word: string;
   sentence: string;
+  maskedSentence?: string;
   answer: string;
   ttsText?: string;
   blanks?: QuizBlank[];

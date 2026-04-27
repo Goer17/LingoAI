@@ -114,6 +114,10 @@ const maskedSentence = computed(() => {
     return '';
   }
 
+  if (props.question.maskedSentence) {
+    return props.question.maskedSentence;
+  }
+
   const answer = props.question.answer;
   const source = props.question.sentence;
   const index = source.toLowerCase().indexOf(answer.toLowerCase());

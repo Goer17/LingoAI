@@ -45,6 +45,11 @@ const quizSchema = z.object({
   })).min(1),
 });
 
+const fillBlankRepairSchema = z.object({
+  maskedSentence: z.string().min(1),
+  answer: z.string().min(1),
+});
+
 function getClient() {
   const settings = getSettings();
 
@@ -93,6 +98,10 @@ export async function searchWord(prompt: string): Promise<SearchResult> {
 
 export async function generateQuiz(prompt: string): Promise<{ questions: QuizDraftQuestion[] }> {
   return requestJson(prompt, quizSchema);
+}
+
+export async function generateFillBlankRepair(prompt: string): Promise<{ maskedSentence: string; answer: string }> {
+  return requestJson(prompt, fillBlankRepairSchema);
 }
 
 export async function askWordChat(prompt: string): Promise<string> {

@@ -121,6 +121,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             type: import("@/types/models").QuizType;
             word: string;
             sentence: string;
+            maskedSentence?: string | undefined;
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
@@ -147,6 +148,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             type: import("@/types/models").QuizType;
             word: string;
             sentence: string;
+            maskedSentence?: string | undefined;
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
@@ -251,6 +253,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             type: import("@/types/models").QuizType;
             word: string;
             sentence: string;
+            maskedSentence?: string | undefined;
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
@@ -410,6 +413,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             type: import("@/types/models").QuizType;
             word: string;
             sentence: string;
+            maskedSentence?: string | undefined;
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
@@ -436,6 +440,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             type: import("@/types/models").QuizType;
             word: string;
             sentence: string;
+            maskedSentence?: string | undefined;
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
@@ -540,6 +545,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             type: import("@/types/models").QuizType;
             word: string;
             sentence: string;
+            maskedSentence?: string | undefined;
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
@@ -699,6 +705,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             type: import("@/types/models").QuizType;
             word: string;
             sentence: string;
+            maskedSentence?: string | undefined;
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
@@ -725,6 +732,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             type: import("@/types/models").QuizType;
             word: string;
             sentence: string;
+            maskedSentence?: string | undefined;
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
@@ -829,6 +837,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             type: import("@/types/models").QuizType;
             word: string;
             sentence: string;
+            maskedSentence?: string | undefined;
             answer: string;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
