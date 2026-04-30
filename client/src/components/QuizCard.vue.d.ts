@@ -1,6 +1,7 @@
 import type { QuizQuestion } from '@/types/models';
 type __VLS_Props = {
     question: QuizQuestion | null;
+    sourceType: 'vocabulary_task' | 'listening_task' | 'mistake_review';
     submittedAnswer: string;
     feedback: string;
     feedbackIsCorrect: boolean;

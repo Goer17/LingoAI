@@ -55,6 +55,8 @@ export interface QuizQuestion {
     sentence: string;
     maskedSentence?: string;
     answer: string;
+    answerVariants?: string[];
+    candidates?: string[];
     ttsText?: string;
     audioUrl?: string;
     blanks?: QuizBlank[];

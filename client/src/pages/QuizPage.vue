@@ -19,6 +19,7 @@
       :total="total"
       :submitting="submitting"
       :awaiting-next="awaitingNext"
+      :source-type="store.quizSession?.sourceType ?? 'vocabulary_task'"
       @submit="submit"
       @play-audio="playAudio"
     />
@@ -29,6 +30,7 @@
       :show-chinese="showChinese"
       :saving="false"
       :allow-save="false"
+      :show-header-label="false"
       @toggle-translation="showChinese = !showChinese"
       @play-audio="playAnswerWordAudio"
     />
@@ -166,10 +168,10 @@ async function submit(payload?: { response: string; blankAnswers: string[] }) {
 
     if (answerRecord?.isCorrect) {
       feedbackIsCorrect.value = true;
-      feedback.value = `Correct. ${nextHint}`;
+      feedback.value = `✅ ${nextHint}`;
     } else {
       feedbackIsCorrect.value = false;
-      feedback.value = `Incorrect. Correct answer: ${question.answer}. ${nextHint}`;
+      feedback.value = `❌ ${nextHint}`;
     }
   } catch (err) {
     frozenQuestion.value = null;

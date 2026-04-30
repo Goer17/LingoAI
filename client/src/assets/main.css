@@ -709,6 +709,15 @@ textarea:focus {
   font-size: 0.92rem;
 }
 
+.inline-blank-correct-success {
+  color: var(--success);
+}
+
+.fill-blank-inline-answer {
+  margin-left: 0;
+  margin-right: 0.1rem;
+}
+
 .quiz-error {
   width: min(760px, 100%);
 }

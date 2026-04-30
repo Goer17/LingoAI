@@ -7,6 +7,9 @@ const maskedSentence = computed(() => {
         return '';
     }
     if (props.question.maskedSentence) {
+        if (props.question.maskedSentence.includes('[BLANK]')) {
+            return props.question.maskedSentence.replace('[BLANK]', '_'.repeat(Math.max(6, props.question.answer.length)));
+        }
         return props.question.maskedSentence;
     }
     const answer = props.question.answer;
@@ -32,6 +35,24 @@ const displayListeningAnswers = computed(() => {
 const showListeningCorrection = computed(() => (props.awaitingNext
     && props.question?.type === 'listening'
     && !props.feedbackIsCorrect));
+const showFillBlankWithInlineAnswer = computed(() => (props.awaitingNext
+    && props.question?.type === 'fill_blank'
+    && !props.feedbackIsCorrect
+    && props.sourceType !== 'listening_task'
+    && Boolean(props.question.maskedSentence?.includes('[BLANK]'))));
+const fillBlankSegments = computed(() => {
+    const question = props.question;
+    if (!question?.maskedSentence?.includes('[BLANK]')) {
+        return [{ key: 'raw', type: 'text', text: maskedSentence.value }];
+    }
+    const [before, ...rest] = question.maskedSentence.split('[BLANK]');
+    const after = rest.join('[BLANK]');
+    return [
+        { key: 'before', type: 'text', text: before },
+        { key: 'blank', type: 'blank' },
+        { key: 'after', type: 'text', text: after },
+    ];
+});
 const listeningSegments = computed(() => {
     const question = props.question;
     if (!question || !showInlineListeningBlanks.value || !question.blanks) {
@@ -278,7 +299,7 @@ if (__VLS_ctx.question) {
                 }
                 if (__VLS_ctx.showListeningCorrection && __VLS_ctx.isIncorrectBlank(segment.blankIndex)) {
                     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
-                        ...{ class: "inline-blank-correct" },
+                        ...{ class: "inline-blank-correct inline-blank-correct-success" },
                     });
                     (segment.blank.answer);
                 }
@@ -289,7 +310,31 @@ if (__VLS_ctx.question) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "sentence-box" },
         });
-        (__VLS_ctx.maskedSentence);
+        if (__VLS_ctx.question.type === 'fill_blank' && __VLS_ctx.showFillBlankWithInlineAnswer) {
+            for (const [segment] of __VLS_getVForSourceType((__VLS_ctx.fillBlankSegments))) {
+                (segment.key);
+                if (segment.type === 'text') {
+                    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
+                    (segment.text);
+                }
+                else {
+                    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                        ...{ class: "inline-blank-input inline-blank-readonly inline-blank-review-wrong fill-blank-inline-answer" },
+                    });
+                    __VLS_asFunctionalElement(__VLS_intrinsicElements.del, __VLS_intrinsicElements.del)({});
+                    (__VLS_ctx.submittedAnswer);
+                }
+                if (segment.type === 'blank') {
+                    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                        ...{ class: "inline-blank-correct inline-blank-correct-success" },
+                    });
+                    (__VLS_ctx.question.answer);
+                }
+            }
+        }
+        else {
+            (__VLS_ctx.maskedSentence);
+        }
     }
     if (!__VLS_ctx.showInlineListeningBlanks && !__VLS_ctx.awaitingNext) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.input)({
@@ -337,7 +382,14 @@ if (__VLS_ctx.question) {
 /** @type {__VLS_StyleScopedClasses['inline-blank-input']} */ ;
 /** @type {__VLS_StyleScopedClasses['inline-blank-readonly']} */ ;
 /** @type {__VLS_StyleScopedClasses['inline-blank-correct']} */ ;
+/** @type {__VLS_StyleScopedClasses['inline-blank-correct-success']} */ ;
 /** @type {__VLS_StyleScopedClasses['sentence-box']} */ ;
+/** @type {__VLS_StyleScopedClasses['inline-blank-input']} */ ;
+/** @type {__VLS_StyleScopedClasses['inline-blank-readonly']} */ ;
+/** @type {__VLS_StyleScopedClasses['inline-blank-review-wrong']} */ ;
+/** @type {__VLS_StyleScopedClasses['fill-blank-inline-answer']} */ ;
+/** @type {__VLS_StyleScopedClasses['inline-blank-correct']} */ ;
+/** @type {__VLS_StyleScopedClasses['inline-blank-correct-success']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
 var __VLS_dollars;
@@ -350,6 +402,8 @@ const __VLS_self = (await import('vue')).defineComponent({
             listeningAnswers: listeningAnswers,
             displayListeningAnswers: displayListeningAnswers,
             showListeningCorrection: showListeningCorrection,
+            showFillBlankWithInlineAnswer: showFillBlankWithInlineAnswer,
+            fillBlankSegments: fillBlankSegments,
             listeningSegments: listeningSegments,
             submitLabel: submitLabel,
             submitDisabled: submitDisabled,

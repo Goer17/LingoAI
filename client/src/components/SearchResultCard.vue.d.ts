@@ -4,6 +4,7 @@ type __VLS_Props = {
     showChinese: boolean;
     saving: boolean;
     allowSave?: boolean;
+    showHeaderLabel?: boolean;
 };
 declare const _default: import("vue").DefineComponent<__VLS_Props, {}, {}, {}, {}, import("vue").ComponentOptionsMixin, import("vue").ComponentOptionsMixin, {
     save: () => any;
@@ -15,5 +16,6 @@ declare const _default: import("vue").DefineComponent<__VLS_Props, {}, {}, {}, {
     "onPlay-audio"?: ((text: string) => any) | undefined;
 }>, {
     allowSave: boolean;
+    showHeaderLabel: boolean;
 }, {}, {}, {}, string, import("vue").ComponentProvideOptions, false, {}, any>;
 export default _default;

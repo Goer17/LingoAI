@@ -40,7 +40,10 @@ const quizSchema = z.object({
     type: z.enum(['fill_blank', 'listening']),
     word: z.string().min(1),
     sentence: z.string().min(1),
+    maskedSentence: z.string().min(1).optional(),
     answer: z.string().min(1),
+    answerVariants: z.array(z.string().min(1)).optional(),
+    candidates: z.array(z.string().min(1)).optional(),
     ttsText: z.string().optional(),
   })).min(1),
 });

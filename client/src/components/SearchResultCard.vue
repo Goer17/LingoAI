@@ -2,7 +2,7 @@
   <section v-if="result" class="card result-card">
     <div class="result-head">
       <div>
-        <p class="eyebrow">Search Result</p>
+        <p v-if="showHeaderLabel" class="eyebrow">Search Result</p>
         <h2>{{ result.text }}</h2>
         <p v-if="result.found" class="subtle-copy">{{ result.type }} · {{ result.pronunciation }}</p>
         <p v-else class="subtle-copy">{{ result.type }} · Not Found</p>
@@ -49,8 +49,10 @@ withDefaults(defineProps<{
   showChinese: boolean;
   saving: boolean;
   allowSave?: boolean;
+  showHeaderLabel?: boolean;
 }>(), {
   allowSave: true,
+  showHeaderLabel: true,
 });
 
 defineEmits<{

@@ -63,8 +63,11 @@ export function submitQuizAnswer(
   }
 
   const normalizedAnswer = payload.response.trim().replace(/\s+/g, ' ').toLowerCase();
-  const expected = question.answer.trim().replace(/\s+/g, ' ').toLowerCase();
-  const isCorrect = normalizedAnswer === expected;
+  const expectedSet = new Set([
+    question.answer.trim().replace(/\s+/g, ' ').toLowerCase(),
+    ...(question.answerVariants ?? []).map((item) => item.trim().replace(/\s+/g, ' ').toLowerCase()),
+  ]);
+  const isCorrect = expectedSet.has(normalizedAnswer);
 
   const nextAnswers = [
     ...session.answers,

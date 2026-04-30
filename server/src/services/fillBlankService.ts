@@ -32,6 +32,24 @@ function maskByExactAnswer(sentence: string, answer: string) {
   return `${normalizedSentence.slice(0, start)}${mask}${normalizedSentence.slice(end)}`;
 }
 
+function buildBracketBlankSentence(sentence: string, answer: string) {
+  const normalizedSentence = sentence;
+  const normalizedAnswer = answer.trim();
+  if (!normalizedAnswer) {
+    return null;
+  }
+
+  const pattern = new RegExp(escapeRegExp(normalizedAnswer), 'i');
+  const matched = normalizedSentence.match(pattern);
+  if (!matched || matched.index == null) {
+    return null;
+  }
+
+  const start = matched.index;
+  const end = start + matched[0].length;
+  return `${normalizedSentence.slice(0, start)}[BLANK]${normalizedSentence.slice(end)}`;
+}
+
 function countBlankRuns(maskedSentence: string) {
   const matches = maskedSentence.match(/_{3,}/g);
   return matches ? matches.length : 0;
@@ -73,6 +91,35 @@ function extractRepairResult(
   return { maskedSentence, answer };
 }
 
+function isValidModelMaskedSentence(sentence: string, maskedSentence: string, answer: string) {
+  if ((maskedSentence.match(/\[BLANK\]/g) ?? []).length !== 1) {
+    return false;
+  }
+
+  const rebuilt = normalizeSpaces(maskedSentence.replace('[BLANK]', answer));
+  return rebuilt.toLowerCase() === normalizeSpaces(sentence).toLowerCase();
+}
+
+function normalizeUnique(values: string[]) {
+  const seen = new Set<string>();
+  const output: string[] = [];
+  for (const item of values) {
+    const normalized = normalizeSpaces(item);
+    if (!normalized) {
+      continue;
+    }
+
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    output.push(normalized);
+  }
+
+  return output;
+}
+
 export async function ensureFillBlankMaskedSentence(question: QuizDraftQuestion): Promise<QuizDraftQuestion> {
   if (question.type !== 'fill_blank') {
     return question;
@@ -80,6 +127,35 @@ export async function ensureFillBlankMaskedSentence(question: QuizDraftQuestion)
 
   const sentence = normalizeSpaces(question.sentence);
   const answer = normalizeSpaces(question.answer);
+  const normalizedVariants = normalizeUnique([answer, ...(question.answerVariants ?? [])]);
+  const normalizedCandidates = normalizeUnique(question.candidates ?? normalizedVariants);
+
+  if (
+    question.maskedSentence
+    && isValidModelMaskedSentence(sentence, normalizeSpaces(question.maskedSentence), answer)
+  ) {
+    return {
+      ...question,
+      sentence,
+      answer,
+      maskedSentence: normalizeSpaces(question.maskedSentence),
+      answerVariants: normalizedVariants,
+      candidates: normalizedCandidates.length > 0 ? normalizedCandidates : normalizedVariants,
+    };
+  }
+
+  const bracketBlank = buildBracketBlankSentence(sentence, answer);
+  if (bracketBlank) {
+    return {
+      ...question,
+      sentence,
+      answer,
+      maskedSentence: bracketBlank,
+      answerVariants: normalizedVariants,
+      candidates: normalizedCandidates.length > 0 ? normalizedCandidates : normalizedVariants,
+    };
+  }
+
   const exactMasked = maskByExactAnswer(sentence, answer);
   if (exactMasked) {
     return {
@@ -87,6 +163,8 @@ export async function ensureFillBlankMaskedSentence(question: QuizDraftQuestion)
       sentence,
       answer,
       maskedSentence: exactMasked,
+      answerVariants: normalizedVariants,
+      candidates: normalizedCandidates.length > 0 ? normalizedCandidates : normalizedVariants,
     };
   }
 
@@ -108,6 +186,8 @@ export async function ensureFillBlankMaskedSentence(question: QuizDraftQuestion)
           sentence,
           answer: extracted.answer,
           maskedSentence: extracted.maskedSentence,
+          answerVariants: normalizeUnique([extracted.answer, ...(question.answerVariants ?? [])]),
+          candidates: normalizeUnique(question.candidates ?? question.answerVariants ?? [extracted.answer]),
         };
       }
     } catch {
@@ -119,5 +199,8 @@ export async function ensureFillBlankMaskedSentence(question: QuizDraftQuestion)
     ...question,
     sentence,
     answer,
+    maskedSentence: bracketBlank ?? question.maskedSentence,
+    answerVariants: normalizedVariants,
+    candidates: normalizedCandidates.length > 0 ? normalizedCandidates : normalizedVariants,
   };
 }

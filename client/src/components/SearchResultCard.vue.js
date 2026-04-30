@@ -1,10 +1,12 @@
 const __VLS_props = withDefaults(defineProps(), {
     allowSave: true,
+    showHeaderLabel: true,
 });
 const __VLS_emit = defineEmits();
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_withDefaultsArg = (function (t) { return t; })({
     allowSave: true,
+    showHeaderLabel: true,
 });
 const __VLS_ctx = {};
 let __VLS_components;
@@ -17,9 +19,11 @@ if (__VLS_ctx.result) {
         ...{ class: "result-head" },
     });
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({});
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-        ...{ class: "eyebrow" },
-    });
+    if (__VLS_ctx.showHeaderLabel) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+            ...{ class: "eyebrow" },
+        });
+    }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.h2, __VLS_intrinsicElements.h2)({});
     (__VLS_ctx.result.text);
     if (__VLS_ctx.result.found) {

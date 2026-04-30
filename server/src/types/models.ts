@@ -50,6 +50,8 @@ export interface QuizQuestion {
   sentence: string;
   maskedSentence?: string;
   answer: string;
+  answerVariants?: string[];
+  candidates?: string[];
   ttsText?: string;
   audioUrl?: string;
   mistakeId?: string;
@@ -68,6 +70,8 @@ export interface QuizDraftQuestion {
   sentence: string;
   maskedSentence?: string;
   answer: string;
+  answerVariants?: string[];
+  candidates?: string[];
   ttsText?: string;
   blanks?: QuizBlank[];
 }

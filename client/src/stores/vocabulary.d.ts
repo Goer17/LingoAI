@@ -123,6 +123,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             sentence: string;
             maskedSentence?: string | undefined;
             answer: string;
+            answerVariants?: string[] | undefined;
+            candidates?: string[] | undefined;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
             blanks?: {
@@ -150,6 +152,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             sentence: string;
             maskedSentence?: string | undefined;
             answer: string;
+            answerVariants?: string[] | undefined;
+            candidates?: string[] | undefined;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
             blanks?: {
@@ -255,6 +259,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             sentence: string;
             maskedSentence?: string | undefined;
             answer: string;
+            answerVariants?: string[] | undefined;
+            candidates?: string[] | undefined;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
             blanks?: {
@@ -415,6 +421,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             sentence: string;
             maskedSentence?: string | undefined;
             answer: string;
+            answerVariants?: string[] | undefined;
+            candidates?: string[] | undefined;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
             blanks?: {
@@ -442,6 +450,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             sentence: string;
             maskedSentence?: string | undefined;
             answer: string;
+            answerVariants?: string[] | undefined;
+            candidates?: string[] | undefined;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
             blanks?: {
@@ -547,6 +557,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             sentence: string;
             maskedSentence?: string | undefined;
             answer: string;
+            answerVariants?: string[] | undefined;
+            candidates?: string[] | undefined;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
             blanks?: {
@@ -707,6 +719,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             sentence: string;
             maskedSentence?: string | undefined;
             answer: string;
+            answerVariants?: string[] | undefined;
+            candidates?: string[] | undefined;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
             blanks?: {
@@ -734,6 +748,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             sentence: string;
             maskedSentence?: string | undefined;
             answer: string;
+            answerVariants?: string[] | undefined;
+            candidates?: string[] | undefined;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
             blanks?: {
@@ -839,6 +855,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
             sentence: string;
             maskedSentence?: string | undefined;
             answer: string;
+            answerVariants?: string[] | undefined;
+            candidates?: string[] | undefined;
             ttsText?: string | undefined;
             audioUrl?: string | undefined;
             blanks?: {

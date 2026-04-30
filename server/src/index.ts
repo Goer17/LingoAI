@@ -1,8 +1,9 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import cors from 'cors';
 import express from 'express';
 import { env } from './config/env.js';
 import { bootstrapDatabase } from './db/bootstrap.js';
-import { requireAuth } from './middleware/auth.js';
 import { authRouter } from './routes/auth.js';
 import { settingsRouter } from './routes/settings.js';
 import { vocabularyRouter } from './routes/vocabulary.js';
@@ -12,12 +13,14 @@ import { fail, ok } from './utils/http.js';
 bootstrapDatabase();
 
 const app = express();
+const clientIndexPath = path.join(env.clientDistPath, 'index.html');
+const hasClientDist = fs.existsSync(clientIndexPath);
 
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(express.json({ limit: '4mb' }));
 app.use('/api/media', express.static(env.audioDirectory));
-app.use((req, res, next) => {
-  if (req.path === '/api/auth/login' || req.path === '/api/health' || req.path.startsWith('/api/media/')) {
+app.use('/api', (req, res, next) => {
+  if (req.path === '/auth/login' || req.path === '/health' || req.path.startsWith('/media/')) {
     return next();
   }
 
@@ -28,12 +31,21 @@ app.use((req, res, next) => {
 
   return next();
 });
-app.use(requireAuth);
 
 app.get('/api/health', (_req, res) => ok(res, { status: 'ok' }));
 app.use('/api/auth', authRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/vocabulary', vocabularyRouter);
+
+if (hasClientDist) {
+  app.use(express.static(env.clientDistPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    return res.sendFile(clientIndexPath);
+  });
+}
 
 app.listen(env.port, env.host, () => {
   console.log(`LingoAI server listening on http://${env.host}:${env.port}`);

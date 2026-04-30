@@ -113,11 +113,11 @@ async function submit(payload) {
             : 'Press Enter again for next question.';
         if (answerRecord?.isCorrect) {
             feedbackIsCorrect.value = true;
-            feedback.value = `Correct. ${nextHint}`;
+            feedback.value = `✅ ${nextHint}`;
         }
         else {
             feedbackIsCorrect.value = false;
-            feedback.value = `Incorrect. Correct answer: ${question.answer}. ${nextHint}`;
+            feedback.value = `❌ ${nextHint}`;
         }
     }
     catch (err) {
@@ -220,6 +220,7 @@ else {
         total: (__VLS_ctx.total),
         submitting: (__VLS_ctx.submitting),
         awaitingNext: (__VLS_ctx.awaitingNext),
+        sourceType: (__VLS_ctx.store.quizSession?.sourceType ?? 'vocabulary_task'),
     }));
     const __VLS_5 = __VLS_4({
         ...{ 'onSubmit': {} },
@@ -234,6 +235,7 @@ else {
         total: (__VLS_ctx.total),
         submitting: (__VLS_ctx.submitting),
         awaitingNext: (__VLS_ctx.awaitingNext),
+        sourceType: (__VLS_ctx.store.quizSession?.sourceType ?? 'vocabulary_task'),
     }, ...__VLS_functionalComponentArgsRest(__VLS_4));
     let __VLS_7;
     let __VLS_8;
@@ -257,6 +259,7 @@ if (__VLS_ctx.answerWordResult) {
         showChinese: (__VLS_ctx.showChinese),
         saving: (false),
         allowSave: (false),
+        showHeaderLabel: (false),
     }));
     const __VLS_13 = __VLS_12({
         ...{ 'onToggleTranslation': {} },
@@ -266,6 +269,7 @@ if (__VLS_ctx.answerWordResult) {
         showChinese: (__VLS_ctx.showChinese),
         saving: (false),
         allowSave: (false),
+        showHeaderLabel: (false),
     }, ...__VLS_functionalComponentArgsRest(__VLS_12));
     let __VLS_15;
     let __VLS_16;
@@ -305,6 +309,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             RouterLink: RouterLink,
             QuizCard: QuizCard,
             SearchResultCard: SearchResultCard,
+            store: store,
             answer: answer,
             error: error,
             submitting: submitting,

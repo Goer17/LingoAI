@@ -48,7 +48,7 @@
             </span>
             <span
               v-if="showListeningCorrection && isIncorrectBlank(segment.blankIndex)"
-              class="inline-blank-correct"
+              class="inline-blank-correct inline-blank-correct-success"
             >
               ({{ segment.blank.answer }})
             </span>
@@ -56,7 +56,20 @@
         </template>
       </div>
       <div v-else class="sentence-box">
-        {{ maskedSentence }}
+        <template v-if="question.type === 'fill_blank' && showFillBlankWithInlineAnswer">
+          <template v-for="segment in fillBlankSegments" :key="segment.key">
+            <span v-if="segment.type === 'text'">{{ segment.text }}</span>
+            <span v-else class="inline-blank-input inline-blank-readonly inline-blank-review-wrong fill-blank-inline-answer">
+              <del>{{ submittedAnswer }}</del>
+            </span>
+            <span v-if="segment.type === 'blank'" class="inline-blank-correct inline-blank-correct-success">
+              ({{ question.answer }})
+            </span>
+          </template>
+        </template>
+        <template v-else>
+          {{ maskedSentence }}
+        </template>
       </div>
       <input
         v-if="!showInlineListeningBlanks && !awaitingNext"
@@ -94,6 +107,7 @@ const model = defineModel<string>({ required: true });
 
 const props = defineProps<{
   question: QuizQuestion | null;
+  sourceType: 'vocabulary_task' | 'listening_task' | 'mistake_review';
   submittedAnswer: string;
   feedback: string;
   feedbackIsCorrect: boolean;
@@ -115,6 +129,9 @@ const maskedSentence = computed(() => {
   }
 
   if (props.question.maskedSentence) {
+    if (props.question.maskedSentence.includes('[BLANK]')) {
+      return props.question.maskedSentence.replace('[BLANK]', '_'.repeat(Math.max(6, props.question.answer.length)));
+    }
     return props.question.maskedSentence;
   }
 
@@ -149,6 +166,28 @@ const showListeningCorrection = computed(() => (
   && props.question?.type === 'listening'
   && !props.feedbackIsCorrect
 ));
+const showFillBlankWithInlineAnswer = computed(() => (
+  props.awaitingNext
+  && props.question?.type === 'fill_blank'
+  && !props.feedbackIsCorrect
+  && props.sourceType !== 'listening_task'
+  && Boolean(props.question.maskedSentence?.includes('[BLANK]'))
+));
+
+const fillBlankSegments = computed(() => {
+  const question = props.question;
+  if (!question?.maskedSentence?.includes('[BLANK]')) {
+    return [{ key: 'raw', type: 'text', text: maskedSentence.value }] as Array<{ key: string; type: 'text'; text: string } | { key: string; type: 'blank' }>;
+  }
+
+  const [before, ...rest] = question.maskedSentence.split('[BLANK]');
+  const after = rest.join('[BLANK]');
+  return [
+    { key: 'before', type: 'text', text: before },
+    { key: 'blank', type: 'blank' as const },
+    { key: 'after', type: 'text', text: after },
+  ];
+});
 
 const listeningSegments = computed(() => {
   const question = props.question;
