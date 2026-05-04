@@ -177,6 +177,11 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     return data.sessionId;
   }
 
+  async function clearTask(taskId: string) {
+    await api.clearTask(taskId);
+    tasks.value = tasks.value.filter((item) => item.id !== taskId);
+  }
+
   async function startMistakeReview() {
     const data = await api.startMistakeReview();
     return data.sessionId;
@@ -276,6 +281,7 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     ensureWordAudio,
     ensureListeningAudio,
     startTask,
+    clearTask,
     startMistakeReview,
     fetchListening,
     addListeningSentence,

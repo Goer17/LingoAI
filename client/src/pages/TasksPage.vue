@@ -23,20 +23,39 @@
             <div class="task-main">
               <div class="inline-heading">
                 <strong>{{ formatTaskType(task.type) }}</strong>
-                <span class="task-status" :class="`status-${task.status}`">{{ task.status }}</span>
+                <span class="task-status" :class="`status-${task.status}`">{{ formatStatusLabel(task.status) }}</span>
               </div>
               <p class="muted-text">Generated: {{ formatDate(task.createdAt) }}</p>
               <p class="muted-text">Questions: {{ task.questionCount || '-' }}</p>
+              <div v-if="task.status === 'pending'" class="task-progress">
+                <div class="task-progress-track">
+                  <span class="task-progress-fill" :style="{ width: `${pendingProgressPercent(task.id)}%` }"></span>
+                </div>
+                <p class="muted-text task-progress-copy">
+                  {{ pendingProgressPercent(task.id) }}% · {{ pendingStageText(task.id) }}
+                </p>
+              </div>
               <p v-if="task.error" class="error-text">{{ task.error }}</p>
             </div>
-            <button
-              class="button button-primary"
-              type="button"
-              :disabled="task.status !== 'ready' || startingTaskId === task.id"
-              @click="startTask(task.id)"
-            >
-              {{ startingTaskId === task.id ? 'Opening...' : 'Start' }}
-            </button>
+            <div class="task-actions">
+              <button
+                v-if="task.status === 'failed'"
+                class="button button-secondary"
+                type="button"
+                :disabled="clearingTaskId === task.id"
+                @click="clearFailedTask(task.id)"
+              >
+                {{ clearingTaskId === task.id ? 'Clearing...' : 'Clear' }}
+              </button>
+              <button
+                class="button button-primary"
+                type="button"
+                :disabled="task.status !== 'ready' || startingTaskId === task.id"
+                @click="startTask(task.id)"
+              >
+                {{ startingTaskId === task.id ? 'Opening...' : 'Start' }}
+              </button>
+            </div>
           </article>
         </div>
       </section>
@@ -88,12 +107,15 @@ const router = useRouter();
 const error = ref('');
 const message = ref('');
 const startingTaskId = ref('');
+const clearingTaskId = ref('');
 const startingMistakeReview = ref(false);
 let pollTimer: number | null = null;
+const pendingProgressTick = ref(Date.now());
 
 onMounted(async () => {
   await refresh();
   pollTimer = window.setInterval(() => {
+    pendingProgressTick.value = Date.now();
     if (store.tasks.some((item) => item.status === 'pending')) {
       void refresh();
     }
@@ -115,6 +137,10 @@ function formatTaskType(type: string) {
     .split('_')
     .map((item) => item.charAt(0).toUpperCase() + item.slice(1))
     .join(' ');
+}
+
+function formatStatusLabel(status: string) {
+  return status.toUpperCase();
 }
 
 function truncateText(value: string, maxLength: number) {
@@ -144,6 +170,42 @@ async function startTask(taskId: string) {
     error.value = err instanceof Error ? err.message : 'Failed to start task.';
   } finally {
     startingTaskId.value = '';
+  }
+}
+
+function pendingProgressPercent(taskId: string) {
+  const task = store.tasks.find((item) => item.id === taskId);
+  if (!task || task.status !== 'pending') {
+    return 0;
+  }
+  const elapsedMs = Math.max(0, pendingProgressTick.value - new Date(task.createdAt).getTime());
+  const maxMs = 12000;
+  const ratio = Math.min(0.95, elapsedMs / maxMs);
+  return Math.max(5, Math.round(ratio * 100));
+}
+
+function pendingStageText(taskId: string) {
+  const progress = pendingProgressPercent(taskId);
+  if (progress < 35) {
+    return 'Collecting learning items';
+  }
+  if (progress < 70) {
+    return 'Generating quiz questions';
+  }
+  return 'Finalizing task';
+}
+
+async function clearFailedTask(taskId: string) {
+  error.value = '';
+  message.value = '';
+  clearingTaskId.value = taskId;
+  try {
+    await store.clearTask(taskId);
+    message.value = 'Failed task removed.';
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Failed to clear task.';
+  } finally {
+    clearingTaskId.value = '';
   }
 }
 

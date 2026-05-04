@@ -12,6 +12,7 @@ import { createQuizSession, getQuizSession, pickQuizEntries, submitQuizAnswer } 
 import {
   createLearningTask,
   createMistakeReviewSession,
+  clearFailedLearningTask,
   getLearningTask,
   listLearningTasks,
   listMistakeEntries,
@@ -238,6 +239,18 @@ vocabularyRouter.post('/tasks/:id/start', (req, res) => {
   }
 
   return ok(res, { sessionId: task.quizSessionId });
+});
+
+vocabularyRouter.post('/tasks/:id/clear', (req, res) => {
+  const result = clearFailedLearningTask(req.params.id);
+  if (!result.ok && result.reason === 'not_found') {
+    return fail(res, 404, 'Task not found.');
+  }
+  if (!result.ok && result.reason === 'not_failed') {
+    return fail(res, 400, 'Only failed tasks can be cleared.');
+  }
+
+  return ok(res, { removed: true });
 });
 
 vocabularyRouter.post('/search-word', async (req, res) => {

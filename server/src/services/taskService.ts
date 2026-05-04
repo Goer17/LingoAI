@@ -77,6 +77,19 @@ export function removeLearningTaskByQuizSessionId(quizSessionId: string) {
   taskRepository.removeByQuizSessionId(quizSessionId);
 }
 
+export function clearFailedLearningTask(id: string) {
+  const task = getLearningTask(id);
+  if (!task) {
+    return { ok: false as const, reason: 'not_found' as const };
+  }
+  if (task.status !== 'failed') {
+    return { ok: false as const, reason: 'not_failed' as const };
+  }
+
+  taskRepository.remove(id);
+  return { ok: true as const };
+}
+
 export function listMistakeEntries() {
   return mistakeRepository.list();
 }

@@ -115,6 +115,9 @@ export const api = {
     startTask(taskId) {
         return unwrap(http.post(`/vocabulary/tasks/${taskId}/start`));
     },
+    clearTask(taskId) {
+        return unwrap(http.post(`/vocabulary/tasks/${taskId}/clear`));
+    },
     startMistakeReview() {
         return unwrap(http.post('/vocabulary/tasks/mistakes/start'));
     },

@@ -6,11 +6,14 @@ const router = useRouter();
 const error = ref('');
 const message = ref('');
 const startingTaskId = ref('');
+const clearingTaskId = ref('');
 const startingMistakeReview = ref(false);
 let pollTimer = null;
+const pendingProgressTick = ref(Date.now());
 onMounted(async () => {
     await refresh();
     pollTimer = window.setInterval(() => {
+        pendingProgressTick.value = Date.now();
         if (store.tasks.some((item) => item.status === 'pending')) {
             void refresh();
         }
@@ -29,6 +32,9 @@ function formatTaskType(type) {
         .split('_')
         .map((item) => item.charAt(0).toUpperCase() + item.slice(1))
         .join(' ');
+}
+function formatStatusLabel(status) {
+    return status.toUpperCase();
 }
 function truncateText(value, maxLength) {
     if (value.length <= maxLength) {
@@ -57,6 +63,41 @@ async function startTask(taskId) {
     }
     finally {
         startingTaskId.value = '';
+    }
+}
+function pendingProgressPercent(taskId) {
+    const task = store.tasks.find((item) => item.id === taskId);
+    if (!task || task.status !== 'pending') {
+        return 0;
+    }
+    const elapsedMs = Math.max(0, pendingProgressTick.value - new Date(task.createdAt).getTime());
+    const maxMs = 12000;
+    const ratio = Math.min(0.95, elapsedMs / maxMs);
+    return Math.max(5, Math.round(ratio * 100));
+}
+function pendingStageText(taskId) {
+    const progress = pendingProgressPercent(taskId);
+    if (progress < 35) {
+        return 'Collecting learning items';
+    }
+    if (progress < 70) {
+        return 'Generating quiz questions';
+    }
+    return 'Finalizing task';
+}
+async function clearFailedTask(taskId) {
+    error.value = '';
+    message.value = '';
+    clearingTaskId.value = taskId;
+    try {
+        await store.clearTask(taskId);
+        message.value = 'Failed task removed.';
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Failed to clear task.';
+    }
+    finally {
+        clearingTaskId.value = '';
     }
 }
 async function startMistakeReview() {
@@ -141,7 +182,7 @@ else {
             ...{ class: "task-status" },
             ...{ class: (`status-${task.status}`) },
         });
-        (task.status);
+        (__VLS_ctx.formatStatusLabel(task.status));
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
             ...{ class: "muted-text" },
         });
@@ -150,11 +191,46 @@ else {
             ...{ class: "muted-text" },
         });
         (task.questionCount || '-');
+        if (task.status === 'pending') {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                ...{ class: "task-progress" },
+            });
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                ...{ class: "task-progress-track" },
+            });
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                ...{ class: "task-progress-fill" },
+                ...{ style: ({ width: `${__VLS_ctx.pendingProgressPercent(task.id)}%` }) },
+            });
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+                ...{ class: "muted-text task-progress-copy" },
+            });
+            (__VLS_ctx.pendingProgressPercent(task.id));
+            (__VLS_ctx.pendingStageText(task.id));
+        }
         if (task.error) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
                 ...{ class: "error-text" },
             });
             (task.error);
+        }
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "task-actions" },
+        });
+        if (task.status === 'failed') {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+                ...{ onClick: (...[$event]) => {
+                        if (!!(__VLS_ctx.store.tasks.length === 0))
+                            return;
+                        if (!(task.status === 'failed'))
+                            return;
+                        __VLS_ctx.clearFailedTask(task.id);
+                    } },
+                ...{ class: "button button-secondary" },
+                type: "button",
+                disabled: (__VLS_ctx.clearingTaskId === task.id),
+            });
+            (__VLS_ctx.clearingTaskId === task.id ? 'Clearing...' : 'Clear');
         }
         __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
             ...{ onClick: (...[$event]) => {
@@ -252,7 +328,15 @@ else {
 /** @type {__VLS_StyleScopedClasses['task-status']} */ ;
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['task-progress']} */ ;
+/** @type {__VLS_StyleScopedClasses['task-progress-track']} */ ;
+/** @type {__VLS_StyleScopedClasses['task-progress-fill']} */ ;
+/** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['task-progress-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['error-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['task-actions']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
 /** @type {__VLS_StyleScopedClasses['card']} */ ;
@@ -281,12 +365,17 @@ const __VLS_self = (await import('vue')).defineComponent({
             error: error,
             message: message,
             startingTaskId: startingTaskId,
+            clearingTaskId: clearingTaskId,
             startingMistakeReview: startingMistakeReview,
             formatDate: formatDate,
             formatTaskType: formatTaskType,
+            formatStatusLabel: formatStatusLabel,
             truncateText: truncateText,
             refresh: refresh,
             startTask: startTask,
+            pendingProgressPercent: pendingProgressPercent,
+            pendingStageText: pendingStageText,
+            clearFailedTask: clearFailedTask,
             startMistakeReview: startMistakeReview,
         };
     },

@@ -133,6 +133,9 @@ export const api = {
   startTask(taskId: string) {
     return unwrap<{ sessionId: string }>(http.post(`/vocabulary/tasks/${taskId}/start`));
   },
+  clearTask(taskId: string) {
+    return unwrap<{ removed: boolean }>(http.post(`/vocabulary/tasks/${taskId}/clear`));
+  },
   startMistakeReview() {
     return unwrap<{ sessionId: string }>(http.post('/vocabulary/tasks/mistakes/start'));
   },

@@ -48,6 +48,9 @@ export declare const api: {
     startTask(taskId: string): Promise<{
         sessionId: string;
     }>;
+    clearTask(taskId: string): Promise<{
+        removed: boolean;
+    }>;
     startMistakeReview(): Promise<{
         sessionId: string;
     }>;

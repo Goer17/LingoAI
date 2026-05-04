@@ -284,6 +284,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     ensureWordAudio: (id: string) => Promise<string>;
     ensureListeningAudio: (id: string) => Promise<string>;
     startTask: (taskId: string) => Promise<string>;
+    clearTask: (taskId: string) => Promise<void>;
     startMistakeReview: () => Promise<string>;
     fetchListening: () => Promise<void>;
     addListeningSentence: (sentence: string) => Promise<{
@@ -582,6 +583,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     ensureWordAudio: (id: string) => Promise<string>;
     ensureListeningAudio: (id: string) => Promise<string>;
     startTask: (taskId: string) => Promise<string>;
+    clearTask: (taskId: string) => Promise<void>;
     startMistakeReview: () => Promise<string>;
     fetchListening: () => Promise<void>;
     addListeningSentence: (sentence: string) => Promise<{
@@ -880,6 +882,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     ensureWordAudio: (id: string) => Promise<string>;
     ensureListeningAudio: (id: string) => Promise<string>;
     startTask: (taskId: string) => Promise<string>;
+    clearTask: (taskId: string) => Promise<void>;
     startMistakeReview: () => Promise<string>;
     fetchListening: () => Promise<void>;
     addListeningSentence: (sentence: string) => Promise<{
@@ -893,4 +896,4 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
-}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "ensureWordAudio" | "ensureListeningAudio" | "startTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "submitQuizAnswer">>;
+}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "ensureWordAudio" | "ensureListeningAudio" | "startTask" | "clearTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "submitQuizAnswer">>;

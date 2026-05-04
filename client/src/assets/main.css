@@ -560,6 +560,40 @@ textarea:focus {
   gap: 0.35rem;
 }
 
+.task-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.task-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.1rem;
+}
+
+.task-progress-track {
+  width: 100%;
+  max-width: 260px;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(122, 90, 12, 0.15);
+  border: 1px solid rgba(122, 90, 12, 0.2);
+}
+
+.task-progress-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #c4901b 0%, #e2b44d 100%);
+  transition: width 280ms ease;
+}
+
+.task-progress-copy {
+  margin-top: 0;
+}
+
 .task-main p,
 .tasks-head .eyebrow,
 .tasks-head .subtle-copy {
