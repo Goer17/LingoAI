@@ -204,3 +204,109 @@ export async function ensureFillBlankMaskedSentence(question: QuizDraftQuestion)
     candidates: normalizedCandidates.length > 0 ? normalizedCandidates : normalizedVariants,
   };
 }
+
+function buildBeInflections(answer: string) {
+  const normalized = normalizeSpaces(answer);
+  if (!/^be\s+/i.test(normalized)) {
+    return [];
+  }
+
+  const suffix = normalized.replace(/^be\s+/i, '').trim();
+  if (!suffix) {
+    return [];
+  }
+
+  return [
+    `am ${suffix}`,
+    `is ${suffix}`,
+    `are ${suffix}`,
+    `was ${suffix}`,
+    `were ${suffix}`,
+    `been ${suffix}`,
+    `being ${suffix}`,
+  ];
+}
+
+function buildListeningMaskCandidates(question: QuizDraftQuestion) {
+  const base = normalizeUnique([
+    question.answer,
+    ...(question.answerVariants ?? []),
+    ...buildBeInflections(question.answer),
+  ]);
+  return base.sort((a, b) => b.length - a.length);
+}
+
+function ensureSingleBlankRun(maskedSentence: string) {
+  const runs = maskedSentence.match(/_{6,}/g) ?? [];
+  return runs.length === 1;
+}
+
+export async function ensureListeningMaskedSentence(question: QuizDraftQuestion): Promise<QuizDraftQuestion> {
+  if (question.type !== 'listening') {
+    return question;
+  }
+
+  const sentence = normalizeSpaces(question.sentence);
+  const normalizedAnswer = normalizeSpaces(question.answer);
+
+  if (!sentence || !normalizedAnswer) {
+    return {
+      ...question,
+      sentence,
+      answer: normalizedAnswer,
+    };
+  }
+
+  if (question.maskedSentence && ensureSingleBlankRun(question.maskedSentence)) {
+    return {
+      ...question,
+      sentence,
+      answer: normalizedAnswer,
+      maskedSentence: normalizeSpaces(question.maskedSentence),
+    };
+  }
+
+  for (const candidate of buildListeningMaskCandidates(question)) {
+    const masked = maskByExactAnswer(sentence, candidate);
+    if (masked) {
+      return {
+        ...question,
+        sentence,
+        answer: normalizedAnswer,
+        maskedSentence: masked,
+      };
+    }
+  }
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt += 1) {
+    const prompt = createRepairFillBlankPrompt({
+      word: question.word,
+      sentence,
+      answer: normalizedAnswer,
+      attempt,
+      maxRetries: MAX_RETRIES,
+    });
+
+    try {
+      const payload = await generateFillBlankRepair(prompt);
+      const extracted = extractRepairResult(sentence, payload);
+      if (extracted && ensureSingleBlankRun(extracted.maskedSentence)) {
+        return {
+          ...question,
+          sentence,
+          answer: normalizedAnswer,
+          maskedSentence: extracted.maskedSentence,
+        };
+      }
+    } catch {
+      // Retry on model/API/parse errors.
+    }
+  }
+
+  return {
+    ...question,
+    sentence,
+    answer: normalizedAnswer,
+    maskedSentence: sentence,
+  };
+}

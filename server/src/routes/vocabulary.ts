@@ -6,7 +6,7 @@ import { createGenerateQuizPrompt } from '../prompts/generateQuizPrompt.js';
 import { createSearchWordPrompt } from '../prompts/searchWordPrompt.js';
 import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, getMediaUrl } from '../services/audioService.js';
 import { askWordChat, generateQuiz, searchWord, streamWordChat } from '../services/openaiService.js';
-import { ensureFillBlankMaskedSentence } from '../services/fillBlankService.js';
+import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '../services/fillBlankService.js';
 import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningQuizDraft, getListeningEntryById, listListeningEntries, pickListeningEntries, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
 import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
 import { createQuizSession, getQuizSession, pickQuizEntries, submitQuizAnswer } from '../services/quizService.js';
@@ -80,7 +80,17 @@ async function generateVocabularyQuizSession() {
 
   const prompt = createGenerateQuizPrompt(entries);
   const result = await generateQuiz(prompt);
-  const normalizedQuestions = await Promise.all(result.questions.map((question) => ensureFillBlankMaskedSentence(question)));
+  const normalizedQuestions = await Promise.all(result.questions.map(async (question) => {
+    if (question.type === 'fill_blank') {
+      return ensureFillBlankMaskedSentence(question);
+    }
+
+    if (question.type === 'listening') {
+      return ensureListeningMaskedSentence(question);
+    }
+
+    return question;
+  }));
   const questions = await Promise.all(normalizedQuestions.map(async (question) => {
     const audioUrl = question.type === 'listening' && question.ttsText
       ? await createAudioDataUrl(question.ttsText)
