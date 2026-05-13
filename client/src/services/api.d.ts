@@ -29,6 +29,13 @@ export declare const api: {
         audioUrl: string;
         audioFile: string;
     }>;
+    updateListeningNote(id: string, note: string): Promise<ListeningEntry>;
+    chatListening(id: string, message: string): Promise<{
+        reply: string;
+        entry: ListeningEntry | null;
+    }>;
+    streamListeningChat(id: string, message: string, onDelta: (chunk: string) => void): Promise<string>;
+    clearListeningChat(id: string): Promise<ListeningEntry>;
     chatWord(id: string, message: string): Promise<{
         reply: string;
         entry: VocabularyEntry | null;

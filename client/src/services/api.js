@@ -39,6 +39,67 @@ export const api = {
     ensureListeningAudio(id) {
         return unwrap(http.post(`/vocabulary/listening/${id}/audio`));
     },
+    updateListeningNote(id, note) {
+        return unwrap(http.post(`/vocabulary/listening/${id}/note`, { note }));
+    },
+    chatListening(id, message) {
+        return unwrap(http.post(`/vocabulary/listening/${id}/chat-word`, { message }));
+    },
+    async streamListeningChat(id, message, onDelta) {
+        const token = getStoredAccessToken();
+        const response = await fetch(`/api/vocabulary/listening/${id}/chat-word/stream`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'x-access-token': token } : {}),
+            },
+            body: JSON.stringify({ message }),
+        });
+        if (!response.ok || !response.body) {
+            throw new Error('Chat failed.');
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullReply = '';
+        let doneReceived = false;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            buffer += decoder.decode(value, { stream: true });
+            const events = buffer.split('\n\n');
+            buffer = events.pop() ?? '';
+            for (const event of events) {
+                const dataLine = event
+                    .split('\n')
+                    .map((line) => line.trim())
+                    .find((line) => line.startsWith('data:'));
+                if (!dataLine) {
+                    continue;
+                }
+                const payload = JSON.parse(dataLine.slice(5).trim());
+                if (payload.type === 'delta' && payload.content) {
+                    fullReply += payload.content;
+                    onDelta(payload.content);
+                }
+                if (payload.type === 'error') {
+                    throw new Error(payload.error || 'Chat failed.');
+                }
+                if (payload.type === 'done') {
+                    doneReceived = true;
+                }
+            }
+        }
+        if (!doneReceived) {
+            throw new Error('Chat stream ended unexpectedly.');
+        }
+        return fullReply.trim();
+    },
+    clearListeningChat(id) {
+        return unwrap(http.post(`/vocabulary/listening/${id}/chat-word/clear`));
+    },
     chatWord(id, message) {
         return unwrap(http.post(`/vocabulary/${id}/chat-word`, { message }));
     },

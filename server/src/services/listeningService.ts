@@ -1,5 +1,5 @@
 import { listeningRepository } from '../db/repositories.js';
-import type { ListeningEntry, QuizDraftQuestion } from '../types/models.js';
+import type { ChatMessage, ListeningEntry, QuizDraftQuestion } from '../types/models.js';
 import { createId } from '../utils/id.js';
 import { deleteAudioFile } from './audioService.js';
 
@@ -7,12 +7,27 @@ function normalizeSentence(sentence: string) {
   return sentence.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
+function normalizeListeningEntry(entry: ListeningEntry): ListeningEntry {
+  const note = typeof entry.note === 'string' ? entry.note : '';
+  const chatHistory = Array.isArray(entry.chatHistory) ? entry.chatHistory : [];
+  if (note === entry.note && chatHistory === entry.chatHistory) {
+    return entry;
+  }
+
+  return {
+    ...entry,
+    note,
+    chatHistory,
+  };
+}
+
 export function listListeningEntries() {
-  return listeningRepository.list();
+  return listeningRepository.list().map((item) => normalizeListeningEntry(item));
 }
 
 export function getListeningEntryById(id: string) {
-  return listeningRepository.getById(id);
+  const entry = listeningRepository.getById(id);
+  return entry ? normalizeListeningEntry(entry) : null;
 }
 
 export function addListeningSentence(sentence: string) {
@@ -30,6 +45,8 @@ export function addListeningSentence(sentence: string) {
     createdAt: now,
     updatedAt: now,
     audioFile: undefined,
+    note: '',
+    chatHistory: [],
   };
 
   listeningRepository.save(entry);
@@ -98,6 +115,59 @@ export function setListeningAudioFile(id: string, audioFile: string) {
   return updated;
 }
 
+export function updateListeningNote(id: string, note: string) {
+  const current = getListeningEntryById(id);
+  if (!current) {
+    return null;
+  }
+
+  const updated: ListeningEntry = {
+    ...current,
+    note,
+    updatedAt: new Date().toISOString(),
+  };
+  listeningRepository.save(updated);
+  return updated;
+}
+
+export function appendListeningChatHistory(id: string, role: ChatMessage['role'], content: string) {
+  const current = getListeningEntryById(id);
+  if (!current) {
+    return null;
+  }
+
+  const updated: ListeningEntry = {
+    ...current,
+    updatedAt: new Date().toISOString(),
+    chatHistory: [
+      ...current.chatHistory,
+      {
+        id: createId('chat'),
+        role,
+        content,
+        createdAt: new Date().toISOString(),
+      },
+    ],
+  };
+  listeningRepository.save(updated);
+  return updated;
+}
+
+export function clearListeningChatHistory(id: string) {
+  const current = getListeningEntryById(id);
+  if (!current) {
+    return null;
+  }
+
+  const updated: ListeningEntry = {
+    ...current,
+    updatedAt: new Date().toISOString(),
+    chatHistory: [],
+  };
+  listeningRepository.save(updated);
+  return updated;
+}
+
 export function rewardListeningFamiliarity(sentences: string[]) {
   if (sentences.length === 0) {
     return listeningRepository.list();
@@ -123,7 +193,7 @@ export function rewardListeningFamiliarity(sentences: string[]) {
     });
   }
 
-  return listeningRepository.list();
+  return listListeningEntries();
 }
 
 type WordMatch = {

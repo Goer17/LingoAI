@@ -7,13 +7,13 @@ type __VLS_Props = {
     showHeaderLabel?: boolean;
 };
 declare const _default: import("vue").DefineComponent<__VLS_Props, {}, {}, {}, {}, import("vue").ComponentOptionsMixin, import("vue").ComponentOptionsMixin, {
-    save: () => any;
-    "toggle-translation": () => any;
     "play-audio": (text: string) => any;
+    "toggle-translation": () => any;
+    save: () => any;
 }, string, import("vue").PublicProps, Readonly<__VLS_Props> & Readonly<{
-    onSave?: (() => any) | undefined;
-    "onToggle-translation"?: (() => any) | undefined;
     "onPlay-audio"?: ((text: string) => any) | undefined;
+    "onToggle-translation"?: (() => any) | undefined;
+    onSave?: (() => any) | undefined;
 }>, {
     allowSave: boolean;
     showHeaderLabel: boolean;

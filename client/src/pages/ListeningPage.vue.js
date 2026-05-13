@@ -1,5 +1,6 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import SentenceDetailPanel from '@/components/SentenceDetailPanel.vue';
 import { useVocabularyStore } from '@/stores/vocabulary';
 import { getStoredMediaAudioUrl } from '@/utils/audioCache';
 const store = useVocabularyStore();
@@ -9,6 +10,7 @@ const error = ref('');
 const message = ref('');
 const adding = ref(false);
 const taskLoading = ref(false);
+const chatLoading = ref(false);
 onMounted(async () => {
     try {
         await store.fetchListening();
@@ -47,6 +49,46 @@ async function playSentence(id, audioFile) {
     }
     catch (err) {
         error.value = err instanceof Error ? err.message : 'Audio playback failed.';
+    }
+}
+async function playSelectedSentence() {
+    const sentence = store.selectedListening;
+    if (!sentence) {
+        return;
+    }
+    await playSentence(sentence.id, sentence.audioFile);
+}
+async function handleSaveNote(note) {
+    error.value = '';
+    try {
+        await store.updateListeningNote(note);
+        message.value = 'Note saved.';
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Failed to save note.';
+    }
+}
+async function handleSendChat(messageInput) {
+    error.value = '';
+    chatLoading.value = true;
+    try {
+        await store.sendListeningChatMessage(messageInput);
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Chat failed.';
+    }
+    finally {
+        chatLoading.value = false;
+    }
+}
+async function handleClearChat() {
+    error.value = '';
+    try {
+        await store.clearListeningChatHistory();
+        message.value = 'Tutor chat cleared.';
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Failed to clear chat.';
     }
 }
 async function startLearning() {
@@ -115,6 +157,12 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.section, __VLS_intrinsicElemen
     ...{ class: "card listening-list-card" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "workspace-grid listening-grid" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "card list-card" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "inline-heading" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.h3, __VLS_intrinsicElements.h3)({});
@@ -132,32 +180,64 @@ else {
         ...{ class: "list-scroller" },
     });
     for (const [item] of __VLS_getVForSourceType((__VLS_ctx.store.listeningItems))) {
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.article, __VLS_intrinsicElements.article)({
-            key: (item.id),
-            ...{ class: "task-row" },
-        });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            ...{ class: "task-main" },
-        });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({});
-        (item.sentence);
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-            ...{ class: "muted-text" },
-        });
-        (item.familiarity);
         __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
             ...{ onClick: (...[$event]) => {
                     if (!!(__VLS_ctx.store.listeningItems.length === 0))
                         return;
-                    __VLS_ctx.playSentence(item.id, item.audioFile);
+                    __VLS_ctx.store.selectListening(item.id);
                 } },
-            ...{ class: "icon-button" },
+            key: (item.id),
+            ...{ class: "word-row" },
+            ...{ class: ({ active: __VLS_ctx.store.selectedListeningId === item.id }) },
             type: "button",
-            'aria-label': "Play sentence",
-            title: "Play sentence",
         });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "task-main sentence-item-main" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+            ...{ class: "sentence-item-text" },
+        });
+        (item.sentence);
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+            ...{ class: "muted-text sentence-item-familiarity" },
+        });
+        (item.familiarity);
     }
 }
+/** @type {[typeof SentenceDetailPanel, ]} */ ;
+// @ts-ignore
+const __VLS_0 = __VLS_asFunctionalComponent(SentenceDetailPanel, new SentenceDetailPanel({
+    ...{ 'onPlayAudio': {} },
+    ...{ 'onSaveNote': {} },
+    ...{ 'onSendChat': {} },
+    ...{ 'onClearChat': {} },
+    sentence: (__VLS_ctx.store.selectedListening),
+    loading: (__VLS_ctx.chatLoading),
+}));
+const __VLS_1 = __VLS_0({
+    ...{ 'onPlayAudio': {} },
+    ...{ 'onSaveNote': {} },
+    ...{ 'onSendChat': {} },
+    ...{ 'onClearChat': {} },
+    sentence: (__VLS_ctx.store.selectedListening),
+    loading: (__VLS_ctx.chatLoading),
+}, ...__VLS_functionalComponentArgsRest(__VLS_0));
+let __VLS_3;
+let __VLS_4;
+let __VLS_5;
+const __VLS_6 = {
+    onPlayAudio: (__VLS_ctx.playSelectedSentence)
+};
+const __VLS_7 = {
+    onSaveNote: (__VLS_ctx.handleSaveNote)
+};
+const __VLS_8 = {
+    onSendChat: (__VLS_ctx.handleSendChat)
+};
+const __VLS_9 = {
+    onClearChat: (__VLS_ctx.handleClearChat)
+};
+var __VLS_2;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "learning-bar" },
 });
@@ -189,14 +269,20 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElement
 /** @type {__VLS_StyleScopedClasses['error-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['card']} */ ;
 /** @type {__VLS_StyleScopedClasses['listening-list-card']} */ ;
+/** @type {__VLS_StyleScopedClasses['workspace-grid']} */ ;
+/** @type {__VLS_StyleScopedClasses['listening-grid']} */ ;
+/** @type {__VLS_StyleScopedClasses['card']} */ ;
+/** @type {__VLS_StyleScopedClasses['list-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['inline-heading']} */ ;
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['empty-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['list-scroller']} */ ;
-/** @type {__VLS_StyleScopedClasses['task-row']} */ ;
+/** @type {__VLS_StyleScopedClasses['word-row']} */ ;
 /** @type {__VLS_StyleScopedClasses['task-main']} */ ;
+/** @type {__VLS_StyleScopedClasses['sentence-item-main']} */ ;
+/** @type {__VLS_StyleScopedClasses['sentence-item-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
-/** @type {__VLS_StyleScopedClasses['icon-button']} */ ;
+/** @type {__VLS_StyleScopedClasses['sentence-item-familiarity']} */ ;
 /** @type {__VLS_StyleScopedClasses['learning-bar']} */ ;
 /** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
@@ -206,14 +292,19 @@ var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
+            SentenceDetailPanel: SentenceDetailPanel,
             store: store,
             sentenceInput: sentenceInput,
             error: error,
             message: message,
             adding: adding,
             taskLoading: taskLoading,
+            chatLoading: chatLoading,
             handleAddSentence: handleAddSentence,
-            playSentence: playSentence,
+            playSelectedSentence: playSelectedSentence,
+            handleSaveNote: handleSaveNote,
+            handleSendChat: handleSendChat,
+            handleClearChat: handleClearChat,
             startLearning: startLearning,
         };
     },

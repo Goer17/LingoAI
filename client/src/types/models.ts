@@ -120,4 +120,6 @@ export interface ListeningEntry {
   createdAt: string;
   updatedAt: string;
   audioFile?: string;
+  note: string;
+  chatHistory: ChatMessage[];
 }

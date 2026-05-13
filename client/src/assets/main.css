@@ -498,6 +498,10 @@ textarea:focus {
   margin-top: 1rem;
 }
 
+.listening-grid {
+  margin-top: 0;
+}
+
 .listening-form {
   margin-top: 0.9rem;
   display: grid;
@@ -558,6 +562,27 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+}
+
+.sentence-item-text {
+  margin: 0;
+  text-align: left;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.sentence-item-main {
+  width: 100%;
+}
+
+.sentence-item-familiarity {
+  margin: 0;
+  width: 100%;
+  text-align: center;
 }
 
 .task-actions {

@@ -17,8 +17,12 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
   const tasksLoading = ref(false);
   const listeningItems = ref<ListeningEntry[]>([]);
   const listeningLoading = ref(false);
+  const selectedListeningId = ref('');
 
   const selectedWord = computed(() => items.value.find((item) => item.id === selectedId.value) ?? null);
+  const selectedListening = computed(() => (
+    listeningItems.value.find((item) => item.id === selectedListeningId.value) ?? null
+  ));
 
   function updateWord(id: string, updater: (entry: VocabularyEntry) => VocabularyEntry) {
     items.value = items.value.map((item) => (item.id === id ? updater(item) : item));
@@ -191,6 +195,9 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     listeningLoading.value = true;
     try {
       listeningItems.value = await api.getListening();
+      if (!selectedListeningId.value && listeningItems.value.length > 0) {
+        selectedListeningId.value = listeningItems.value[0].id;
+      }
     } finally {
       listeningLoading.value = false;
     }
@@ -199,12 +206,16 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
   async function addListeningSentence(sentence: string) {
     const data = await api.addListeningSentence(sentence);
     listeningItems.value = await api.getListening();
+    selectedListeningId.value = data.entry.id;
     return data;
   }
 
   async function deleteListeningSentence(id: string) {
     await api.deleteListeningSentence(id);
     listeningItems.value = listeningItems.value.filter((item) => item.id !== id);
+    if (selectedListeningId.value === id) {
+      selectedListeningId.value = listeningItems.value[0]?.id ?? '';
+    }
   }
 
   async function createListeningTask() {
@@ -231,6 +242,92 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
         : item
     ));
     return data.audioUrl;
+  }
+
+  function selectListening(id: string) {
+    selectedListeningId.value = id;
+  }
+
+  function updateListening(id: string, updater: (entry: ListeningEntry) => ListeningEntry) {
+    listeningItems.value = listeningItems.value.map((item) => (item.id === id ? updater(item) : item));
+  }
+
+  async function updateListeningNote(note: string) {
+    if (!selectedListeningId.value) {
+      return;
+    }
+
+    const entry = await api.updateListeningNote(selectedListeningId.value, note);
+    updateListening(entry.id, () => entry);
+  }
+
+  async function sendListeningChatMessage(message: string) {
+    if (!selectedListeningId.value) {
+      throw new Error('No sentence selected.');
+    }
+
+    const userMessageId = createClientMessageId('listen-chat-user');
+    const assistantMessageId = createClientMessageId('listen-chat-assistant');
+    const now = new Date().toISOString();
+    const currentSentenceId = selectedListeningId.value;
+
+    updateListening(currentSentenceId, (entry) => ({
+      ...entry,
+      updatedAt: now,
+      chatHistory: [
+        ...entry.chatHistory,
+        {
+          id: userMessageId,
+          role: 'user',
+          content: message,
+          createdAt: now,
+        },
+        {
+          id: assistantMessageId,
+          role: 'assistant',
+          content: '',
+          createdAt: now,
+        },
+      ],
+    }));
+
+    try {
+      const reply = await api.streamListeningChat(currentSentenceId, message, (chunk) => {
+        updateListening(currentSentenceId, (entry) => ({
+          ...entry,
+          chatHistory: entry.chatHistory.map((item) => (
+            item.id === assistantMessageId
+              ? { ...item, content: item.content + chunk }
+              : item
+          )),
+          updatedAt: new Date().toISOString(),
+        }));
+      });
+
+      return reply;
+    } catch (error) {
+      updateListening(currentSentenceId, (entry) => ({
+        ...entry,
+        chatHistory: entry.chatHistory.map((item) => (
+          item.id === assistantMessageId
+            ? { ...item, content: error instanceof Error ? error.message : 'Chat failed.' }
+            : item
+        )),
+        updatedAt: new Date().toISOString(),
+      }));
+
+      throw error;
+    }
+  }
+
+  async function clearListeningChatHistory() {
+    if (!selectedListeningId.value) {
+      throw new Error('No sentence selected.');
+    }
+
+    const entry = await api.clearListeningChat(selectedListeningId.value);
+    updateListening(entry.id, () => entry);
+    return entry;
   }
 
   async function loadQuiz(id: string) {
@@ -267,6 +364,8 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     tasksLoading,
     listeningItems,
     listeningLoading,
+    selectedListeningId,
+    selectedListening,
     fetchVocabulary,
     selectWord,
     searchWord,
@@ -280,6 +379,10 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     createListeningTask,
     ensureWordAudio,
     ensureListeningAudio,
+    selectListening,
+    updateListeningNote,
+    sendListeningChatMessage,
+    clearListeningChatHistory,
     startTask,
     clearTask,
     startMistakeReview,

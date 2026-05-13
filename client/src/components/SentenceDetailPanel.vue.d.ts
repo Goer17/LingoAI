@@ -1,7 +1,6 @@
-import type { VocabularyEntry } from '@/types/models';
+import type { ListeningEntry } from '@/types/models';
 type __VLS_Props = {
-    word: VocabularyEntry | null;
-    showChinese: boolean;
+    sentence: ListeningEntry | null;
     loading: boolean;
 };
 declare const _default: import("vue").DefineComponent<__VLS_Props, {}, {}, {}, {}, import("vue").ComponentOptionsMixin, import("vue").ComponentOptionsMixin, {
@@ -9,12 +8,10 @@ declare const _default: import("vue").DefineComponent<__VLS_Props, {}, {}, {}, {
     "save-note": (note: string) => any;
     "send-chat": (message: string) => any;
     "clear-chat": () => any;
-    "toggle-translation": () => any;
 }, string, import("vue").PublicProps, Readonly<__VLS_Props> & Readonly<{
     "onPlay-audio"?: (() => any) | undefined;
     "onSave-note"?: ((note: string) => any) | undefined;
     "onSend-chat"?: ((message: string) => any) | undefined;
     "onClear-chat"?: (() => any) | undefined;
-    "onToggle-translation"?: (() => any) | undefined;
 }>, {}, {}, {}, {}, string, import("vue").ComponentProvideOptions, false, {}, any>;
 export default _default;

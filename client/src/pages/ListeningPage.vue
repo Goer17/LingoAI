@@ -23,23 +23,39 @@
     <p v-if="error" class="error-text">{{ error }}</p>
 
     <section class="card listening-list-card">
-      <div class="inline-heading">
-        <h3>Sentence Bank</h3>
-        <span class="muted-text">{{ store.listeningItems.length }} items</span>
-      </div>
-
-      <p v-if="store.listeningItems.length === 0" class="empty-copy">No listening sentences yet.</p>
-
-      <div v-else class="list-scroller">
-        <article v-for="item in store.listeningItems" :key="item.id" class="task-row">
-          <div class="task-main">
-            <p>{{ item.sentence }}</p>
-            <p class="muted-text">Familiarity: {{ item.familiarity }}</p>
+      <div class="workspace-grid listening-grid">
+        <div class="card list-card">
+          <div class="inline-heading">
+            <h3>Sentence Bank</h3>
+            <span class="muted-text">{{ store.listeningItems.length }} items</span>
           </div>
-          <button class="icon-button" type="button" aria-label="Play sentence" title="Play sentence" @click="playSentence(item.id, item.audioFile)">
-            🔊
-          </button>
-        </article>
+
+          <p v-if="store.listeningItems.length === 0" class="empty-copy">No listening sentences yet.</p>
+
+          <div v-else class="list-scroller">
+            <button
+              v-for="item in store.listeningItems"
+              :key="item.id"
+              class="word-row"
+              :class="{ active: store.selectedListeningId === item.id }"
+              type="button"
+              @click="store.selectListening(item.id)"
+            >
+              <div class="task-main sentence-item-main">
+                <p class="sentence-item-text">{{ item.sentence }}</p>
+                <p class="muted-text sentence-item-familiarity">Familiarity: {{ item.familiarity }}</p>
+              </div>
+            </button>
+          </div>
+        </div>
+        <SentenceDetailPanel
+          :sentence="store.selectedListening"
+          :loading="chatLoading"
+          @play-audio="playSelectedSentence"
+          @save-note="handleSaveNote"
+          @send-chat="handleSendChat"
+          @clear-chat="handleClearChat"
+        />
       </div>
     </section>
 
@@ -59,6 +75,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import SentenceDetailPanel from '@/components/SentenceDetailPanel.vue';
 import { useVocabularyStore } from '@/stores/vocabulary';
 import { getStoredMediaAudioUrl } from '@/utils/audioCache';
 
@@ -69,6 +86,7 @@ const error = ref('');
 const message = ref('');
 const adding = ref(false);
 const taskLoading = ref(false);
+const chatLoading = ref(false);
 
 onMounted(async () => {
   try {
@@ -107,6 +125,47 @@ async function playSentence(id: string, audioFile?: string) {
     await audio.play();
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Audio playback failed.';
+  }
+}
+
+async function playSelectedSentence() {
+  const sentence = store.selectedListening;
+  if (!sentence) {
+    return;
+  }
+
+  await playSentence(sentence.id, sentence.audioFile);
+}
+
+async function handleSaveNote(note: string) {
+  error.value = '';
+  try {
+    await store.updateListeningNote(note);
+    message.value = 'Note saved.';
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Failed to save note.';
+  }
+}
+
+async function handleSendChat(messageInput: string) {
+  error.value = '';
+  chatLoading.value = true;
+  try {
+    await store.sendListeningChatMessage(messageInput);
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Chat failed.';
+  } finally {
+    chatLoading.value = false;
+  }
+}
+
+async function handleClearChat() {
+  error.value = '';
+  try {
+    await store.clearListeningChatHistory();
+    message.value = 'Tutor chat cleared.';
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Failed to clear chat.';
   }
 }
 

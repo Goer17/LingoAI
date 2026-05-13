@@ -229,6 +229,13 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;
+        note: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
     }[], ListeningEntry[] | {
         id: string;
         sentence: string;
@@ -236,8 +243,31 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;
+        note: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
     }[]>;
     listeningLoading: import("vue").Ref<boolean, boolean>;
+    selectedListeningId: import("vue").Ref<string, string>;
+    selectedListening: import("vue").ComputedRef<{
+        id: string;
+        sentence: string;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+        audioFile?: string | undefined;
+        note: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
+    } | null>;
     fetchVocabulary: () => Promise<void>;
     selectWord: (id: string) => Promise<void>;
     searchWord: (query: string) => Promise<void>;
@@ -283,6 +313,10 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     createListeningTask: () => Promise<LearningTask>;
     ensureWordAudio: (id: string) => Promise<string>;
     ensureListeningAudio: (id: string) => Promise<string>;
+    selectListening: (id: string) => void;
+    updateListeningNote: (note: string) => Promise<void>;
+    sendListeningChatMessage: (message: string) => Promise<string>;
+    clearListeningChatHistory: () => Promise<ListeningEntry>;
     startTask: (taskId: string) => Promise<string>;
     clearTask: (taskId: string) => Promise<void>;
     startMistakeReview: () => Promise<string>;
@@ -298,7 +332,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
-}, "items" | "selectedId" | "searchResult" | "loading" | "searching" | "savingWord" | "quizSession" | "tasks" | "mistakes" | "tasksLoading" | "listeningItems" | "listeningLoading">, Pick<{
+}, "loading" | "items" | "selectedId" | "searchResult" | "searching" | "savingWord" | "quizSession" | "tasks" | "mistakes" | "tasksLoading" | "listeningItems" | "listeningLoading" | "selectedListeningId">, Pick<{
     items: import("vue").Ref<{
         id: string;
         text: string;
@@ -528,6 +562,13 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;
+        note: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
     }[], ListeningEntry[] | {
         id: string;
         sentence: string;
@@ -535,8 +576,31 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;
+        note: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
     }[]>;
     listeningLoading: import("vue").Ref<boolean, boolean>;
+    selectedListeningId: import("vue").Ref<string, string>;
+    selectedListening: import("vue").ComputedRef<{
+        id: string;
+        sentence: string;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+        audioFile?: string | undefined;
+        note: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
+    } | null>;
     fetchVocabulary: () => Promise<void>;
     selectWord: (id: string) => Promise<void>;
     searchWord: (query: string) => Promise<void>;
@@ -582,6 +646,10 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     createListeningTask: () => Promise<LearningTask>;
     ensureWordAudio: (id: string) => Promise<string>;
     ensureListeningAudio: (id: string) => Promise<string>;
+    selectListening: (id: string) => void;
+    updateListeningNote: (note: string) => Promise<void>;
+    sendListeningChatMessage: (message: string) => Promise<string>;
+    clearListeningChatHistory: () => Promise<ListeningEntry>;
     startTask: (taskId: string) => Promise<string>;
     clearTask: (taskId: string) => Promise<void>;
     startMistakeReview: () => Promise<string>;
@@ -597,7 +665,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
-}, "selectedWord">, Pick<{
+}, "selectedWord" | "selectedListening">, Pick<{
     items: import("vue").Ref<{
         id: string;
         text: string;
@@ -827,6 +895,13 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;
+        note: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
     }[], ListeningEntry[] | {
         id: string;
         sentence: string;
@@ -834,8 +909,31 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;
+        note: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
     }[]>;
     listeningLoading: import("vue").Ref<boolean, boolean>;
+    selectedListeningId: import("vue").Ref<string, string>;
+    selectedListening: import("vue").ComputedRef<{
+        id: string;
+        sentence: string;
+        familiarity: number;
+        createdAt: string;
+        updatedAt: string;
+        audioFile?: string | undefined;
+        note: string;
+        chatHistory: {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            createdAt: string;
+        }[];
+    } | null>;
     fetchVocabulary: () => Promise<void>;
     selectWord: (id: string) => Promise<void>;
     searchWord: (query: string) => Promise<void>;
@@ -881,6 +979,10 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     createListeningTask: () => Promise<LearningTask>;
     ensureWordAudio: (id: string) => Promise<string>;
     ensureListeningAudio: (id: string) => Promise<string>;
+    selectListening: (id: string) => void;
+    updateListeningNote: (note: string) => Promise<void>;
+    sendListeningChatMessage: (message: string) => Promise<string>;
+    clearListeningChatHistory: () => Promise<ListeningEntry>;
     startTask: (taskId: string) => Promise<string>;
     clearTask: (taskId: string) => Promise<void>;
     startMistakeReview: () => Promise<string>;
@@ -896,4 +998,4 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
-}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "ensureWordAudio" | "ensureListeningAudio" | "startTask" | "clearTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "submitQuizAnswer">>;
+}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "ensureWordAudio" | "ensureListeningAudio" | "selectListening" | "updateListeningNote" | "sendListeningChatMessage" | "clearListeningChatHistory" | "startTask" | "clearTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "submitQuizAnswer">>;
