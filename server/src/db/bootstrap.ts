@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { env } from '../config/env.js';
-import { metaRepository, settingsRepository, quizRepository, vocabularyRepository } from './repositories.js';
+import { metaRepository, settingsRepository, quizRepository, taskRepository, vocabularyRepository } from './repositories.js';
 import type { QuizSession, Settings, VocabularyEntry } from '../types/models.js';
 
 const LEGACY_IMPORT_MARKER = 'legacy_json_import_v1';
@@ -41,6 +41,19 @@ export function bootstrapDatabase() {
       quizRepository.save({
         ...session,
         sourceType: session.sourceType ?? 'vocabulary_task',
+      });
+    }
+
+    // Ensure existing tasks created before writing payload support still have payload key.
+    const tasks = taskRepository.list();
+    for (const task of tasks) {
+      if (Object.prototype.hasOwnProperty.call(task, 'payload')) {
+        continue;
+      }
+
+      taskRepository.save({
+        ...task,
+        payload: null,
       });
     }
 

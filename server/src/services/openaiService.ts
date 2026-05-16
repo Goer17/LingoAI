@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { getSettings } from './settingsService.js';
-import type { QuizDraftQuestion, SearchResult } from '../types/models.js';
+import type { QuizDraftQuestion, SearchResult, WritingEvaluation } from '../types/models.js';
 
 const meaningSchema = z.object({
   partOfSpeech: z.string().min(1),
@@ -51,6 +51,22 @@ const quizSchema = z.object({
 const fillBlankRepairSchema = z.object({
   maskedSentence: z.string().min(1),
   answer: z.string().min(1),
+});
+
+const writingExerciseSchema = z.object({
+  requirement: z.string().min(1),
+  targetWordCount: z.number().int().min(80).max(260),
+  keyPoints: z.array(z.string().min(1)).min(1),
+});
+
+const writingEvaluationSchema = z.object({
+  score: z.number().min(0).max(10),
+  topicAlignment: z.string().min(1),
+  summary: z.string().min(1),
+  strengths: z.array(z.string().min(1)).min(1),
+  grammarCorrections: z.array(z.string().min(1)).min(1),
+  expressionPolish: z.array(z.string().min(1)).min(1),
+  improvedEssay: z.string().min(1),
 });
 
 function getClient() {
@@ -105,6 +121,18 @@ export async function generateQuiz(prompt: string): Promise<{ questions: QuizDra
 
 export async function generateFillBlankRepair(prompt: string): Promise<{ maskedSentence: string; answer: string }> {
   return requestJson(prompt, fillBlankRepairSchema);
+}
+
+export async function generateWritingExercise(prompt: string): Promise<{
+  requirement: string;
+  targetWordCount: number;
+  keyPoints: string[];
+}> {
+  return requestJson(prompt, writingExerciseSchema);
+}
+
+export async function evaluateWritingSubmission(prompt: string): Promise<WritingEvaluation> {
+  return requestJson(prompt, writingEvaluationSchema);
 }
 
 export async function askWordChat(prompt: string): Promise<string> {

@@ -55,6 +55,14 @@ async function startTask(taskId) {
     error.value = '';
     startingTaskId.value = taskId;
     try {
+        const task = store.tasks.find((item) => item.id === taskId);
+        if (!task) {
+            throw new Error('Task not found.');
+        }
+        if (task.type === 'writing') {
+            await router.push(`/writing-task/${task.id}`);
+            return;
+        }
         const sessionId = await store.startTask(taskId);
         await router.push(`/quiz/${sessionId}`);
     }
@@ -190,7 +198,13 @@ else {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
             ...{ class: "muted-text" },
         });
-        (task.questionCount || '-');
+        (task.type === 'writing' ? 'Exercise: short essay' : `Questions: ${task.questionCount || '-'}`);
+        if (task.type === 'writing' && task.payload?.exercise) {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+                ...{ class: "muted-text" },
+            });
+            (task.payload.exercise.topicTitle);
+        }
         if (task.status === 'pending') {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
                 ...{ class: "task-progress" },
@@ -326,6 +340,7 @@ else {
 /** @type {__VLS_StyleScopedClasses['task-main']} */ ;
 /** @type {__VLS_StyleScopedClasses['inline-heading']} */ ;
 /** @type {__VLS_StyleScopedClasses['task-status']} */ ;
+/** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['task-progress']} */ ;

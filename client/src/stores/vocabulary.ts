@@ -2,7 +2,17 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { api } from '@/services/api';
 import { getAudioUrl } from '@/utils/audioCache';
-import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, SearchResult, VocabularyEntry } from '@/types/models';
+import type {
+  LearningTask,
+  ListeningEntry,
+  MistakeEntry,
+  QuizSession,
+  SearchResult,
+  VocabularyEntry,
+  WritingEvaluation,
+  WritingKnowledgePoint,
+  WritingTopic,
+} from '@/types/models';
 
 export const useVocabularyStore = defineStore('vocabulary', () => {
   const items = ref<VocabularyEntry[]>([]);
@@ -18,11 +28,26 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
   const listeningItems = ref<ListeningEntry[]>([]);
   const listeningLoading = ref(false);
   const selectedListeningId = ref('');
+  const writingTopics = ref<WritingTopic[]>([]);
+  const selectedWritingTopicId = ref('');
+  const selectedWritingPointId = ref('');
+  const writingLoading = ref(false);
 
   const selectedWord = computed(() => items.value.find((item) => item.id === selectedId.value) ?? null);
   const selectedListening = computed(() => (
     listeningItems.value.find((item) => item.id === selectedListeningId.value) ?? null
   ));
+  const selectedWritingTopic = computed(() => (
+    writingTopics.value.find((item) => item.id === selectedWritingTopicId.value) ?? null
+  ));
+  const selectedWritingPoint = computed(() => {
+    const topic = selectedWritingTopic.value;
+    if (!topic) {
+      return null;
+    }
+
+    return topic.knowledgePoints.find((item) => item.id === selectedWritingPointId.value) ?? null;
+  });
 
   function updateWord(id: string, updater: (entry: VocabularyEntry) => VocabularyEntry) {
     items.value = items.value.map((item) => (item.id === id ? updater(item) : item));
@@ -163,7 +188,7 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     tasksLoading.value = true;
     try {
       const data = await api.getTasks();
-      tasks.value = data.tasks;
+      tasks.value = data.tasks.filter((item) => !(item.type === 'writing' && item.payload?.evaluation));
       mistakes.value = data.mistakes;
     } finally {
       tasksLoading.value = false;
@@ -222,6 +247,190 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     const task = await api.createListeningTask();
     tasks.value = [task, ...tasks.value.filter((item) => item.id !== task.id)];
     return task;
+  }
+
+  function updateWritingTopicLocal(topic: WritingTopic) {
+    writingTopics.value = writingTopics.value.map((item) => (item.id === topic.id ? topic : item));
+  }
+
+  function updateWritingPointLocal(topicId: string, pointId: string, updater: (point: WritingKnowledgePoint) => WritingKnowledgePoint) {
+    writingTopics.value = writingTopics.value.map((topic) => {
+      if (topic.id !== topicId) {
+        return topic;
+      }
+
+      return {
+        ...topic,
+        knowledgePoints: topic.knowledgePoints.map((point) => (
+          point.id === pointId ? updater(point) : point
+        )),
+      };
+    });
+  }
+
+  async function fetchWritingTopics() {
+    writingLoading.value = true;
+    try {
+      writingTopics.value = await api.getWritingTopics();
+      if (!selectedWritingTopicId.value && writingTopics.value.length > 0) {
+        selectedWritingTopicId.value = writingTopics.value[0].id;
+      }
+      if (selectedWritingTopicId.value) {
+        const currentTopic = writingTopics.value.find((item) => item.id === selectedWritingTopicId.value) ?? null;
+        if (!currentTopic) {
+          selectedWritingTopicId.value = writingTopics.value[0]?.id ?? '';
+          selectedWritingPointId.value = '';
+        } else if (selectedWritingPointId.value) {
+          const pointExists = currentTopic.knowledgePoints.some((item) => item.id === selectedWritingPointId.value);
+          if (!pointExists) {
+            selectedWritingPointId.value = currentTopic.knowledgePoints[0]?.id ?? '';
+          }
+        } else if (currentTopic.knowledgePoints.length > 0) {
+          selectedWritingPointId.value = currentTopic.knowledgePoints[0].id;
+        }
+      }
+    } finally {
+      writingLoading.value = false;
+    }
+  }
+
+  async function addWritingTopic(title: string) {
+    const result = await api.addWritingTopic(title);
+    if (result.created) {
+      writingTopics.value = [result.topic, ...writingTopics.value.filter((item) => item.id !== result.topic.id)];
+      selectedWritingTopicId.value = result.topic.id;
+      selectedWritingPointId.value = '';
+    } else {
+      updateWritingTopicLocal(result.topic);
+      selectedWritingTopicId.value = result.topic.id;
+      selectedWritingPointId.value = result.topic.knowledgePoints[0]?.id ?? '';
+    }
+    return result;
+  }
+
+  async function updateWritingTopicTitle(topicId: string, title: string) {
+    const topic = await api.updateWritingTopicTitle(topicId, title);
+    updateWritingTopicLocal(topic);
+    return topic;
+  }
+
+  async function deleteWritingTopic(topicId: string) {
+    await api.deleteWritingTopic(topicId);
+    writingTopics.value = writingTopics.value.filter((item) => item.id !== topicId);
+    if (selectedWritingTopicId.value === topicId) {
+      selectedWritingTopicId.value = writingTopics.value[0]?.id ?? '';
+      selectedWritingPointId.value = writingTopics.value[0]?.knowledgePoints[0]?.id ?? '';
+    }
+  }
+
+  function selectWritingTopic(topicId: string) {
+    selectedWritingTopicId.value = topicId;
+    const topic = writingTopics.value.find((item) => item.id === topicId) ?? null;
+    if (!topic) {
+      selectedWritingPointId.value = '';
+      return;
+    }
+
+    if (!topic.knowledgePoints.some((item) => item.id === selectedWritingPointId.value)) {
+      selectedWritingPointId.value = topic.knowledgePoints[0]?.id ?? '';
+    }
+  }
+
+  function selectWritingPoint(pointId: string) {
+    selectedWritingPointId.value = pointId;
+  }
+
+  async function addWritingKnowledgePoint(topicId: string, payload: { title: string; content: string }) {
+    const result = await api.addWritingKnowledgePoint(topicId, payload);
+    updateWritingTopicLocal(result.topic);
+    selectedWritingTopicId.value = topicId;
+    selectedWritingPointId.value = result.point.id;
+    return result;
+  }
+
+  async function updateWritingKnowledgePoint(topicId: string, pointId: string, payload: { title: string; content: string }) {
+    const topic = await api.updateWritingKnowledgePoint(topicId, pointId, payload);
+    updateWritingTopicLocal(topic);
+    return topic;
+  }
+
+  async function deleteWritingKnowledgePoint(topicId: string, pointId: string) {
+    const topic = await api.deleteWritingKnowledgePoint(topicId, pointId);
+    updateWritingTopicLocal(topic);
+    if (selectedWritingPointId.value === pointId) {
+      selectedWritingPointId.value = topic.knowledgePoints[0]?.id ?? '';
+    }
+  }
+
+  async function sendWritingKnowledgePointChatMessage(topicId: string, pointId: string, message: string) {
+    const userMessageId = createClientMessageId('writing-chat-user');
+    const assistantMessageId = createClientMessageId('writing-chat-assistant');
+    const now = new Date().toISOString();
+
+    updateWritingPointLocal(topicId, pointId, (point) => ({
+      ...point,
+      updatedAt: now,
+      chatHistory: [
+        ...point.chatHistory,
+        {
+          id: userMessageId,
+          role: 'user',
+          content: message,
+          createdAt: now,
+        },
+        {
+          id: assistantMessageId,
+          role: 'assistant',
+          content: '',
+          createdAt: now,
+        },
+      ],
+    }));
+
+    try {
+      const reply = await api.streamWritingKnowledgePointChat(topicId, pointId, message, (chunk) => {
+        updateWritingPointLocal(topicId, pointId, (point) => ({
+          ...point,
+          updatedAt: new Date().toISOString(),
+          chatHistory: point.chatHistory.map((item) => (
+            item.id === assistantMessageId
+              ? { ...item, content: item.content + chunk }
+              : item
+          )),
+        }));
+      });
+
+      return reply;
+    } catch (error) {
+      updateWritingPointLocal(topicId, pointId, (point) => ({
+        ...point,
+        updatedAt: new Date().toISOString(),
+        chatHistory: point.chatHistory.map((item) => (
+          item.id === assistantMessageId
+            ? { ...item, content: error instanceof Error ? error.message : 'Chat failed.' }
+            : item
+        )),
+      }));
+      throw error;
+    }
+  }
+
+  async function clearWritingKnowledgePointChat(topicId: string, pointId: string) {
+    const result = await api.clearWritingKnowledgePointChat(topicId, pointId);
+    updateWritingTopicLocal(result.topic);
+    return result;
+  }
+
+  async function createWritingTask(topicId: string) {
+    const task = await api.createWritingTask(topicId);
+    tasks.value = [task, ...tasks.value.filter((item) => item.id !== task.id)];
+    return task;
+  }
+
+  async function evaluateWritingTask(taskId: string, submission: string): Promise<{ task: LearningTask; evaluation: WritingEvaluation; removed: boolean }> {
+    const result = await api.evaluateWritingTask(taskId, submission);
+    tasks.value = tasks.value.filter((item) => item.id !== result.task.id);
+    return result;
   }
 
   async function ensureWordAudio(id: string) {
@@ -366,6 +575,12 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     listeningLoading,
     selectedListeningId,
     selectedListening,
+    writingTopics,
+    selectedWritingTopicId,
+    selectedWritingPointId,
+    selectedWritingTopic,
+    selectedWritingPoint,
+    writingLoading,
     fetchVocabulary,
     selectWord,
     searchWord,
@@ -377,6 +592,19 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     fetchTasks,
     createVocabularyTask,
     createListeningTask,
+    fetchWritingTopics,
+    addWritingTopic,
+    updateWritingTopicTitle,
+    deleteWritingTopic,
+    selectWritingTopic,
+    selectWritingPoint,
+    addWritingKnowledgePoint,
+    updateWritingKnowledgePoint,
+    deleteWritingKnowledgePoint,
+    sendWritingKnowledgePointChatMessage,
+    clearWritingKnowledgePointChat,
+    createWritingTask,
+    evaluateWritingTask,
     ensureWordAudio,
     ensureListeningAudio,
     selectListening,

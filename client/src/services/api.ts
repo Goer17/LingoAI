@@ -1,5 +1,16 @@
 import { getStoredAccessToken, http, unwrap } from './http';
-import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, SearchResult, SettingsForm, VocabularyEntry } from '@/types/models';
+import type {
+  LearningTask,
+  ListeningEntry,
+  MistakeEntry,
+  QuizSession,
+  SearchResult,
+  SettingsForm,
+  VocabularyEntry,
+  WritingEvaluation,
+  WritingKnowledgePoint,
+  WritingTopic,
+} from '@/types/models';
 
 export const api = {
   login(token: string) {
@@ -221,5 +232,108 @@ export const api = {
   },
   submitQuizAnswer(id: string, questionId: string, response: string) {
     return unwrap<{ session: QuizSession; vocabulary?: VocabularyEntry[]; listening?: ListeningEntry[] }>(http.post(`/vocabulary/quiz/${id}/answer`, { questionId, response }));
+  },
+  getWritingTopics() {
+    return unwrap<WritingTopic[]>(http.get('/writing/topics'));
+  },
+  addWritingTopic(title: string) {
+    return unwrap<{ created: boolean; topic: WritingTopic }>(http.post('/writing/topics', { title }));
+  },
+  updateWritingTopicTitle(topicId: string, title: string) {
+    return unwrap<WritingTopic>(http.post(`/writing/topics/${topicId}/title`, { title }));
+  },
+  deleteWritingTopic(topicId: string) {
+    return unwrap<{ removed: boolean }>(http.post(`/writing/topics/${topicId}/delete`));
+  },
+  addWritingKnowledgePoint(topicId: string, payload: { title: string; content: string }) {
+    return unwrap<{ topic: WritingTopic; point: WritingKnowledgePoint }>(http.post(`/writing/topics/${topicId}/points`, payload));
+  },
+  updateWritingKnowledgePoint(topicId: string, pointId: string, payload: { title: string; content: string }) {
+    return unwrap<WritingTopic>(http.post(`/writing/topics/${topicId}/points/${pointId}`, payload));
+  },
+  deleteWritingKnowledgePoint(topicId: string, pointId: string) {
+    return unwrap<WritingTopic>(http.post(`/writing/topics/${topicId}/points/${pointId}/delete`));
+  },
+  async streamWritingKnowledgePointChat(
+    topicId: string,
+    pointId: string,
+    message: string,
+    onDelta: (chunk: string) => void,
+  ) {
+    const token = getStoredAccessToken();
+    const response = await fetch(`/api/writing/topics/${topicId}/points/${pointId}/chat/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'x-access-token': token } : {}),
+      },
+      body: JSON.stringify({ message }),
+    });
+
+    if (!response.ok || !response.body) {
+      throw new Error('Chat failed.');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullReply = '';
+    let doneReceived = false;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop() ?? '';
+
+      for (const event of events) {
+        const dataLine = event
+          .split('\n')
+          .map((line) => line.trim())
+          .find((line) => line.startsWith('data:'));
+
+        if (!dataLine) {
+          continue;
+        }
+
+        const payload = JSON.parse(dataLine.slice(5).trim()) as {
+          type: 'delta' | 'done' | 'error';
+          content?: string;
+          error?: string;
+        };
+
+        if (payload.type === 'delta' && payload.content) {
+          fullReply += payload.content;
+          onDelta(payload.content);
+        }
+
+        if (payload.type === 'error') {
+          throw new Error(payload.error || 'Chat failed.');
+        }
+
+        if (payload.type === 'done') {
+          doneReceived = true;
+        }
+      }
+    }
+
+    if (!doneReceived) {
+      throw new Error('Chat stream ended unexpectedly.');
+    }
+
+    return fullReply.trim();
+  },
+  clearWritingKnowledgePointChat(topicId: string, pointId: string) {
+    return unwrap<{ topic: WritingTopic; point: WritingKnowledgePoint }>(http.post(`/writing/topics/${topicId}/points/${pointId}/chat/clear`));
+  },
+  createWritingTask(topicId: string) {
+    return unwrap<LearningTask>(http.post(`/writing/tasks/${topicId}`));
+  },
+  evaluateWritingTask(taskId: string, submission: string) {
+    return unwrap<{ task: LearningTask; evaluation: WritingEvaluation; removed: boolean }>(http.post(`/writing/tasks/${taskId}/evaluate`, { submission }));
   },
 };

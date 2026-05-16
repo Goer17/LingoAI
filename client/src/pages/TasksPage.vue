@@ -9,7 +9,7 @@
           <div>
             <p class="eyebrow">Tasks</p>
             <h2>Learning Queue</h2>
-            <p class="subtle-copy">Vocabulary quizzes are generated in the background. Start when ready.</p>
+            <p class="subtle-copy">Vocabulary, listening, and writing tasks are generated in the background. Start when ready.</p>
           </div>
           <button class="button button-secondary" type="button" :disabled="store.tasksLoading" @click="refresh">
             Refresh
@@ -26,7 +26,10 @@
                 <span class="task-status" :class="`status-${task.status}`">{{ formatStatusLabel(task.status) }}</span>
               </div>
               <p class="muted-text">Generated: {{ formatDate(task.createdAt) }}</p>
-              <p class="muted-text">Questions: {{ task.questionCount || '-' }}</p>
+              <p class="muted-text">{{ task.type === 'writing' ? 'Exercise: short essay' : `Questions: ${task.questionCount || '-'}` }}</p>
+              <p v-if="task.type === 'writing' && task.payload?.exercise" class="muted-text">
+                Topic: {{ task.payload.exercise.topicTitle }}
+              </p>
               <div v-if="task.status === 'pending'" class="task-progress">
                 <div class="task-progress-track">
                   <span class="task-progress-fill" :style="{ width: `${pendingProgressPercent(task.id)}%` }"></span>
@@ -164,6 +167,16 @@ async function startTask(taskId: string) {
   error.value = '';
   startingTaskId.value = taskId;
   try {
+    const task = store.tasks.find((item) => item.id === taskId);
+    if (!task) {
+      throw new Error('Task not found.');
+    }
+
+    if (task.type === 'writing') {
+      await router.push(`/writing-task/${task.id}`);
+      return;
+    }
+
     const sessionId = await store.startTask(taskId);
     await router.push(`/quiz/${sessionId}`);
   } catch (err) {

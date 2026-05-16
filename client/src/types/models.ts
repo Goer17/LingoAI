@@ -1,6 +1,6 @@
 export type WordType = 'word' | 'phrase';
 export type QuizType = 'fill_blank' | 'listening';
-export type LearningTaskType = 'vocabulary' | 'listening';
+export type LearningTaskType = 'vocabulary' | 'listening' | 'writing';
 export type LearningTaskStatus = 'pending' | 'ready' | 'failed';
 export type QuizSourceType = 'vocabulary_task' | 'listening_task' | 'mistake_review';
 
@@ -98,6 +98,7 @@ export interface LearningTask {
   quizSessionId: string | null;
   questionCount: number;
   error: string | null;
+  payload?: WritingTaskPayload | null;
 }
 
 export interface MistakeEntry {
@@ -122,4 +123,47 @@ export interface ListeningEntry {
   audioFile?: string;
   note: string;
   chatHistory: ChatMessage[];
+}
+
+export interface WritingKnowledgePoint {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  chatHistory: ChatMessage[];
+}
+
+export interface WritingTopic {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  knowledgePoints: WritingKnowledgePoint[];
+}
+
+export interface WritingExercise {
+  topicId: string;
+  topicTitle: string;
+  requirement: string;
+  targetWordCount: number;
+  keyPoints: string[];
+  createdAt: string;
+}
+
+export interface WritingEvaluation {
+  score: number;
+  topicAlignment: string;
+  summary: string;
+  strengths: string[];
+  grammarCorrections: string[];
+  expressionPolish: string[];
+  improvedEssay: string;
+}
+
+export interface WritingTaskPayload {
+  topicId: string;
+  exercise: WritingExercise | null;
+  submission: string | null;
+  evaluation: WritingEvaluation | null;
 }

@@ -7,6 +7,8 @@ import VocabularyPage from '@/pages/VocabularyPage.vue';
 import QuizPage from '@/pages/QuizPage.vue';
 import TasksPage from '@/pages/TasksPage.vue';
 import ListeningPage from '@/pages/ListeningPage.vue';
+import WritingPage from '@/pages/WritingPage.vue';
+import WritingTaskPage from '@/pages/WritingTaskPage.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -35,6 +37,11 @@ const router = createRouter({
           component: ListeningPage,
         },
         {
+          path: 'writing',
+          name: 'writing',
+          component: WritingPage,
+        },
+        {
           path: 'setting',
           name: 'setting',
           component: SettingPage,
@@ -43,6 +50,11 @@ const router = createRouter({
           path: 'tasks',
           name: 'tasks',
           component: TasksPage,
+        },
+        {
+          path: 'writing-task/:id',
+          name: 'writing-task',
+          component: WritingTaskPage,
         },
       ],
     },

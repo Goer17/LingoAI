@@ -1,5 +1,5 @@
 import { db } from './database.js';
-import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, Settings, VocabularyEntry } from '../types/models.js';
+import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, Settings, VocabularyEntry, WritingTopic } from '../types/models.js';
 
 function parseJson<T>(value: string): T {
   return JSON.parse(value) as T;
@@ -340,5 +340,60 @@ export const listeningRepository = {
 
   remove(id: string) {
     db.prepare('DELETE FROM listening_entries WHERE id = ?').run(id);
+  },
+};
+
+export const writingTopicRepository = {
+  list(): WritingTopic[] {
+    const rows = db.prepare(`
+      SELECT payload_json
+      FROM writing_topics
+      ORDER BY created_at DESC
+    `).all() as Array<{ payload_json: string }>;
+
+    return rows.map((row) => parseJson<WritingTopic>(row.payload_json));
+  },
+
+  getById(id: string): WritingTopic | null {
+    const row = db.prepare(`
+      SELECT payload_json
+      FROM writing_topics
+      WHERE id = ?
+    `).get(id) as { payload_json: string } | undefined;
+
+    return row ? parseJson<WritingTopic>(row.payload_json) : null;
+  },
+
+  getByNormalizedTitle(normalizedTitle: string): WritingTopic | null {
+    const row = db.prepare(`
+      SELECT payload_json
+      FROM writing_topics
+      WHERE normalized_title = ?
+    `).get(normalizedTitle) as { payload_json: string } | undefined;
+
+    return row ? parseJson<WritingTopic>(row.payload_json) : null;
+  },
+
+  save(topic: WritingTopic) {
+    db.prepare(`
+      INSERT INTO writing_topics (
+        id, normalized_title, created_at, updated_at, payload_json
+      ) VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        normalized_title = excluded.normalized_title,
+        created_at = excluded.created_at,
+        updated_at = excluded.updated_at,
+        payload_json = excluded.payload_json
+    `).run(
+      topic.id,
+      topic.title.trim().toLowerCase(),
+      topic.createdAt,
+      topic.updatedAt,
+      JSON.stringify(topic),
+    );
+  },
+
+  remove(id: string) {
+    db.prepare('DELETE FROM writing_topics WHERE id = ?').run(id);
   },
 };

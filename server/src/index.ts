@@ -7,6 +7,7 @@ import { bootstrapDatabase } from './db/bootstrap.js';
 import { authRouter } from './routes/auth.js';
 import { settingsRouter } from './routes/settings.js';
 import { vocabularyRouter } from './routes/vocabulary.js';
+import { writingRouter } from './routes/writing.js';
 import { validateAccessToken } from './services/tokenService.js';
 import { fail, ok } from './utils/http.js';
 
@@ -36,6 +37,7 @@ app.get('/api/health', (_req, res) => ok(res, { status: 'ok' }));
 app.use('/api/auth', authRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/vocabulary', vocabularyRouter);
+app.use('/api/writing', writingRouter);
 
 if (hasClientDist) {
   app.use(express.static(env.clientDistPath));

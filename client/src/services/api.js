@@ -188,4 +188,86 @@ export const api = {
     submitQuizAnswer(id, questionId, response) {
         return unwrap(http.post(`/vocabulary/quiz/${id}/answer`, { questionId, response }));
     },
+    getWritingTopics() {
+        return unwrap(http.get('/writing/topics'));
+    },
+    addWritingTopic(title) {
+        return unwrap(http.post('/writing/topics', { title }));
+    },
+    updateWritingTopicTitle(topicId, title) {
+        return unwrap(http.post(`/writing/topics/${topicId}/title`, { title }));
+    },
+    deleteWritingTopic(topicId) {
+        return unwrap(http.post(`/writing/topics/${topicId}/delete`));
+    },
+    addWritingKnowledgePoint(topicId, payload) {
+        return unwrap(http.post(`/writing/topics/${topicId}/points`, payload));
+    },
+    updateWritingKnowledgePoint(topicId, pointId, payload) {
+        return unwrap(http.post(`/writing/topics/${topicId}/points/${pointId}`, payload));
+    },
+    deleteWritingKnowledgePoint(topicId, pointId) {
+        return unwrap(http.post(`/writing/topics/${topicId}/points/${pointId}/delete`));
+    },
+    async streamWritingKnowledgePointChat(topicId, pointId, message, onDelta) {
+        const token = getStoredAccessToken();
+        const response = await fetch(`/api/writing/topics/${topicId}/points/${pointId}/chat/stream`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'x-access-token': token } : {}),
+            },
+            body: JSON.stringify({ message }),
+        });
+        if (!response.ok || !response.body) {
+            throw new Error('Chat failed.');
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullReply = '';
+        let doneReceived = false;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            buffer += decoder.decode(value, { stream: true });
+            const events = buffer.split('\n\n');
+            buffer = events.pop() ?? '';
+            for (const event of events) {
+                const dataLine = event
+                    .split('\n')
+                    .map((line) => line.trim())
+                    .find((line) => line.startsWith('data:'));
+                if (!dataLine) {
+                    continue;
+                }
+                const payload = JSON.parse(dataLine.slice(5).trim());
+                if (payload.type === 'delta' && payload.content) {
+                    fullReply += payload.content;
+                    onDelta(payload.content);
+                }
+                if (payload.type === 'error') {
+                    throw new Error(payload.error || 'Chat failed.');
+                }
+                if (payload.type === 'done') {
+                    doneReceived = true;
+                }
+            }
+        }
+        if (!doneReceived) {
+            throw new Error('Chat stream ended unexpectedly.');
+        }
+        return fullReply.trim();
+    },
+    clearWritingKnowledgePointChat(topicId, pointId) {
+        return unwrap(http.post(`/writing/topics/${topicId}/points/${pointId}/chat/clear`));
+    },
+    createWritingTask(topicId) {
+        return unwrap(http.post(`/writing/tasks/${topicId}`));
+    },
+    evaluateWritingTask(taskId, submission) {
+        return unwrap(http.post(`/writing/tasks/${taskId}/evaluate`, { submission }));
+    },
 };

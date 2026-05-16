@@ -82,6 +82,14 @@ db.exec(`
     payload_json TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS writing_topics (
+    id TEXT PRIMARY KEY,
+    normalized_title TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    payload_json TEXT NOT NULL
+  );
+
   CREATE INDEX IF NOT EXISTS idx_vocabulary_order
     ON vocabulary_entries (familiarity ASC, created_at DESC);
 
@@ -93,6 +101,9 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_listening_entries_order
     ON listening_entries (familiarity ASC, created_at DESC);
+
+  CREATE INDEX IF NOT EXISTS idx_writing_topics_created
+    ON writing_topics (created_at DESC);
 `);
 
 try {

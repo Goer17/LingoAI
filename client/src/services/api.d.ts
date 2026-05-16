@@ -1,4 +1,4 @@
-import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, SearchResult, SettingsForm, VocabularyEntry } from '@/types/models';
+import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, SearchResult, SettingsForm, VocabularyEntry, WritingEvaluation, WritingKnowledgePoint, WritingTopic } from '@/types/models';
 export declare const api: {
     login(token: string): Promise<{
         token: string;
@@ -66,5 +66,37 @@ export declare const api: {
         session: QuizSession;
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
+    }>;
+    getWritingTopics(): Promise<WritingTopic[]>;
+    addWritingTopic(title: string): Promise<{
+        created: boolean;
+        topic: WritingTopic;
+    }>;
+    updateWritingTopicTitle(topicId: string, title: string): Promise<WritingTopic>;
+    deleteWritingTopic(topicId: string): Promise<{
+        removed: boolean;
+    }>;
+    addWritingKnowledgePoint(topicId: string, payload: {
+        title: string;
+        content: string;
+    }): Promise<{
+        topic: WritingTopic;
+        point: WritingKnowledgePoint;
+    }>;
+    updateWritingKnowledgePoint(topicId: string, pointId: string, payload: {
+        title: string;
+        content: string;
+    }): Promise<WritingTopic>;
+    deleteWritingKnowledgePoint(topicId: string, pointId: string): Promise<WritingTopic>;
+    streamWritingKnowledgePointChat(topicId: string, pointId: string, message: string, onDelta: (chunk: string) => void): Promise<string>;
+    clearWritingKnowledgePointChat(topicId: string, pointId: string): Promise<{
+        topic: WritingTopic;
+        point: WritingKnowledgePoint;
+    }>;
+    createWritingTask(topicId: string): Promise<LearningTask>;
+    evaluateWritingTask(taskId: string, submission: string): Promise<{
+        task: LearningTask;
+        evaluation: WritingEvaluation;
+        removed: boolean;
     }>;
 };
