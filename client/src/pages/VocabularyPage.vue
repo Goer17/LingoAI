@@ -25,6 +25,7 @@
         @save-note="handleSaveNote"
         @send-chat="handleSendChat"
         @clear-chat="handleClearChat"
+        @delete="handleDeleteWord"
       />
     </div>
 
@@ -118,6 +119,17 @@ async function handleClearChat() {
     message.value = 'Tutor chat cleared.';
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to clear chat.';
+  }
+}
+
+async function handleDeleteWord(id: string) {
+  error.value = '';
+  message.value = '';
+  try {
+    await store.deleteWord(id);
+    message.value = 'Word deleted.';
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Failed to delete word.';
   }
 }
 

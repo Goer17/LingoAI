@@ -12,6 +12,14 @@
           <button class="icon-button" type="button" aria-label="Play sentence" title="Play sentence" @click="$emit('play-audio')">
             🔊
           </button>
+          <button
+            class="button button-secondary delete-action"
+            type="button"
+            :class="{ confirm: deleteConfirm }"
+            @click="handleDeleteClick"
+          >
+            {{ deleteConfirm ? 'Confirm' : 'Delete' }}
+          </button>
         </div>
       </div>
 
@@ -75,9 +83,11 @@ const emit = defineEmits<{
   'save-note': [note: string];
   'send-chat': [message: string];
   'clear-chat': [];
+  delete: [id: string];
 }>();
 
 const chatItems = computed(() => props.sentence?.chatHistory ?? []);
+const deleteConfirm = ref(false);
 
 function submit() {
   if (!draft.value.trim() || !props.sentence) {
@@ -96,6 +106,23 @@ function handleNoteChange(event: Event) {
 
   emit('save-note', target.value);
 }
+
+function handleDeleteClick() {
+  if (deleteConfirm.value) {
+    emit('delete', props.sentence?.id ?? '');
+    deleteConfirm.value = false;
+    return;
+  }
+
+  deleteConfirm.value = true;
+}
+
+watch(
+  () => props.sentence?.id,
+  () => {
+    deleteConfirm.value = false;
+  },
+);
 
 watch(
   () => {

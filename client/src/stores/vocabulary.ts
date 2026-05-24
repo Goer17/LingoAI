@@ -179,6 +179,14 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     return entry;
   }
 
+  async function deleteWord(id: string) {
+    await api.deleteWord(id);
+    items.value = items.value.filter((item) => item.id !== id);
+    if (selectedId.value === id) {
+      selectedId.value = items.value[0]?.id ?? '';
+    }
+  }
+
   async function generateQuiz() {
     quizSession.value = await api.generateQuiz();
     return quizSession.value;
@@ -588,6 +596,7 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     updateNote,
     sendChatMessage,
     clearChatHistory,
+    deleteWord,
     generateQuiz,
     fetchTasks,
     createVocabularyTask,

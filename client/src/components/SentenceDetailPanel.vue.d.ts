@@ -8,10 +8,12 @@ declare const _default: import("vue").DefineComponent<__VLS_Props, {}, {}, {}, {
     "save-note": (note: string) => any;
     "send-chat": (message: string) => any;
     "clear-chat": () => any;
+    delete: (id: string) => any;
 }, string, import("vue").PublicProps, Readonly<__VLS_Props> & Readonly<{
     "onPlay-audio"?: (() => any) | undefined;
     "onSave-note"?: ((note: string) => any) | undefined;
     "onSend-chat"?: ((message: string) => any) | undefined;
     "onClear-chat"?: (() => any) | undefined;
+    onDelete?: ((id: string) => any) | undefined;
 }>, {}, {}, {}, {}, string, import("vue").ComponentProvideOptions, false, {}, any>;
 export default _default;

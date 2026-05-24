@@ -15,6 +15,9 @@ export declare const api: {
         removed: boolean;
     }>;
     getWord(id: string): Promise<VocabularyEntry>;
+    deleteWord(id: string): Promise<{
+        removed: boolean;
+    }>;
     searchWord(query: string): Promise<SearchResult>;
     saveWord(result: SearchResult): Promise<{
         created: boolean;

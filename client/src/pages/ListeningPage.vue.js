@@ -91,6 +91,17 @@ async function handleClearChat() {
         error.value = err instanceof Error ? err.message : 'Failed to clear chat.';
     }
 }
+async function handleDeleteSentence(id) {
+    error.value = '';
+    message.value = '';
+    try {
+        await store.deleteListeningSentence(id);
+        message.value = 'Sentence deleted.';
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Failed to delete sentence.';
+    }
+}
 async function startLearning() {
     error.value = '';
     taskLoading.value = true;
@@ -211,6 +222,7 @@ const __VLS_0 = __VLS_asFunctionalComponent(SentenceDetailPanel, new SentenceDet
     ...{ 'onSaveNote': {} },
     ...{ 'onSendChat': {} },
     ...{ 'onClearChat': {} },
+    ...{ 'onDelete': {} },
     sentence: (__VLS_ctx.store.selectedListening),
     loading: (__VLS_ctx.chatLoading),
 }));
@@ -219,6 +231,7 @@ const __VLS_1 = __VLS_0({
     ...{ 'onSaveNote': {} },
     ...{ 'onSendChat': {} },
     ...{ 'onClearChat': {} },
+    ...{ 'onDelete': {} },
     sentence: (__VLS_ctx.store.selectedListening),
     loading: (__VLS_ctx.chatLoading),
 }, ...__VLS_functionalComponentArgsRest(__VLS_0));
@@ -236,6 +249,9 @@ const __VLS_8 = {
 };
 const __VLS_9 = {
     onClearChat: (__VLS_ctx.handleClearChat)
+};
+const __VLS_10 = {
+    onDelete: (__VLS_ctx.handleDeleteSentence)
 };
 var __VLS_2;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -305,6 +321,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             handleSaveNote: handleSaveNote,
             handleSendChat: handleSendChat,
             handleClearChat: handleClearChat,
+            handleDeleteSentence: handleDeleteSentence,
             startLearning: startLearning,
         };
     },

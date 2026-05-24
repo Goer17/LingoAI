@@ -343,6 +343,12 @@ textarea:focus {
   color: var(--text);
 }
 
+.delete-action.confirm {
+  border-color: rgba(139, 45, 45, 0.45);
+  background: rgba(139, 45, 45, 0.12);
+  color: var(--error);
+}
+
 .word-row.active {
   border-color: var(--line-strong);
   background: #fff;

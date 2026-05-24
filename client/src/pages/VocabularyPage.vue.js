@@ -76,6 +76,17 @@ async function handleClearChat() {
         error.value = err instanceof Error ? err.message : 'Failed to clear chat.';
     }
 }
+async function handleDeleteWord(id) {
+    error.value = '';
+    message.value = '';
+    try {
+        await store.deleteWord(id);
+        message.value = 'Word deleted.';
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Failed to delete word.';
+    }
+}
 async function playSearchAudio(input) {
     error.value = '';
     try {
@@ -218,6 +229,7 @@ const __VLS_23 = __VLS_asFunctionalComponent(WordDetailPanel, new WordDetailPane
     ...{ 'onSaveNote': {} },
     ...{ 'onSendChat': {} },
     ...{ 'onClearChat': {} },
+    ...{ 'onDelete': {} },
     word: (__VLS_ctx.store.selectedWord),
     showChinese: (__VLS_ctx.showChinese),
     loading: (__VLS_ctx.chatLoading),
@@ -228,6 +240,7 @@ const __VLS_24 = __VLS_23({
     ...{ 'onSaveNote': {} },
     ...{ 'onSendChat': {} },
     ...{ 'onClearChat': {} },
+    ...{ 'onDelete': {} },
     word: (__VLS_ctx.store.selectedWord),
     showChinese: (__VLS_ctx.showChinese),
     loading: (__VLS_ctx.chatLoading),
@@ -251,6 +264,9 @@ const __VLS_32 = {
 };
 const __VLS_33 = {
     onClearChat: (__VLS_ctx.handleClearChat)
+};
+const __VLS_34 = {
+    onDelete: (__VLS_ctx.handleDeleteWord)
 };
 var __VLS_25;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -300,6 +316,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             handleSaveNote: handleSaveNote,
             handleSendChat: handleSendChat,
             handleClearChat: handleClearChat,
+            handleDeleteWord: handleDeleteWord,
             playSearchAudio: playSearchAudio,
             playWordAudio: playWordAudio,
             startLearning: startLearning,

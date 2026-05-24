@@ -37,6 +37,9 @@ export const api = {
   getWord(id: string) {
     return unwrap<VocabularyEntry>(http.get(`/vocabulary/${id}`));
   },
+  deleteWord(id: string) {
+    return unwrap<{ removed: boolean }>(http.post(`/vocabulary/${id}/delete`));
+  },
   searchWord(query: string) {
     return unwrap<SearchResult>(http.post('/vocabulary/search-word', { query }));
   },

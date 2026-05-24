@@ -55,6 +55,7 @@
           @save-note="handleSaveNote"
           @send-chat="handleSendChat"
           @clear-chat="handleClearChat"
+          @delete="handleDeleteSentence"
         />
       </div>
     </section>
@@ -166,6 +167,17 @@ async function handleClearChat() {
     message.value = 'Tutor chat cleared.';
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to clear chat.';
+  }
+}
+
+async function handleDeleteSentence(id: string) {
+  error.value = '';
+  message.value = '';
+  try {
+    await store.deleteListeningSentence(id);
+    message.value = 'Sentence deleted.';
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Failed to delete sentence.';
   }
 }
 

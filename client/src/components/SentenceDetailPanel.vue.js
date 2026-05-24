@@ -4,6 +4,7 @@ const chatHistoryRef = ref(null);
 const props = defineProps();
 const emit = defineEmits();
 const chatItems = computed(() => props.sentence?.chatHistory ?? []);
+const deleteConfirm = ref(false);
 function submit() {
     if (!draft.value.trim() || !props.sentence) {
         return;
@@ -18,6 +19,17 @@ function handleNoteChange(event) {
     }
     emit('save-note', target.value);
 }
+function handleDeleteClick() {
+    if (deleteConfirm.value) {
+        emit('delete', props.sentence?.id ?? '');
+        deleteConfirm.value = false;
+        return;
+    }
+    deleteConfirm.value = true;
+}
+watch(() => props.sentence?.id, () => {
+    deleteConfirm.value = false;
+});
 watch(() => {
     const history = props.sentence?.chatHistory ?? [];
     const last = history[history.length - 1];
@@ -153,6 +165,13 @@ if (__VLS_ctx.sentence) {
         'aria-label': "Play sentence",
         title: "Play sentence",
     });
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+        ...{ onClick: (__VLS_ctx.handleDeleteClick) },
+        ...{ class: "button button-secondary delete-action" },
+        type: "button",
+        ...{ class: ({ confirm: __VLS_ctx.deleteConfirm }) },
+    });
+    (__VLS_ctx.deleteConfirm ? 'Confirm' : 'Delete');
     __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
         ...{ class: "field" },
     });
@@ -245,6 +264,9 @@ else {
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['result-actions']} */ ;
 /** @type {__VLS_StyleScopedClasses['icon-button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
+/** @type {__VLS_StyleScopedClasses['delete-action']} */ ;
 /** @type {__VLS_StyleScopedClasses['field']} */ ;
 /** @type {__VLS_StyleScopedClasses['chat-shell']} */ ;
 /** @type {__VLS_StyleScopedClasses['section-heading']} */ ;
@@ -271,8 +293,10 @@ const __VLS_self = (await import('vue')).defineComponent({
             draft: draft,
             chatHistoryRef: chatHistoryRef,
             chatItems: chatItems,
+            deleteConfirm: deleteConfirm,
             submit: submit,
             handleNoteChange: handleNoteChange,
+            handleDeleteClick: handleDeleteClick,
             renderMarkdown: renderMarkdown,
         };
     },

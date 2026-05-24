@@ -8,7 +8,7 @@ import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, getMediaU
 import { askWordChat, generateQuiz, searchWord, streamWordChat } from '../services/openaiService.js';
 import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '../services/fillBlankService.js';
 import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningQuizDraft, getListeningEntryById, listListeningEntries, pickListeningEntries, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
-import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
+import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, removeWord, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
 import { createQuizSession, getQuizSession, pickQuizEntries, submitQuizAnswer } from '../services/quizService.js';
 import {
   createLearningTask,
@@ -410,6 +410,15 @@ vocabularyRouter.post('/:id/note', (req, res) => {
   }
 
   return ok(res, updated);
+});
+
+vocabularyRouter.post('/:id/delete', (req, res) => {
+  const removed = removeWord(req.params.id);
+  if (!removed) {
+    return fail(res, 404, 'Word not found.');
+  }
+
+  return ok(res, { removed: true });
 });
 
 vocabularyRouter.post('/:id/audio', async (req, res) => {

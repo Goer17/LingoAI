@@ -392,6 +392,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     updateNote: (note: string) => Promise<void>;
     sendChatMessage: (message: string) => Promise<string>;
     clearChatHistory: () => Promise<VocabularyEntry>;
+    deleteWord: (id: string) => Promise<void>;
     generateQuiz: () => Promise<{
         id: string;
         createdAt: string;
@@ -871,6 +872,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     updateNote: (note: string) => Promise<void>;
     sendChatMessage: (message: string) => Promise<string>;
     clearChatHistory: () => Promise<VocabularyEntry>;
+    deleteWord: (id: string) => Promise<void>;
     generateQuiz: () => Promise<{
         id: string;
         createdAt: string;
@@ -1350,6 +1352,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     updateNote: (note: string) => Promise<void>;
     sendChatMessage: (message: string) => Promise<string>;
     clearChatHistory: () => Promise<VocabularyEntry>;
+    deleteWord: (id: string) => Promise<void>;
     generateQuiz: () => Promise<{
         id: string;
         createdAt: string;
@@ -1436,4 +1439,4 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
-}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "fetchWritingTopics" | "addWritingTopic" | "updateWritingTopicTitle" | "deleteWritingTopic" | "selectWritingTopic" | "selectWritingPoint" | "addWritingKnowledgePoint" | "updateWritingKnowledgePoint" | "deleteWritingKnowledgePoint" | "sendWritingKnowledgePointChatMessage" | "clearWritingKnowledgePointChat" | "createWritingTask" | "evaluateWritingTask" | "ensureWordAudio" | "ensureListeningAudio" | "selectListening" | "updateListeningNote" | "sendListeningChatMessage" | "clearListeningChatHistory" | "startTask" | "clearTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "submitQuizAnswer">>;
+}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "deleteWord" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "fetchWritingTopics" | "addWritingTopic" | "updateWritingTopicTitle" | "deleteWritingTopic" | "selectWritingTopic" | "selectWritingPoint" | "addWritingKnowledgePoint" | "updateWritingKnowledgePoint" | "deleteWritingKnowledgePoint" | "sendWritingKnowledgePointChatMessage" | "clearWritingKnowledgePointChat" | "createWritingTask" | "evaluateWritingTask" | "ensureWordAudio" | "ensureListeningAudio" | "selectListening" | "updateListeningNote" | "sendListeningChatMessage" | "clearListeningChatHistory" | "startTask" | "clearTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "submitQuizAnswer">>;

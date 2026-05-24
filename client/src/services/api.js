@@ -24,6 +24,9 @@ export const api = {
     getWord(id) {
         return unwrap(http.get(`/vocabulary/${id}`));
     },
+    deleteWord(id) {
+        return unwrap(http.post(`/vocabulary/${id}/delete`));
+    },
     searchWord(query) {
         return unwrap(http.post('/vocabulary/search-word', { query }));
     },

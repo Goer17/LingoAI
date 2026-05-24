@@ -3,6 +3,7 @@ const draft = ref('');
 const chatHistoryRef = ref(null);
 const props = defineProps();
 const emit = defineEmits();
+const deleteConfirm = ref(false);
 function submit() {
     if (!draft.value.trim() || !props.word) {
         return;
@@ -17,6 +18,17 @@ function handleNoteChange(event) {
     }
     emit('save-note', target.value);
 }
+function handleDeleteClick() {
+    if (deleteConfirm.value) {
+        emit('delete', props.word?.id ?? '');
+        deleteConfirm.value = false;
+        return;
+    }
+    deleteConfirm.value = true;
+}
+watch(() => props.word?.id, () => {
+    deleteConfirm.value = false;
+});
 watch(() => {
     const history = props.word?.chatHistory ?? [];
     const last = history[history.length - 1];
@@ -163,6 +175,13 @@ if (__VLS_ctx.word) {
         type: "button",
     });
     (__VLS_ctx.showChinese ? 'Hide Chinese' : 'Show Chinese');
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+        ...{ onClick: (__VLS_ctx.handleDeleteClick) },
+        ...{ class: "button button-secondary delete-action" },
+        type: "button",
+        ...{ class: ({ confirm: __VLS_ctx.deleteConfirm }) },
+    });
+    (__VLS_ctx.deleteConfirm ? 'Confirm' : 'Delete');
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "meaning-grid detail-grid" },
     });
@@ -291,6 +310,9 @@ else {
 /** @type {__VLS_StyleScopedClasses['icon-button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
+/** @type {__VLS_StyleScopedClasses['delete-action']} */ ;
 /** @type {__VLS_StyleScopedClasses['meaning-grid']} */ ;
 /** @type {__VLS_StyleScopedClasses['detail-grid']} */ ;
 /** @type {__VLS_StyleScopedClasses['meaning-card']} */ ;
@@ -323,8 +345,10 @@ const __VLS_self = (await import('vue')).defineComponent({
         return {
             draft: draft,
             chatHistoryRef: chatHistoryRef,
+            deleteConfirm: deleteConfirm,
             submit: submit,
             handleNoteChange: handleNoteChange,
+            handleDeleteClick: handleDeleteClick,
             renderMarkdown: renderMarkdown,
         };
     },
