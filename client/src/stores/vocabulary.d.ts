@@ -1,4 +1,4 @@
-import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, SearchResult, VocabularyEntry, WritingEvaluation, WritingKnowledgePoint, WritingTopic } from '@/types/models';
+import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, SearchResult, VocabularyEntry, WritingKnowledgePoint, WritingTopic } from '@/types/models';
 export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabulary", Pick<{
     items: import("vue").Ref<{
         id: string;
@@ -180,26 +180,16 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
-        payload?: {
+        scenario?: {
             topicId: string;
-            exercise: {
-                topicId: string;
-                topicTitle: string;
-                requirement: string;
-                targetWordCount: number;
-                keyPoints: string[];
-                createdAt: string;
-            } | null;
-            submission: string | null;
-            evaluation: {
-                score: number;
-                topicAlignment: string;
-                summary: string;
-                strengths: string[];
-                grammarCorrections: string[];
-                expressionPolish: string[];
-                improvedEssay: string;
-            } | null;
+            topicTitle: string;
+            setting: string;
+            userRole: string;
+            assistantRole: string;
+            objectives: {
+                id: string;
+                description: string;
+            }[];
         } | null | undefined;
     }[], LearningTask[] | {
         id: string;
@@ -210,26 +200,16 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
-        payload?: {
+        scenario?: {
             topicId: string;
-            exercise: {
-                topicId: string;
-                topicTitle: string;
-                requirement: string;
-                targetWordCount: number;
-                keyPoints: string[];
-                createdAt: string;
-            } | null;
-            submission: string | null;
-            evaluation: {
-                score: number;
-                topicAlignment: string;
-                summary: string;
-                strengths: string[];
-                grammarCorrections: string[];
-                expressionPolish: string[];
-                improvedEssay: string;
-            } | null;
+            topicTitle: string;
+            setting: string;
+            userRole: string;
+            assistantRole: string;
+            objectives: {
+                id: string;
+                description: string;
+            }[];
         } | null | undefined;
     }[]>;
     mistakes: import("vue").Ref<{
@@ -452,12 +432,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         topic: WritingTopic;
         point: WritingKnowledgePoint;
     }>;
-    createWritingTask: (topicId: string) => Promise<LearningTask>;
-    evaluateWritingTask: (taskId: string, submission: string) => Promise<{
-        task: LearningTask;
-        evaluation: WritingEvaluation;
-        removed: boolean;
-    }>;
+    createExpressionTask: (topicId: string) => Promise<LearningTask>;
     ensureWordAudio: (id: string) => Promise<string>;
     ensureListeningAudio: (id: string) => Promise<string>;
     selectListening: (id: string) => void;
@@ -479,7 +454,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
-}, "items" | "selectedId" | "searchResult" | "loading" | "searching" | "savingWord" | "quizSession" | "tasks" | "mistakes" | "tasksLoading" | "listeningItems" | "listeningLoading" | "selectedListeningId" | "writingTopics" | "selectedWritingTopicId" | "selectedWritingPointId" | "writingLoading">, Pick<{
+}, "loading" | "items" | "selectedId" | "searchResult" | "searching" | "savingWord" | "quizSession" | "tasks" | "mistakes" | "tasksLoading" | "listeningItems" | "listeningLoading" | "selectedListeningId" | "writingTopics" | "selectedWritingTopicId" | "selectedWritingPointId" | "writingLoading">, Pick<{
     items: import("vue").Ref<{
         id: string;
         text: string;
@@ -660,26 +635,16 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
-        payload?: {
+        scenario?: {
             topicId: string;
-            exercise: {
-                topicId: string;
-                topicTitle: string;
-                requirement: string;
-                targetWordCount: number;
-                keyPoints: string[];
-                createdAt: string;
-            } | null;
-            submission: string | null;
-            evaluation: {
-                score: number;
-                topicAlignment: string;
-                summary: string;
-                strengths: string[];
-                grammarCorrections: string[];
-                expressionPolish: string[];
-                improvedEssay: string;
-            } | null;
+            topicTitle: string;
+            setting: string;
+            userRole: string;
+            assistantRole: string;
+            objectives: {
+                id: string;
+                description: string;
+            }[];
         } | null | undefined;
     }[], LearningTask[] | {
         id: string;
@@ -690,26 +655,16 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
-        payload?: {
+        scenario?: {
             topicId: string;
-            exercise: {
-                topicId: string;
-                topicTitle: string;
-                requirement: string;
-                targetWordCount: number;
-                keyPoints: string[];
-                createdAt: string;
-            } | null;
-            submission: string | null;
-            evaluation: {
-                score: number;
-                topicAlignment: string;
-                summary: string;
-                strengths: string[];
-                grammarCorrections: string[];
-                expressionPolish: string[];
-                improvedEssay: string;
-            } | null;
+            topicTitle: string;
+            setting: string;
+            userRole: string;
+            assistantRole: string;
+            objectives: {
+                id: string;
+                description: string;
+            }[];
         } | null | undefined;
     }[]>;
     mistakes: import("vue").Ref<{
@@ -932,12 +887,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         topic: WritingTopic;
         point: WritingKnowledgePoint;
     }>;
-    createWritingTask: (topicId: string) => Promise<LearningTask>;
-    evaluateWritingTask: (taskId: string, submission: string) => Promise<{
-        task: LearningTask;
-        evaluation: WritingEvaluation;
-        removed: boolean;
-    }>;
+    createExpressionTask: (topicId: string) => Promise<LearningTask>;
     ensureWordAudio: (id: string) => Promise<string>;
     ensureListeningAudio: (id: string) => Promise<string>;
     selectListening: (id: string) => void;
@@ -1140,26 +1090,16 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
-        payload?: {
+        scenario?: {
             topicId: string;
-            exercise: {
-                topicId: string;
-                topicTitle: string;
-                requirement: string;
-                targetWordCount: number;
-                keyPoints: string[];
-                createdAt: string;
-            } | null;
-            submission: string | null;
-            evaluation: {
-                score: number;
-                topicAlignment: string;
-                summary: string;
-                strengths: string[];
-                grammarCorrections: string[];
-                expressionPolish: string[];
-                improvedEssay: string;
-            } | null;
+            topicTitle: string;
+            setting: string;
+            userRole: string;
+            assistantRole: string;
+            objectives: {
+                id: string;
+                description: string;
+            }[];
         } | null | undefined;
     }[], LearningTask[] | {
         id: string;
@@ -1170,26 +1110,16 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
-        payload?: {
+        scenario?: {
             topicId: string;
-            exercise: {
-                topicId: string;
-                topicTitle: string;
-                requirement: string;
-                targetWordCount: number;
-                keyPoints: string[];
-                createdAt: string;
-            } | null;
-            submission: string | null;
-            evaluation: {
-                score: number;
-                topicAlignment: string;
-                summary: string;
-                strengths: string[];
-                grammarCorrections: string[];
-                expressionPolish: string[];
-                improvedEssay: string;
-            } | null;
+            topicTitle: string;
+            setting: string;
+            userRole: string;
+            assistantRole: string;
+            objectives: {
+                id: string;
+                description: string;
+            }[];
         } | null | undefined;
     }[]>;
     mistakes: import("vue").Ref<{
@@ -1412,12 +1342,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         topic: WritingTopic;
         point: WritingKnowledgePoint;
     }>;
-    createWritingTask: (topicId: string) => Promise<LearningTask>;
-    evaluateWritingTask: (taskId: string, submission: string) => Promise<{
-        task: LearningTask;
-        evaluation: WritingEvaluation;
-        removed: boolean;
-    }>;
+    createExpressionTask: (topicId: string) => Promise<LearningTask>;
     ensureWordAudio: (id: string) => Promise<string>;
     ensureListeningAudio: (id: string) => Promise<string>;
     selectListening: (id: string) => void;
@@ -1439,4 +1364,4 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
-}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "deleteWord" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "fetchWritingTopics" | "addWritingTopic" | "updateWritingTopicTitle" | "deleteWritingTopic" | "selectWritingTopic" | "selectWritingPoint" | "addWritingKnowledgePoint" | "updateWritingKnowledgePoint" | "deleteWritingKnowledgePoint" | "sendWritingKnowledgePointChatMessage" | "clearWritingKnowledgePointChat" | "createWritingTask" | "evaluateWritingTask" | "ensureWordAudio" | "ensureListeningAudio" | "selectListening" | "updateListeningNote" | "sendListeningChatMessage" | "clearListeningChatHistory" | "startTask" | "clearTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "submitQuizAnswer">>;
+}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "deleteWord" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "fetchWritingTopics" | "addWritingTopic" | "updateWritingTopicTitle" | "deleteWritingTopic" | "selectWritingTopic" | "selectWritingPoint" | "addWritingKnowledgePoint" | "updateWritingKnowledgePoint" | "deleteWritingKnowledgePoint" | "sendWritingKnowledgePointChatMessage" | "clearWritingKnowledgePointChat" | "createExpressionTask" | "ensureWordAudio" | "ensureListeningAudio" | "selectListening" | "updateListeningNote" | "sendListeningChatMessage" | "clearListeningChatHistory" | "startTask" | "clearTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "submitQuizAnswer">>;

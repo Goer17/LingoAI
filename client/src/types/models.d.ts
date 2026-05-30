@@ -1,6 +1,6 @@
 export type WordType = 'word' | 'phrase';
 export type QuizType = 'fill_blank' | 'listening';
-export type LearningTaskType = 'vocabulary' | 'listening' | 'writing';
+export type LearningTaskType = 'vocabulary' | 'listening' | 'expression';
 export type LearningTaskStatus = 'pending' | 'ready' | 'failed';
 export type QuizSourceType = 'vocabulary_task' | 'listening_task' | 'mistake_review';
 export interface Meaning {
@@ -89,7 +89,7 @@ export interface LearningTask {
     quizSessionId: string | null;
     questionCount: number;
     error: string | null;
-    payload?: WritingTaskPayload | null;
+    scenario?: ScenarioData | null;
 }
 export interface MistakeEntry {
     id: string;
@@ -128,26 +128,24 @@ export interface WritingTopic {
     updatedAt: string;
     knowledgePoints: WritingKnowledgePoint[];
 }
-export interface WritingExercise {
+export interface ScenarioObjective {
+    id: string;
+    description: string;
+}
+export interface ScenarioData {
     topicId: string;
     topicTitle: string;
-    requirement: string;
-    targetWordCount: number;
-    keyPoints: string[];
-    createdAt: string;
+    setting: string;
+    userRole: string;
+    assistantRole: string;
+    objectives: ScenarioObjective[];
 }
-export interface WritingEvaluation {
-    score: number;
-    topicAlignment: string;
-    summary: string;
-    strengths: string[];
-    grammarCorrections: string[];
-    expressionPolish: string[];
-    improvedEssay: string;
-}
-export interface WritingTaskPayload {
-    topicId: string;
-    exercise: WritingExercise | null;
-    submission: string | null;
-    evaluation: WritingEvaluation | null;
+export interface ScenarioSummary {
+    overallAssessment: string;
+    objectiveResults: Array<{
+        objective: string;
+        feedback: string;
+    }>;
+    expressionSuggestions: string[];
+    encouragement: string;
 }

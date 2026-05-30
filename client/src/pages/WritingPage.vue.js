@@ -266,11 +266,11 @@ async function startLearning() {
     error.value = '';
     startingTask.value = true;
     try {
-        await store.createWritingTask(topic.id);
+        await store.createExpressionTask(topic.id);
         await router.push('/tasks');
     }
     catch (err) {
-        error.value = err instanceof Error ? err.message : 'Failed to create writing task.';
+        error.value = err instanceof Error ? err.message : 'Failed to create expression task.';
     }
     finally {
         startingTask.value = false;

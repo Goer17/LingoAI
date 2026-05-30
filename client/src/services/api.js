@@ -267,10 +267,65 @@ export const api = {
     clearWritingKnowledgePointChat(topicId, pointId) {
         return unwrap(http.post(`/writing/topics/${topicId}/points/${pointId}/chat/clear`));
     },
-    createWritingTask(topicId) {
-        return unwrap(http.post(`/writing/tasks/${topicId}`));
+    createExpressionTask(topicId) {
+        return unwrap(http.post(`/writing/scenarios/${topicId}`));
     },
-    evaluateWritingTask(taskId, submission) {
-        return unwrap(http.post(`/writing/tasks/${taskId}/evaluate`, { submission }));
+    async streamScenarioChat(scenario, history, message, onDelta) {
+        const token = getStoredAccessToken();
+        const response = await fetch('/api/writing/scenarios/chat/stream', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'x-access-token': token } : {}),
+            },
+            body: JSON.stringify({ scenario, history, message }),
+        });
+        if (!response.ok || !response.body) {
+            throw new Error('Chat failed.');
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullReply = '';
+        let doneReceived = false;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            buffer += decoder.decode(value, { stream: true });
+            const events = buffer.split('\n\n');
+            buffer = events.pop() ?? '';
+            for (const event of events) {
+                const dataLine = event
+                    .split('\n')
+                    .map((line) => line.trim())
+                    .find((line) => line.startsWith('data:'));
+                if (!dataLine) {
+                    continue;
+                }
+                const payload = JSON.parse(dataLine.slice(5).trim());
+                if (payload.type === 'delta' && payload.content) {
+                    fullReply += payload.content;
+                    onDelta(payload.content);
+                }
+                if (payload.type === 'error') {
+                    throw new Error(payload.error || 'Chat failed.');
+                }
+                if (payload.type === 'done') {
+                    doneReceived = true;
+                }
+            }
+        }
+        if (!doneReceived) {
+            throw new Error('Chat stream ended unexpectedly.');
+        }
+        return fullReply.trim();
+    },
+    checkObjectives(scenario, history) {
+        return unwrap(http.post('/writing/scenarios/check-objectives', { scenario, history }));
+    },
+    summarizeScenario(scenario, history) {
+        return unwrap(http.post('/writing/scenarios/summarize', { scenario, history }));
     },
 };

@@ -9,7 +9,6 @@ import type {
   QuizSession,
   SearchResult,
   VocabularyEntry,
-  WritingEvaluation,
   WritingKnowledgePoint,
   WritingTopic,
 } from '@/types/models';
@@ -196,7 +195,7 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     tasksLoading.value = true;
     try {
       const data = await api.getTasks();
-      tasks.value = data.tasks.filter((item) => !(item.type === 'writing' && item.payload?.evaluation));
+      tasks.value = data.tasks;
       mistakes.value = data.mistakes;
     } finally {
       tasksLoading.value = false;
@@ -429,16 +428,11 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     return result;
   }
 
-  async function createWritingTask(topicId: string) {
-    const task = await api.createWritingTask(topicId);
+
+  async function createExpressionTask(topicId: string) {
+    const task = await api.createExpressionTask(topicId);
     tasks.value = [task, ...tasks.value.filter((item) => item.id !== task.id)];
     return task;
-  }
-
-  async function evaluateWritingTask(taskId: string, submission: string): Promise<{ task: LearningTask; evaluation: WritingEvaluation; removed: boolean }> {
-    const result = await api.evaluateWritingTask(taskId, submission);
-    tasks.value = tasks.value.filter((item) => item.id !== result.task.id);
-    return result;
   }
 
   async function ensureWordAudio(id: string) {
@@ -612,8 +606,7 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     deleteWritingKnowledgePoint,
     sendWritingKnowledgePointChatMessage,
     clearWritingKnowledgePointChat,
-    createWritingTask,
-    evaluateWritingTask,
+    createExpressionTask,
     ensureWordAudio,
     ensureListeningAudio,
     selectListening,

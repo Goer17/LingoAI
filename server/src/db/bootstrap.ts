@@ -44,19 +44,6 @@ export function bootstrapDatabase() {
       });
     }
 
-    // Ensure existing tasks created before writing payload support still have payload key.
-    const tasks = taskRepository.list();
-    for (const task of tasks) {
-      if (Object.prototype.hasOwnProperty.call(task, 'payload')) {
-        continue;
-      }
-
-      taskRepository.save({
-        ...task,
-        payload: null,
-      });
-    }
-
     metaRepository.set(LEGACY_IMPORT_MARKER, 'done');
   }
 }

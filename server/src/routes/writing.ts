@@ -1,17 +1,17 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { createChatWritingKnowledgePointPrompt } from '../prompts/chatWritingKnowledgePointPrompt.js';
-import { createEvaluateWritingSubmissionPrompt } from '../prompts/evaluateWritingSubmissionPrompt.js';
-import { createGenerateWritingExercisePrompt } from '../prompts/generateWritingExercisePrompt.js';
-import { askWordChat, evaluateWritingSubmission, generateWritingExercise, streamWordChat } from '../services/openaiService.js';
+import { createCheckObjectivesPrompt } from '../prompts/checkObjectivesPrompt.js';
+import { createGenerateScenarioPrompt } from '../prompts/generateScenarioPrompt.js';
+import { createScenarioChatMessages } from '../prompts/scenarioChatPrompt.js';
+import { createSummarizeScenarioPrompt } from '../prompts/summarizeScenarioPrompt.js';
+import { askWordChat, checkObjectives, generateScenario, streamScenarioChat, streamWordChat, summarizeScenario } from '../services/openaiService.js';
+import { attachScenarioToTask, createLearningTask, markLearningTaskFailed, markLearningTaskReady } from '../services/taskService.js';
 import {
   addKnowledgePoint,
   addWritingTopic,
   appendKnowledgePointChat,
-  attachWritingEvaluationToTaskPayload,
-  attachWritingExerciseToTaskPayload,
   clearKnowledgePointChat,
-  createInitialWritingTaskPayload,
   getKnowledgePoint,
   getWritingTopicById,
   listWritingTopics,
@@ -20,7 +20,6 @@ import {
   updateKnowledgePoint,
   updateWritingTopicTitle,
 } from '../services/writingService.js';
-import { createLearningTask, getLearningTask, markLearningTaskFailed, markLearningTaskReady, removeLearningTask, updateLearningTaskPayload } from '../services/taskService.js';
 import { fail, ok } from '../utils/http.js';
 
 const topicSchema = z.object({
@@ -36,51 +35,62 @@ const chatSchema = z.object({
   message: z.string().min(1),
 });
 
-const evaluateSchema = z.object({
-  submission: z.string().min(1),
+const scenarioChatSchema = z.object({
+  scenario: z.object({
+    topicId: z.string().min(1),
+    topicTitle: z.string().min(1),
+    setting: z.string().min(1),
+    userRole: z.string().min(1),
+    assistantRole: z.string().min(1),
+    objectives: z.array(z.object({
+      id: z.string().min(1),
+      description: z.string().min(1),
+    })).min(1),
+  }),
+  history: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string().min(1),
+  })),
+  message: z.string().min(1),
+});
+
+const checkObjectivesSchema = z.object({
+  scenario: z.object({
+    topicId: z.string().min(1),
+    topicTitle: z.string().min(1),
+    setting: z.string().min(1),
+    userRole: z.string().min(1),
+    assistantRole: z.string().min(1),
+    objectives: z.array(z.object({
+      id: z.string().min(1),
+      description: z.string().min(1),
+    })).min(1),
+  }),
+  history: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string().min(1),
+  })),
+});
+
+const summarizeSchema = z.object({
+  scenario: z.object({
+    topicId: z.string().min(1),
+    topicTitle: z.string().min(1),
+    setting: z.string().min(1),
+    userRole: z.string().min(1),
+    assistantRole: z.string().min(1),
+    objectives: z.array(z.object({
+      id: z.string().min(1),
+      description: z.string().min(1),
+    })).min(1),
+  }),
+  history: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string().min(1),
+  })),
 });
 
 export const writingRouter = Router();
-
-async function processWritingTask(taskId: string, topicId: string) {
-  const task = getLearningTask(taskId);
-  const topic = getWritingTopicById(topicId);
-  if (!task || !topic) {
-    markLearningTaskFailed(taskId, 'Topic not found.');
-    return;
-  }
-
-  try {
-    if (topic.knowledgePoints.length === 0) {
-      throw new Error('Add at least one knowledge point before generating a writing task.');
-    }
-
-    const prompt = createGenerateWritingExercisePrompt(topic);
-    const generated = await generateWritingExercise(prompt);
-    const exercise = {
-      topicId: topic.id,
-      topicTitle: topic.title,
-      requirement: generated.requirement,
-      targetWordCount: generated.targetWordCount,
-      keyPoints: generated.keyPoints,
-      createdAt: new Date().toISOString(),
-    };
-
-    const payload = attachWritingExerciseToTaskPayload(
-      createInitialWritingTaskPayload(topic.id),
-      exercise,
-    );
-
-    updateLearningTaskPayload(taskId, payload);
-    markLearningTaskReady(taskId, {
-      questionCount: 1,
-      quizSessionId: null,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Writing task generation failed.';
-    markLearningTaskFailed(taskId, message);
-  }
-}
 
 writingRouter.get('/topics', (_req, res) => ok(res, listWritingTopics()));
 
@@ -266,54 +276,120 @@ writingRouter.post('/topics/:id/points/:pointId/chat/clear', (req, res) => {
   return ok(res, updated);
 });
 
-writingRouter.post('/tasks/:topicId', (req, res) => {
+writingRouter.post('/scenarios/chat/stream', async (req, res) => {
+  const parsed = scenarioChatSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return fail(res, 400, 'Invalid scenario chat payload.');
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const messages = createScenarioChatMessages(
+      parsed.data.scenario,
+      parsed.data.history,
+      parsed.data.message,
+    );
+
+    await streamScenarioChat(messages, (chunk) => {
+      if (res.writableEnded) {
+        return;
+      }
+
+      res.write(`data: ${JSON.stringify({ type: 'delta', content: chunk })}\n\n`);
+    });
+
+    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Chat failed.';
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify({ type: 'error', error: message })}\n\n`);
+    }
+  } finally {
+    if (!res.writableEnded) {
+      res.end();
+    }
+  }
+});
+
+writingRouter.post('/scenarios/check-objectives', async (req, res) => {
+  const parsed = checkObjectivesSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return fail(res, 400, 'Invalid check objectives payload.');
+  }
+
+  try {
+    const prompt = createCheckObjectivesPrompt(parsed.data.scenario, parsed.data.history);
+    const result = await checkObjectives(prompt);
+    return ok(res, result);
+  } catch (error) {
+    return fail(res, 500, error instanceof Error ? error.message : 'Objective check failed.');
+  }
+});
+
+writingRouter.post('/scenarios/summarize', async (req, res) => {
+  const parsed = summarizeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return fail(res, 400, 'Invalid summarize payload.');
+  }
+
+  try {
+    const prompt = createSummarizeScenarioPrompt(parsed.data.scenario, parsed.data.history);
+    const result = await summarizeScenario(prompt);
+    return ok(res, result);
+  } catch (error) {
+    return fail(res, 500, error instanceof Error ? error.message : 'Summary generation failed.');
+  }
+});
+
+async function processExpressionTask(taskId: string, topicId: string) {
+  const topic = getWritingTopicById(topicId);
+  if (!topic) {
+    markLearningTaskFailed(taskId, 'Topic not found.');
+    return;
+  }
+
+  try {
+    if (topic.knowledgePoints.length === 0) {
+      throw new Error('Add at least one knowledge point before starting scenario practice.');
+    }
+
+    const prompt = createGenerateScenarioPrompt(topic);
+    const generated = await generateScenario(prompt);
+    const scenarioData = {
+      topicId: topic.id,
+      topicTitle: topic.title,
+      setting: generated.setting,
+      userRole: generated.userRole,
+      assistantRole: generated.assistantRole,
+      objectives: generated.objectives,
+    };
+
+    attachScenarioToTask(taskId, scenarioData);
+    markLearningTaskReady(taskId, {
+      questionCount: generated.objectives.length,
+      quizSessionId: null,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Scenario generation failed.';
+    markLearningTaskFailed(taskId, message);
+  }
+}
+
+writingRouter.post('/scenarios/:topicId', (req, res) => {
   const topic = getWritingTopicById(req.params.topicId);
   if (!topic) {
     return fail(res, 404, 'Topic not found.');
   }
 
-  const task = createLearningTask('writing', createInitialWritingTaskPayload(topic.id));
-  void processWritingTask(task.id, topic.id);
+  if (topic.knowledgePoints.length === 0) {
+    return fail(res, 400, 'Add at least one knowledge point before starting scenario practice.');
+  }
+
+  const task = createLearningTask('expression');
+  void processExpressionTask(task.id, topic.id);
   return ok(res, task);
-});
-
-writingRouter.post('/tasks/:taskId/evaluate', async (req, res) => {
-  const parsed = evaluateSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return fail(res, 400, 'Essay submission is required.');
-  }
-
-  const task = getLearningTask(req.params.taskId);
-  if (!task || task.type !== 'writing') {
-    return fail(res, 404, 'Writing task not found.');
-  }
-
-  if (task.status !== 'ready' || !task.payload?.exercise) {
-    return fail(res, 400, 'Writing task is not ready yet.');
-  }
-
-  const submission = parsed.data.submission.trim();
-  if (!submission) {
-    return fail(res, 400, 'Essay submission is required.');
-  }
-
-  try {
-    const prompt = createEvaluateWritingSubmissionPrompt(task.payload.exercise, submission);
-    const evaluation = await evaluateWritingSubmission(prompt);
-    const nextPayload = attachWritingEvaluationToTaskPayload(task.payload, submission, evaluation);
-    const updated = updateLearningTaskPayload(task.id, nextPayload);
-    if (!updated) {
-      return fail(res, 404, 'Writing task not found.');
-    }
-
-    removeLearningTask(task.id);
-
-    return ok(res, {
-      task: updated,
-      evaluation,
-      removed: true,
-    });
-  } catch (error) {
-    return fail(res, 500, error instanceof Error ? error.message : 'Writing evaluation failed.');
-  }
 });

@@ -1,5 +1,5 @@
 import { mistakeRepository, taskRepository } from '../db/repositories.js';
-import type { LearningTask, MistakeEntry, QuizSession, WritingTaskPayload } from '../types/models.js';
+import type { LearningTask, MistakeEntry, QuizSession, ScenarioData } from '../types/models.js';
 import { createId } from '../utils/id.js';
 import { createQuizSession } from './quizService.js';
 
@@ -12,27 +12,15 @@ function sameMistake(a: MistakeEntry, b: Omit<MistakeEntry, 'id' | 'createdAt' |
   );
 }
 
-function normalizeTask(task: LearningTask): LearningTask {
-  if (Object.prototype.hasOwnProperty.call(task, 'payload')) {
-    return task;
-  }
-
-  return {
-    ...task,
-    payload: null,
-  };
-}
-
 export function listLearningTasks() {
-  return taskRepository.list().map((item) => normalizeTask(item));
+  return taskRepository.list();
 }
 
 export function getLearningTask(id: string) {
-  const task = taskRepository.getById(id);
-  return task ? normalizeTask(task) : null;
+  return taskRepository.getById(id) ?? null;
 }
 
-export function createLearningTask(type: LearningTask['type'], payload?: WritingTaskPayload | null) {
+export function createLearningTask(type: LearningTask['type']) {
   const now = new Date().toISOString();
   const task: LearningTask = {
     id: createId('task'),
@@ -43,7 +31,6 @@ export function createLearningTask(type: LearningTask['type'], payload?: Writing
     quizSessionId: null,
     questionCount: 0,
     error: null,
-    payload: payload ?? null,
   };
 
   taskRepository.save(task);
@@ -63,7 +50,6 @@ export function markLearningTaskReady(id: string, payload: { quizSessionId?: str
     quizSessionId: payload.quizSessionId ?? null,
     questionCount: payload.questionCount,
     error: null,
-    payload: current.payload ?? null,
   };
 
   taskRepository.save(updated);
@@ -81,7 +67,6 @@ export function markLearningTaskFailed(id: string, error: string) {
     status: 'failed',
     updatedAt: new Date().toISOString(),
     error,
-    payload: current.payload ?? null,
   };
 
   taskRepository.save(updated);
@@ -96,7 +81,7 @@ export function removeLearningTask(id: string) {
   taskRepository.remove(id);
 }
 
-export function updateLearningTaskPayload(id: string, payload: WritingTaskPayload) {
+export function attachScenarioToTask(id: string, scenario: ScenarioData) {
   const current = getLearningTask(id);
   if (!current) {
     return null;
@@ -104,7 +89,7 @@ export function updateLearningTaskPayload(id: string, payload: WritingTaskPayloa
 
   const updated: LearningTask = {
     ...current,
-    payload,
+    scenario,
     updatedAt: new Date().toISOString(),
   };
 
@@ -116,9 +101,6 @@ export function clearFailedLearningTask(id: string) {
   const task = getLearningTask(id);
   if (!task) {
     return { ok: false as const, reason: 'not_found' as const };
-  }
-  if (task.status !== 'failed') {
-    return { ok: false as const, reason: 'not_failed' as const };
   }
 
   taskRepository.remove(id);

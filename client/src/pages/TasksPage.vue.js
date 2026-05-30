@@ -6,7 +6,8 @@ const router = useRouter();
 const error = ref('');
 const message = ref('');
 const startingTaskId = ref('');
-const clearingTaskId = ref('');
+const deletingTaskId = ref('');
+const deleteMode = ref(false);
 const startingMistakeReview = ref(false);
 let pollTimer = null;
 const pendingProgressTick = ref(Date.now());
@@ -59,8 +60,8 @@ async function startTask(taskId) {
         if (!task) {
             throw new Error('Task not found.');
         }
-        if (task.type === 'writing') {
-            await router.push(`/writing-task/${task.id}`);
+        if (task.type === 'expression') {
+            await router.push(`/expression-practice/${task.id}`);
             return;
         }
         const sessionId = await store.startTask(taskId);
@@ -93,19 +94,25 @@ function pendingStageText(taskId) {
     }
     return 'Finalizing task';
 }
-async function clearFailedTask(taskId) {
+function toggleDeleteMode() {
+    deleteMode.value = !deleteMode.value;
+}
+async function deleteTask(taskId) {
     error.value = '';
     message.value = '';
-    clearingTaskId.value = taskId;
+    deletingTaskId.value = taskId;
     try {
         await store.clearTask(taskId);
-        message.value = 'Failed task removed.';
+        message.value = 'Task removed.';
+        if (store.tasks.length === 0) {
+            deleteMode.value = false;
+        }
     }
     catch (err) {
-        error.value = err instanceof Error ? err.message : 'Failed to clear task.';
+        error.value = err instanceof Error ? err.message : 'Failed to remove task.';
     }
     finally {
-        clearingTaskId.value = '';
+        deletingTaskId.value = '';
     }
 }
 async function startMistakeReview() {
@@ -158,12 +165,23 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.h2, __VLS_intrinsicElements.h2
 __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
     ...{ class: "subtle-copy" },
 });
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "result-actions" },
+});
 __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
     ...{ onClick: (__VLS_ctx.refresh) },
     ...{ class: "button button-secondary" },
     type: "button",
     disabled: (__VLS_ctx.store.tasksLoading),
 });
+if (__VLS_ctx.store.tasks.length > 0) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+        ...{ onClick: (__VLS_ctx.toggleDeleteMode) },
+        ...{ class: "button button-secondary" },
+        type: "button",
+    });
+    (__VLS_ctx.deleteMode ? 'Cancel' : 'Delete');
+}
 if (__VLS_ctx.store.tasks.length === 0) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
         ...{ class: "empty-copy" },
@@ -172,12 +190,27 @@ if (__VLS_ctx.store.tasks.length === 0) {
 else {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "list-scroller" },
+        ...{ class: ({ 'delete-mode': __VLS_ctx.deleteMode }) },
     });
     for (const [task] of __VLS_getVForSourceType((__VLS_ctx.store.tasks))) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.article, __VLS_intrinsicElements.article)({
             key: (task.id),
             ...{ class: "task-row" },
         });
+        if (__VLS_ctx.deleteMode) {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+                ...{ onClick: (...[$event]) => {
+                        if (!!(__VLS_ctx.store.tasks.length === 0))
+                            return;
+                        if (!(__VLS_ctx.deleteMode))
+                            return;
+                        __VLS_ctx.deleteTask(task.id);
+                    } },
+                ...{ class: "task-delete-btn" },
+                type: "button",
+                disabled: (__VLS_ctx.deletingTaskId === task.id),
+            });
+        }
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "task-main" },
         });
@@ -198,12 +231,12 @@ else {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
             ...{ class: "muted-text" },
         });
-        (task.type === 'writing' ? 'Exercise: short essay' : `Questions: ${task.questionCount || '-'}`);
-        if (task.type === 'writing' && task.payload?.exercise) {
+        (task.type === 'expression' ? `Objectives: ${task.questionCount || '-'}` : `Questions: ${task.questionCount || '-'}`);
+        if (task.type === 'expression' && task.scenario) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
                 ...{ class: "muted-text" },
             });
-            (task.payload.exercise.topicTitle);
+            (task.scenario.topicTitle);
         }
         if (task.status === 'pending') {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -228,35 +261,24 @@ else {
             });
             (task.error);
         }
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            ...{ class: "task-actions" },
-        });
-        if (task.status === 'failed') {
+        if (!__VLS_ctx.deleteMode) {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                ...{ class: "task-actions" },
+            });
             __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
                 ...{ onClick: (...[$event]) => {
                         if (!!(__VLS_ctx.store.tasks.length === 0))
                             return;
-                        if (!(task.status === 'failed'))
+                        if (!(!__VLS_ctx.deleteMode))
                             return;
-                        __VLS_ctx.clearFailedTask(task.id);
+                        __VLS_ctx.startTask(task.id);
                     } },
-                ...{ class: "button button-secondary" },
+                ...{ class: "button button-primary" },
                 type: "button",
-                disabled: (__VLS_ctx.clearingTaskId === task.id),
+                disabled: (task.status !== 'ready' || __VLS_ctx.startingTaskId === task.id),
             });
-            (__VLS_ctx.clearingTaskId === task.id ? 'Clearing...' : 'Clear');
+            (__VLS_ctx.startingTaskId === task.id ? 'Opening...' : 'Start');
         }
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
-            ...{ onClick: (...[$event]) => {
-                    if (!!(__VLS_ctx.store.tasks.length === 0))
-                        return;
-                    __VLS_ctx.startTask(task.id);
-                } },
-            ...{ class: "button button-primary" },
-            type: "button",
-            disabled: (task.status !== 'ready' || __VLS_ctx.startingTaskId === task.id),
-        });
-        (__VLS_ctx.startingTaskId === task.id ? 'Opening...' : 'Start');
     }
 }
 __VLS_asFunctionalElement(__VLS_intrinsicElements.section, __VLS_intrinsicElements.section)({
@@ -332,11 +354,15 @@ else {
 /** @type {__VLS_StyleScopedClasses['tasks-head']} */ ;
 /** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
+/** @type {__VLS_StyleScopedClasses['result-actions']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
 /** @type {__VLS_StyleScopedClasses['empty-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['list-scroller']} */ ;
 /** @type {__VLS_StyleScopedClasses['task-row']} */ ;
+/** @type {__VLS_StyleScopedClasses['task-delete-btn']} */ ;
 /** @type {__VLS_StyleScopedClasses['task-main']} */ ;
 /** @type {__VLS_StyleScopedClasses['inline-heading']} */ ;
 /** @type {__VLS_StyleScopedClasses['task-status']} */ ;
@@ -350,8 +376,6 @@ else {
 /** @type {__VLS_StyleScopedClasses['task-progress-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['error-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['task-actions']} */ ;
-/** @type {__VLS_StyleScopedClasses['button']} */ ;
-/** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
 /** @type {__VLS_StyleScopedClasses['card']} */ ;
@@ -380,7 +404,8 @@ const __VLS_self = (await import('vue')).defineComponent({
             error: error,
             message: message,
             startingTaskId: startingTaskId,
-            clearingTaskId: clearingTaskId,
+            deletingTaskId: deletingTaskId,
+            deleteMode: deleteMode,
             startingMistakeReview: startingMistakeReview,
             formatDate: formatDate,
             formatTaskType: formatTaskType,
@@ -390,7 +415,8 @@ const __VLS_self = (await import('vue')).defineComponent({
             startTask: startTask,
             pendingProgressPercent: pendingProgressPercent,
             pendingStageText: pendingStageText,
-            clearFailedTask: clearFailedTask,
+            toggleDeleteMode: toggleDeleteMode,
+            deleteTask: deleteTask,
             startMistakeReview: startMistakeReview,
         };
     },

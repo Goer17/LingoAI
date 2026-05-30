@@ -8,7 +8,7 @@ import QuizPage from '@/pages/QuizPage.vue';
 import TasksPage from '@/pages/TasksPage.vue';
 import ListeningPage from '@/pages/ListeningPage.vue';
 import WritingPage from '@/pages/WritingPage.vue';
-import WritingTaskPage from '@/pages/WritingTaskPage.vue';
+import ExpressionPracticePage from '@/pages/ExpressionPracticePage.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -52,9 +52,9 @@ const router = createRouter({
           component: TasksPage,
         },
         {
-          path: 'writing-task/:id',
-          name: 'writing-task',
-          component: WritingTaskPage,
+          path: 'expression-practice/:taskId',
+          name: 'expression-practice',
+          component: ExpressionPracticePage,
         },
       ],
     },

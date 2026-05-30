@@ -1,4 +1,4 @@
-import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, SearchResult, SettingsForm, VocabularyEntry, WritingEvaluation, WritingKnowledgePoint, WritingTopic } from '@/types/models';
+import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, ScenarioData, ScenarioSummary, SearchResult, SettingsForm, VocabularyEntry, WritingKnowledgePoint, WritingTopic } from '@/types/models';
 export declare const api: {
     login(token: string): Promise<{
         token: string;
@@ -96,10 +96,19 @@ export declare const api: {
         topic: WritingTopic;
         point: WritingKnowledgePoint;
     }>;
-    createWritingTask(topicId: string): Promise<LearningTask>;
-    evaluateWritingTask(taskId: string, submission: string): Promise<{
-        task: LearningTask;
-        evaluation: WritingEvaluation;
-        removed: boolean;
+    createExpressionTask(topicId: string): Promise<LearningTask>;
+    streamScenarioChat(scenario: ScenarioData, history: Array<{
+        role: "user" | "assistant";
+        content: string;
+    }>, message: string, onDelta: (chunk: string) => void): Promise<string>;
+    checkObjectives(scenario: ScenarioData, history: Array<{
+        role: "user" | "assistant";
+        content: string;
+    }>): Promise<{
+        completedObjectiveIds: string[];
     }>;
+    summarizeScenario(scenario: ScenarioData, history: Array<{
+        role: "user" | "assistant";
+        content: string;
+    }>): Promise<ScenarioSummary>;
 };

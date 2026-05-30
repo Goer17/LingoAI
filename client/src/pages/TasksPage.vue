@@ -9,26 +9,45 @@
           <div>
             <p class="eyebrow">Tasks</p>
             <h2>Learning Queue</h2>
-            <p class="subtle-copy">Vocabulary, listening, and writing tasks are generated in the background. Start when ready.</p>
+            <p class="subtle-copy">Vocabulary, listening, and expression tasks are generated in the background. Start when ready.</p>
           </div>
-          <button class="button button-secondary" type="button" :disabled="store.tasksLoading" @click="refresh">
-            Refresh
-          </button>
+          <div class="result-actions">
+            <button class="button button-secondary" type="button" :disabled="store.tasksLoading" @click="refresh">
+              Refresh
+            </button>
+            <button
+              v-if="store.tasks.length > 0"
+              class="button button-secondary"
+              type="button"
+              @click="toggleDeleteMode"
+            >
+              {{ deleteMode ? 'Cancel' : 'Delete' }}
+            </button>
+          </div>
         </div>
 
         <p v-if="store.tasks.length === 0" class="empty-copy">No learning tasks yet.</p>
 
-        <div v-else class="list-scroller">
+        <div v-else class="list-scroller" :class="{ 'delete-mode': deleteMode }">
           <article v-for="task in store.tasks" :key="task.id" class="task-row">
+            <button
+              v-if="deleteMode"
+              class="task-delete-btn"
+              type="button"
+              :disabled="deletingTaskId === task.id"
+              @click="deleteTask(task.id)"
+            >
+              &times;
+            </button>
             <div class="task-main">
               <div class="inline-heading">
                 <strong>{{ formatTaskType(task.type) }}</strong>
                 <span class="task-status" :class="`status-${task.status}`">{{ formatStatusLabel(task.status) }}</span>
               </div>
               <p class="muted-text">Generated: {{ formatDate(task.createdAt) }}</p>
-              <p class="muted-text">{{ task.type === 'writing' ? 'Exercise: short essay' : `Questions: ${task.questionCount || '-'}` }}</p>
-              <p v-if="task.type === 'writing' && task.payload?.exercise" class="muted-text">
-                Topic: {{ task.payload.exercise.topicTitle }}
+              <p class="muted-text">{{ task.type === 'expression' ? `Objectives: ${task.questionCount || '-'}` : `Questions: ${task.questionCount || '-'}` }}</p>
+              <p v-if="task.type === 'expression' && task.scenario" class="muted-text">
+                Topic: {{ task.scenario.topicTitle }}
               </p>
               <div v-if="task.status === 'pending'" class="task-progress">
                 <div class="task-progress-track">
@@ -40,16 +59,7 @@
               </div>
               <p v-if="task.error" class="error-text">{{ task.error }}</p>
             </div>
-            <div class="task-actions">
-              <button
-                v-if="task.status === 'failed'"
-                class="button button-secondary"
-                type="button"
-                :disabled="clearingTaskId === task.id"
-                @click="clearFailedTask(task.id)"
-              >
-                {{ clearingTaskId === task.id ? 'Clearing...' : 'Clear' }}
-              </button>
+            <div v-if="!deleteMode" class="task-actions">
               <button
                 class="button button-primary"
                 type="button"
@@ -110,7 +120,8 @@ const router = useRouter();
 const error = ref('');
 const message = ref('');
 const startingTaskId = ref('');
-const clearingTaskId = ref('');
+const deletingTaskId = ref('');
+const deleteMode = ref(false);
 const startingMistakeReview = ref(false);
 let pollTimer: number | null = null;
 const pendingProgressTick = ref(Date.now());
@@ -172,8 +183,8 @@ async function startTask(taskId: string) {
       throw new Error('Task not found.');
     }
 
-    if (task.type === 'writing') {
-      await router.push(`/writing-task/${task.id}`);
+    if (task.type === 'expression') {
+      await router.push(`/expression-practice/${task.id}`);
       return;
     }
 
@@ -208,17 +219,24 @@ function pendingStageText(taskId: string) {
   return 'Finalizing task';
 }
 
-async function clearFailedTask(taskId: string) {
+function toggleDeleteMode() {
+  deleteMode.value = !deleteMode.value;
+}
+
+async function deleteTask(taskId: string) {
   error.value = '';
   message.value = '';
-  clearingTaskId.value = taskId;
+  deletingTaskId.value = taskId;
   try {
     await store.clearTask(taskId);
-    message.value = 'Failed task removed.';
+    message.value = 'Task removed.';
+    if (store.tasks.length === 0) {
+      deleteMode.value = false;
+    }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to clear task.';
+    error.value = err instanceof Error ? err.message : 'Failed to remove task.';
   } finally {
-    clearingTaskId.value = '';
+    deletingTaskId.value = '';
   }
 }
 

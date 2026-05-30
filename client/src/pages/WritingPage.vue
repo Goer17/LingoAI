@@ -2,9 +2,9 @@
   <section class="writing-page">
     <div class="card writing-topic-card">
       <div class="section-heading">
-        <p class="eyebrow">Writing</p>
+        <p class="eyebrow">Expression</p>
         <h2>Topic Workspace</h2>
-        <p class="subtle-copy">Create topic-specific knowledge points and ask the tutor for focused writing guidance.</p>
+        <p class="subtle-copy">Create topic-specific knowledge points and practise through scenario conversations.</p>
       </div>
       <form class="writing-topic-form" @submit.prevent="handleAddTopic">
         <input
@@ -271,8 +271,8 @@
             <div class="learning-bar">
               <div>
                 <p class="eyebrow">Practice</p>
-                <h2>Generate a Writing Task</h2>
-                <p class="subtle-copy">Creates one 150-word writing prompt based on this topic and your knowledge points.</p>
+                <h2>Scenario Conversation</h2>
+                <p class="subtle-copy">Start a role-play conversation based on this topic and your knowledge points.</p>
               </div>
               <button
                 class="button button-primary"
@@ -596,10 +596,10 @@ async function startLearning() {
   error.value = '';
   startingTask.value = true;
   try {
-    await store.createWritingTask(topic.id);
+    await store.createExpressionTask(topic.id);
     await router.push('/tasks');
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to create writing task.';
+    error.value = err instanceof Error ? err.message : 'Failed to create expression task.';
   } finally {
     startingTask.value = false;
   }

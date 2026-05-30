@@ -354,11 +354,8 @@ vocabularyRouter.post('/tasks/:id/start', (req, res) => {
 
 vocabularyRouter.post('/tasks/:id/clear', (req, res) => {
   const result = clearFailedLearningTask(req.params.id);
-  if (!result.ok && result.reason === 'not_found') {
+  if (!result.ok) {
     return fail(res, 404, 'Task not found.');
-  }
-  if (!result.ok && result.reason === 'not_failed') {
-    return fail(res, 400, 'Only failed tasks can be cleared.');
   }
 
   return ok(res, { removed: true });

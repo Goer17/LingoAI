@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { getSettings } from './settingsService.js';
-import type { QuizDraftQuestion, SearchResult, WritingEvaluation } from '../types/models.js';
+import type { QuizDraftQuestion, ScenarioSummary, SearchResult } from '../types/models.js';
 
 const meaningSchema = z.object({
   partOfSpeech: z.string().min(1),
@@ -53,20 +53,28 @@ const fillBlankRepairSchema = z.object({
   answer: z.string().min(1),
 });
 
-const writingExerciseSchema = z.object({
-  requirement: z.string().min(1),
-  targetWordCount: z.number().int().min(80).max(260),
-  keyPoints: z.array(z.string().min(1)).min(1),
+const scenarioSchema = z.object({
+  setting: z.string().min(1),
+  userRole: z.string().min(1),
+  assistantRole: z.string().min(1),
+  objectives: z.array(z.object({
+    id: z.string().min(1),
+    description: z.string().min(1),
+  })).min(1),
 });
 
-const writingEvaluationSchema = z.object({
-  score: z.number().min(0).max(10),
-  topicAlignment: z.string().min(1),
-  summary: z.string().min(1),
-  strengths: z.array(z.string().min(1)).min(1),
-  grammarCorrections: z.array(z.string().min(1)).min(1),
-  expressionPolish: z.array(z.string().min(1)).min(1),
-  improvedEssay: z.string().min(1),
+const objectiveCheckSchema = z.object({
+  completedObjectiveIds: z.array(z.string()),
+});
+
+const scenarioSummarySchema = z.object({
+  overallAssessment: z.string().min(1),
+  objectiveResults: z.array(z.object({
+    objective: z.string().min(1),
+    feedback: z.string().min(1),
+  })).min(1),
+  expressionSuggestions: z.array(z.string().min(1)).min(1),
+  encouragement: z.string().min(1),
 });
 
 function getClient() {
@@ -123,16 +131,47 @@ export async function generateFillBlankRepair(prompt: string): Promise<{ maskedS
   return requestJson(prompt, fillBlankRepairSchema);
 }
 
-export async function generateWritingExercise(prompt: string): Promise<{
-  requirement: string;
-  targetWordCount: number;
-  keyPoints: string[];
-}> {
-  return requestJson(prompt, writingExerciseSchema);
+export async function generateScenario(prompt: string) {
+  return requestJson(prompt, scenarioSchema);
 }
 
-export async function evaluateWritingSubmission(prompt: string): Promise<WritingEvaluation> {
-  return requestJson(prompt, writingEvaluationSchema);
+export async function checkObjectives(prompt: string) {
+  return requestJson(prompt, objectiveCheckSchema);
+}
+
+export async function summarizeScenario(prompt: string): Promise<ScenarioSummary> {
+  return requestJson(prompt, scenarioSummarySchema);
+}
+
+export async function streamScenarioChat(
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+  onDelta: (chunk: string) => void,
+): Promise<string> {
+  const { client, settings } = getClient();
+  const stream = await client.chat.completions.create({
+    model: settings.languageModel,
+    temperature: 0.7,
+    stream: true,
+    messages,
+  });
+
+  let fullText = '';
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content ?? '';
+    if (!delta) {
+      continue;
+    }
+
+    fullText += delta;
+    onDelta(delta);
+  }
+
+  const output = fullText.trim();
+  if (!output) {
+    throw new Error('The language model returned an empty reply.');
+  }
+
+  return output;
 }
 
 export async function askWordChat(prompt: string): Promise<string> {

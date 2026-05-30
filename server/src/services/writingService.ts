@@ -1,5 +1,5 @@
 import { writingTopicRepository } from '../db/repositories.js';
-import type { ChatMessage, WritingEvaluation, WritingExercise, WritingTaskPayload, WritingTopic } from '../types/models.js';
+import type { ChatMessage, WritingTopic } from '../types/models.js';
 import { createId } from '../utils/id.js';
 
 function normalizeTitle(value: string) {
@@ -263,33 +263,3 @@ export function clearKnowledgePointChat(topicId: string, pointId: string) {
   return { topic: updatedTopic, point };
 }
 
-export function createInitialWritingTaskPayload(topicId: string): WritingTaskPayload {
-  return {
-    topicId,
-    exercise: null,
-    submission: null,
-    evaluation: null,
-  };
-}
-
-export function attachWritingExerciseToTaskPayload(
-  payload: WritingTaskPayload,
-  exercise: WritingExercise,
-): WritingTaskPayload {
-  return {
-    ...payload,
-    exercise,
-  };
-}
-
-export function attachWritingEvaluationToTaskPayload(
-  payload: WritingTaskPayload,
-  submission: string,
-  evaluation: WritingEvaluation,
-): WritingTaskPayload {
-  return {
-    ...payload,
-    submission,
-    evaluation,
-  };
-}
