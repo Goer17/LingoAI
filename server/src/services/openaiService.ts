@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { getSettings } from './settingsService.js';
-import type { QuizDraftQuestion, ScenarioSummary, SearchResult } from '../types/models.js';
+import type { PolishResult, QuizDraftQuestion, ScenarioSummary, SearchResult } from '../types/models.js';
 
 const meaningSchema = z.object({
   partOfSpeech: z.string().min(1),
@@ -77,6 +77,16 @@ const scenarioSummarySchema = z.object({
   encouragement: z.string().min(1),
 });
 
+const polishResultsSchema = z.object({
+  results: z.array(z.object({
+    index: z.number(),
+    original: z.string(),
+    polished: z.string(),
+    isPerfect: z.boolean(),
+    explanation: z.string(),
+  })).min(1),
+});
+
 function getClient() {
   const settings = getSettings();
 
@@ -141,6 +151,10 @@ export async function checkObjectives(prompt: string) {
 
 export async function summarizeScenario(prompt: string): Promise<ScenarioSummary> {
   return requestJson(prompt, scenarioSummarySchema);
+}
+
+export async function polishUserMessages(prompt: string): Promise<{ results: PolishResult[] }> {
+  return requestJson(prompt, polishResultsSchema);
 }
 
 export async function streamScenarioChat(

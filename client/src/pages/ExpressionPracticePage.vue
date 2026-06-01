@@ -18,15 +18,27 @@
         </div>
 
         <div ref="chatRef" class="expression-chat-history">
-          <div
-            v-for="(msg, index) in chatHistory"
-            :key="index"
-            class="chat-bubble"
-            :class="msg.role"
-          >
-            <span class="chat-role">{{ msg.role === 'user' ? 'You' : scenario.assistantRole }}</span>
-            <div class="chat-content" v-html="renderSimpleMarkdown(msg.content)" />
-          </div>
+          <template v-for="(msg, index) in chatHistory" :key="index">
+            <div
+              class="chat-bubble"
+              :class="msg.role"
+            >
+              <span class="chat-role">{{ msg.role === 'user' ? 'You' : scenario.assistantRole }}</span>
+              <div class="chat-content" v-html="renderSimpleMarkdown(msg.content)" />
+            </div>
+            <div
+              v-if="ended && msg.role === 'user' && polishResults.has(index)"
+              class="polish-feedback"
+              :class="{ perfect: polishResults.get(index)!.isPerfect }"
+            >
+              <span v-if="polishResults.get(index)!.isPerfect" class="polish-text">✅ Perfect!</span>
+              <span v-else class="polish-text">✏️ {{ polishResults.get(index)!.polished }}</span>
+              <span
+                v-if="!polishResults.get(index)!.isPerfect && polishResults.get(index)!.explanation"
+                class="polish-tooltip"
+              >{{ polishResults.get(index)!.explanation }}</span>
+            </div>
+          </template>
           <p v-if="chatHistory.length === 0 && !ended" class="empty-copy">Start the conversation. Say hello!</p>
         </div>
 
@@ -67,42 +79,14 @@
           <button
             class="button button-primary"
             type="button"
-            :disabled="!allCompleted || summarizing"
+            :disabled="!allCompleted || polishing"
             @click="handleEnd"
           >
-            {{ summarizing ? 'Summarizing...' : 'End Practice' }}
+            {{ polishing ? 'Reviewing...' : 'End Practice' }}
           </button>
         </div>
 
-        <div v-if="summary" class="expression-summary">
-          <p class="eyebrow">Summary</p>
-          <h3>Performance Review</h3>
-
-          <div class="expression-summary-block">
-            <p>{{ summary.overallAssessment }}</p>
-          </div>
-
-          <div class="expression-summary-block">
-            <h4>Objective Feedback</h4>
-            <div v-for="(result, index) in summary.objectiveResults" :key="`obj-${index}`" class="expression-objective-feedback">
-              <p><strong>{{ result.objective }}</strong></p>
-              <p>{{ result.feedback }}</p>
-            </div>
-          </div>
-
-          <div class="expression-summary-block">
-            <h4>Expression Suggestions</h4>
-            <ul>
-              <li v-for="(suggestion, index) in summary.expressionSuggestions" :key="`sug-${index}`">
-                {{ suggestion }}
-              </li>
-            </ul>
-          </div>
-
-          <div class="expression-summary-block expression-encouragement">
-            <p>{{ summary.encouragement }}</p>
-          </div>
-
+        <div v-if="ended" class="expression-end-bar">
           <button class="button button-primary" type="button" @click="backToTopics">
             Back to Topics
           </button>
@@ -117,7 +101,7 @@ import { computed, nextTick, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/services/api';
 import { useVocabularyStore } from '@/stores/vocabulary';
-import type { ScenarioData, ScenarioSummary } from '@/types/models';
+import type { PolishResult, ScenarioData } from '@/types/models';
 
 const route = useRoute();
 const router = useRouter();
@@ -125,7 +109,7 @@ const store = useVocabularyStore();
 const loading = ref(true);
 const error = ref('');
 const sending = ref(false);
-const summarizing = ref(false);
+const polishing = ref(false);
 const ended = ref(false);
 const draft = ref('');
 const chatRef = ref<HTMLElement | null>(null);
@@ -134,7 +118,7 @@ const taskId = ref('');
 const scenario = ref<ScenarioData | null>(null);
 const chatHistory = ref<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
 const completedIds = ref<Set<string>>(new Set());
-const summary = ref<ScenarioSummary | null>(null);
+const polishResults = ref<Map<number, PolishResult>>(new Map());
 
 const objectiveStatuses = computed(() => {
   if (!scenario.value) {
@@ -241,24 +225,45 @@ async function checkObjectivesInBackground() {
 }
 
 async function handleEnd() {
-  if (!scenario.value || summarizing.value) {
+  if (!scenario.value || polishing.value) {
     return;
   }
 
   error.value = '';
-  summarizing.value = true;
+  polishing.value = true;
   ended.value = true;
 
   try {
-    const validHistory = chatHistory.value.filter((m) => m.content);
-    summary.value = await api.summarizeScenario(scenario.value, validHistory);
+    const userMessages: string[] = [];
+    const userIndices: number[] = [];
+    chatHistory.value.forEach((msg, index) => {
+      if (msg.role === 'user' && msg.content) {
+        userMessages.push(msg.content);
+        userIndices.push(index);
+      }
+    });
+
+    if (userMessages.length > 0) {
+      const { results } = await api.polishUserMessages(scenario.value, userMessages);
+      const map = new Map<number, PolishResult>();
+      for (const result of results) {
+        const chatIndex = userIndices[result.index];
+        if (chatIndex !== undefined) {
+          map.set(chatIndex, result);
+        }
+      }
+      polishResults.value = map;
+    }
+
     if (taskId.value) {
       await store.clearTask(taskId.value).catch(() => {});
     }
+
+    await scrollToBottom();
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to generate summary.';
+    error.value = err instanceof Error ? err.message : 'Failed to generate feedback.';
   } finally {
-    summarizing.value = false;
+    polishing.value = false;
   }
 }
 

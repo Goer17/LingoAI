@@ -3,9 +3,10 @@ import { z } from 'zod';
 import { createChatWritingKnowledgePointPrompt } from '../prompts/chatWritingKnowledgePointPrompt.js';
 import { createCheckObjectivesPrompt } from '../prompts/checkObjectivesPrompt.js';
 import { createGenerateScenarioPrompt } from '../prompts/generateScenarioPrompt.js';
+import { createPolishUserMessagesPrompt } from '../prompts/polishUserMessagesPrompt.js';
 import { createScenarioChatMessages } from '../prompts/scenarioChatPrompt.js';
 import { createSummarizeScenarioPrompt } from '../prompts/summarizeScenarioPrompt.js';
-import { askWordChat, checkObjectives, generateScenario, streamScenarioChat, streamWordChat, summarizeScenario } from '../services/openaiService.js';
+import { askWordChat, checkObjectives, generateScenario, polishUserMessages, streamScenarioChat, streamWordChat, summarizeScenario } from '../services/openaiService.js';
 import { attachScenarioToTask, createLearningTask, markLearningTaskFailed, markLearningTaskReady } from '../services/taskService.js';
 import {
   addKnowledgePoint,
@@ -88,6 +89,21 @@ const summarizeSchema = z.object({
     role: z.enum(['user', 'assistant']),
     content: z.string().min(1),
   })),
+});
+
+const polishSchema = z.object({
+  scenario: z.object({
+    topicId: z.string().min(1),
+    topicTitle: z.string().min(1),
+    setting: z.string().min(1),
+    userRole: z.string().min(1),
+    assistantRole: z.string().min(1),
+    objectives: z.array(z.object({
+      id: z.string().min(1),
+      description: z.string().min(1),
+    })).min(1),
+  }),
+  messages: z.array(z.string().min(1)).min(1),
 });
 
 export const writingRouter = Router();
@@ -342,6 +358,21 @@ writingRouter.post('/scenarios/summarize', async (req, res) => {
     return ok(res, result);
   } catch (error) {
     return fail(res, 500, error instanceof Error ? error.message : 'Summary generation failed.');
+  }
+});
+
+writingRouter.post('/scenarios/polish', async (req, res) => {
+  const parsed = polishSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return fail(res, 400, 'Invalid polish payload.');
+  }
+
+  try {
+    const prompt = createPolishUserMessagesPrompt(parsed.data.scenario, parsed.data.messages);
+    const result = await polishUserMessages(prompt);
+    return ok(res, result);
+  } catch (error) {
+    return fail(res, 500, error instanceof Error ? error.message : 'Polish generation failed.');
   }
 });
 

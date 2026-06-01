@@ -328,4 +328,7 @@ export const api = {
     summarizeScenario(scenario, history) {
         return unwrap(http.post('/writing/scenarios/summarize', { scenario, history }));
     },
+    polishUserMessages(scenario, messages) {
+        return unwrap(http.post('/writing/scenarios/polish', { scenario, messages }));
+    },
 };

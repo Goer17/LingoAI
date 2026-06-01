@@ -3,6 +3,7 @@ import type {
   LearningTask,
   ListeningEntry,
   MistakeEntry,
+  PolishResult,
   QuizSession,
   ScenarioData,
   ScenarioSummary,
@@ -424,6 +425,14 @@ export const api = {
   ) {
     return unwrap<ScenarioSummary>(
       http.post('/writing/scenarios/summarize', { scenario, history }),
+    );
+  },
+  polishUserMessages(
+    scenario: ScenarioData,
+    messages: string[],
+  ) {
+    return unwrap<{ results: PolishResult[] }>(
+      http.post('/writing/scenarios/polish', { scenario, messages }),
     );
   },
 };

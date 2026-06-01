@@ -1,4 +1,4 @@
-import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, ScenarioData, ScenarioSummary, SearchResult, SettingsForm, VocabularyEntry, WritingKnowledgePoint, WritingTopic } from '@/types/models';
+import type { LearningTask, ListeningEntry, MistakeEntry, PolishResult, QuizSession, ScenarioData, ScenarioSummary, SearchResult, SettingsForm, VocabularyEntry, WritingKnowledgePoint, WritingTopic } from '@/types/models';
 export declare const api: {
     login(token: string): Promise<{
         token: string;
@@ -111,4 +111,7 @@ export declare const api: {
         role: "user" | "assistant";
         content: string;
     }>): Promise<ScenarioSummary>;
+    polishUserMessages(scenario: ScenarioData, messages: string[]): Promise<{
+        results: PolishResult[];
+    }>;
 };

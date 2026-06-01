@@ -175,3 +175,11 @@ export interface ScenarioSummary {
   expressionSuggestions: string[];
   encouragement: string;
 }
+
+export interface PolishResult {
+  index: number;
+  original: string;
+  polished: string;
+  isPerfect: boolean;
+  explanation: string;
+}

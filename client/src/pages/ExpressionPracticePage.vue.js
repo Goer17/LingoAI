@@ -8,7 +8,7 @@ const store = useVocabularyStore();
 const loading = ref(true);
 const error = ref('');
 const sending = ref(false);
-const summarizing = ref(false);
+const polishing = ref(false);
 const ended = ref(false);
 const draft = ref('');
 const chatRef = ref(null);
@@ -16,7 +16,7 @@ const taskId = ref('');
 const scenario = ref(null);
 const chatHistory = ref([]);
 const completedIds = ref(new Set());
-const summary = ref(null);
+const polishResults = ref(new Map());
 const objectiveStatuses = computed(() => {
     if (!scenario.value) {
         return [];
@@ -106,24 +106,42 @@ async function checkObjectivesInBackground() {
     }
 }
 async function handleEnd() {
-    if (!scenario.value || summarizing.value) {
+    if (!scenario.value || polishing.value) {
         return;
     }
     error.value = '';
-    summarizing.value = true;
+    polishing.value = true;
     ended.value = true;
     try {
-        const validHistory = chatHistory.value.filter((m) => m.content);
-        summary.value = await api.summarizeScenario(scenario.value, validHistory);
+        const userMessages = [];
+        const userIndices = [];
+        chatHistory.value.forEach((msg, index) => {
+            if (msg.role === 'user' && msg.content) {
+                userMessages.push(msg.content);
+                userIndices.push(index);
+            }
+        });
+        if (userMessages.length > 0) {
+            const { results } = await api.polishUserMessages(scenario.value, userMessages);
+            const map = new Map();
+            for (const result of results) {
+                const chatIndex = userIndices[result.index];
+                if (chatIndex !== undefined) {
+                    map.set(chatIndex, result);
+                }
+            }
+            polishResults.value = map;
+        }
         if (taskId.value) {
             await store.clearTask(taskId.value).catch(() => { });
         }
+        await scrollToBottom();
     }
     catch (err) {
-        error.value = err instanceof Error ? err.message : 'Failed to generate summary.';
+        error.value = err instanceof Error ? err.message : 'Failed to generate feedback.';
     }
     finally {
-        summarizing.value = false;
+        polishing.value = false;
     }
 }
 async function backToTopics() {
@@ -198,8 +216,8 @@ if (__VLS_ctx.scenario && !__VLS_ctx.loading) {
     });
     /** @type {typeof __VLS_ctx.chatRef} */ ;
     for (const [msg, index] of __VLS_getVForSourceType((__VLS_ctx.chatHistory))) {
+        (index);
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            key: (index),
             ...{ class: "chat-bubble" },
             ...{ class: (msg.role) },
         });
@@ -211,6 +229,29 @@ if (__VLS_ctx.scenario && !__VLS_ctx.loading) {
             ...{ class: "chat-content" },
         });
         __VLS_asFunctionalDirective(__VLS_directives.vHtml)(null, { ...__VLS_directiveBindingRestFields, value: (__VLS_ctx.renderSimpleMarkdown(msg.content)) }, null, null);
+        if (__VLS_ctx.ended && msg.role === 'user' && __VLS_ctx.polishResults.has(index)) {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                ...{ class: "polish-feedback" },
+                ...{ class: ({ perfect: __VLS_ctx.polishResults.get(index).isPerfect }) },
+            });
+            if (__VLS_ctx.polishResults.get(index).isPerfect) {
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                    ...{ class: "polish-text" },
+                });
+            }
+            else {
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                    ...{ class: "polish-text" },
+                });
+                (__VLS_ctx.polishResults.get(index).polished);
+            }
+            if (!__VLS_ctx.polishResults.get(index).isPerfect && __VLS_ctx.polishResults.get(index).explanation) {
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                    ...{ class: "polish-tooltip" },
+                });
+                (__VLS_ctx.polishResults.get(index).explanation);
+            }
+        }
     }
     if (__VLS_ctx.chatHistory.length === 0 && !__VLS_ctx.ended) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
@@ -272,54 +313,14 @@ if (__VLS_ctx.scenario && !__VLS_ctx.loading) {
             ...{ onClick: (__VLS_ctx.handleEnd) },
             ...{ class: "button button-primary" },
             type: "button",
-            disabled: (!__VLS_ctx.allCompleted || __VLS_ctx.summarizing),
+            disabled: (!__VLS_ctx.allCompleted || __VLS_ctx.polishing),
         });
-        (__VLS_ctx.summarizing ? 'Summarizing...' : 'End Practice');
+        (__VLS_ctx.polishing ? 'Reviewing...' : 'End Practice');
     }
-    if (__VLS_ctx.summary) {
+    if (__VLS_ctx.ended) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            ...{ class: "expression-summary" },
+            ...{ class: "expression-end-bar" },
         });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-            ...{ class: "eyebrow" },
-        });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.h3, __VLS_intrinsicElements.h3)({});
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            ...{ class: "expression-summary-block" },
-        });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({});
-        (__VLS_ctx.summary.overallAssessment);
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            ...{ class: "expression-summary-block" },
-        });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.h4, __VLS_intrinsicElements.h4)({});
-        for (const [result, index] of __VLS_getVForSourceType((__VLS_ctx.summary.objectiveResults))) {
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-                key: (`obj-${index}`),
-                ...{ class: "expression-objective-feedback" },
-            });
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({});
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
-            (result.objective);
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({});
-            (result.feedback);
-        }
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            ...{ class: "expression-summary-block" },
-        });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.h4, __VLS_intrinsicElements.h4)({});
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.ul, __VLS_intrinsicElements.ul)({});
-        for (const [suggestion, index] of __VLS_getVForSourceType((__VLS_ctx.summary.expressionSuggestions))) {
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.li, __VLS_intrinsicElements.li)({
-                key: (`sug-${index}`),
-            });
-            (suggestion);
-        }
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            ...{ class: "expression-summary-block expression-encouragement" },
-        });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({});
-        (__VLS_ctx.summary.encouragement);
         __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
             ...{ onClick: (__VLS_ctx.backToTopics) },
             ...{ class: "button button-primary" },
@@ -344,6 +345,10 @@ if (__VLS_ctx.scenario && !__VLS_ctx.loading) {
 /** @type {__VLS_StyleScopedClasses['chat-bubble']} */ ;
 /** @type {__VLS_StyleScopedClasses['chat-role']} */ ;
 /** @type {__VLS_StyleScopedClasses['chat-content']} */ ;
+/** @type {__VLS_StyleScopedClasses['polish-feedback']} */ ;
+/** @type {__VLS_StyleScopedClasses['polish-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['polish-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['polish-tooltip']} */ ;
 /** @type {__VLS_StyleScopedClasses['empty-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['chat-form']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
@@ -358,14 +363,7 @@ if (__VLS_ctx.scenario && !__VLS_ctx.loading) {
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
-/** @type {__VLS_StyleScopedClasses['expression-summary']} */ ;
-/** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
-/** @type {__VLS_StyleScopedClasses['expression-summary-block']} */ ;
-/** @type {__VLS_StyleScopedClasses['expression-summary-block']} */ ;
-/** @type {__VLS_StyleScopedClasses['expression-objective-feedback']} */ ;
-/** @type {__VLS_StyleScopedClasses['expression-summary-block']} */ ;
-/** @type {__VLS_StyleScopedClasses['expression-summary-block']} */ ;
-/** @type {__VLS_StyleScopedClasses['expression-encouragement']} */ ;
+/** @type {__VLS_StyleScopedClasses['expression-end-bar']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
 var __VLS_dollars;
@@ -375,13 +373,13 @@ const __VLS_self = (await import('vue')).defineComponent({
             loading: loading,
             error: error,
             sending: sending,
-            summarizing: summarizing,
+            polishing: polishing,
             ended: ended,
             draft: draft,
             chatRef: chatRef,
             scenario: scenario,
             chatHistory: chatHistory,
-            summary: summary,
+            polishResults: polishResults,
             objectiveStatuses: objectiveStatuses,
             completedCount: completedCount,
             allCompleted: allCompleted,
