@@ -1576,3 +1576,310 @@ textarea:focus {
     text-align: center;
   }
 }
+
+@media (max-width: 640px) {
+  .shell {
+    padding: 0.75rem;
+    gap: 0.85rem;
+  }
+
+  .topbar {
+    top: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 22px;
+    gap: 0.65rem;
+  }
+
+  .brand {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .brand-copy {
+    display: none;
+  }
+
+  .brand-mark {
+    font-size: 1rem;
+  }
+
+  .nav-links {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 0.2rem;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-link {
+    flex: 0 0 auto;
+    padding: 0.45rem 0.8rem;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  .card,
+  .quiz-card {
+    border-radius: 22px;
+  }
+
+  .search-panel,
+  .result-card,
+  .settings-card,
+  .learning-bar,
+  .quiz-summary,
+  .quiz-card,
+  .tasks-card,
+  .writing-topic-card,
+  .writing-workspace-card,
+  .listening-input-card,
+  .listening-list-card,
+  .expression-chat-card,
+  .expression-objectives-card,
+  .expression-practice-page,
+  .expression-loading-card,
+  .settings-hero {
+    padding: 0.95rem;
+  }
+
+  .list-card,
+  .detail-card,
+  .writing-points-card,
+  .writing-point-detail-card {
+    padding: 0.85rem;
+  }
+
+  .auth-card {
+    padding: 1.1rem;
+  }
+
+  .list-card,
+  .detail-card,
+  .tasks-card {
+    min-height: 0;
+  }
+
+  .list-scroller {
+    max-height: 55vh;
+  }
+
+  .chat-history {
+    max-height: 42vh;
+  }
+
+  .expression-chat-history {
+    max-height: 48vh;
+  }
+
+  .result-head,
+  .detail-head,
+  .tasks-head,
+  .inline-heading,
+  .learning-bar,
+  .settings-footer,
+  .quiz-meta {
+    gap: 0.5rem;
+  }
+
+  .result-actions,
+  .task-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .result-actions .button,
+  .task-actions .button {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .button {
+    padding: 0.7rem 1rem;
+  }
+
+  .button-tight {
+    padding: 0.45rem 0.8rem;
+  }
+
+  .meaning-grid {
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+  }
+
+  .meaning-card {
+    padding: 0.85rem;
+    border-radius: 16px;
+  }
+
+  .task-row {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.85rem;
+  }
+
+  .task-actions {
+    align-self: stretch;
+    flex-direction: row;
+  }
+
+  .mistake-row {
+    padding-right: 5rem;
+  }
+
+  .mistake-type-chip {
+    top: 0.6rem;
+    right: 0.6rem;
+  }
+
+  .task-progress-track {
+    max-width: 100%;
+  }
+
+  .modal-backdrop {
+    padding: 0.75rem;
+  }
+
+  .modal-panel {
+    padding: 1.05rem 1.1rem 0.95rem;
+    gap: 0.85rem;
+    border-radius: 20px;
+  }
+
+  .modal-head {
+    gap: 0.7rem;
+  }
+
+  .modal-actions {
+    flex-wrap: wrap;
+  }
+
+  .modal-actions .button {
+    flex: 1 1 auto;
+  }
+
+  .sentence-box {
+    padding: 0.9rem;
+    font-size: 1rem;
+    border-radius: 18px;
+  }
+
+  .sentence-box-inline {
+    line-height: 1.9;
+  }
+
+  .inline-blank-input {
+    min-width: 4ch;
+    font-size: 0.95rem;
+  }
+
+  .quiz-summary h1 {
+    font-size: 1.6rem;
+  }
+
+  .settings-hero h1 {
+    font-size: 1.4rem;
+  }
+
+  .model-category-head {
+    padding: 0.95rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .model-category-icon {
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 14px;
+  }
+
+  .model-category-icon svg {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
+  .model-category-chevron {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .model-category-body {
+    padding: 0.9rem 1rem 1rem;
+  }
+
+  .model-entry {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+    padding: 0.85rem;
+  }
+
+  .model-radio {
+    width: 100%;
+  }
+
+  .model-entry-status {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+
+  .model-entry-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .model-entry-actions .button {
+    flex: 1 1 auto;
+  }
+
+  .model-entry-actions .icon-button {
+    flex: 0 0 auto;
+  }
+
+  .settings-actions {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.9rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .expression-practice-page {
+    gap: 0.85rem;
+  }
+
+  .expression-scenario-header {
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .expression-end-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .expression-end-bar .button {
+    width: 100%;
+  }
+
+  .chat-bubble {
+    max-width: 94%;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .polish-feedback {
+    max-width: 94%;
+  }
+
+  .login-page,
+  .quiz-page {
+    padding: 0.75rem;
+  }
+}
