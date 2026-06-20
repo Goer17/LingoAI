@@ -1,23 +1,34 @@
 import { reactive, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { api } from '@/services/api';
+import type { SettingsForm } from '@/types/models';
+
+function emptyForm(): SettingsForm {
+  return {
+    models: {
+      language: { entries: [], activeId: null },
+      audio: { entries: [], activeId: null },
+      image: { entries: [], activeId: null },
+    },
+    updatedAt: null,
+  };
+}
 
 export const useSettingsStore = defineStore('settings', () => {
-  const form = reactive({
-    baseUrl: '',
-    apiKey: '',
-    languageModel: '',
-    audioModel: '',
-    updatedAt: null as string | null,
-  });
+  const form = reactive<SettingsForm>(emptyForm());
   const loading = ref(false);
   const saving = ref(false);
+
+  function applyData(data: SettingsForm) {
+    form.models = data.models;
+    form.updatedAt = data.updatedAt;
+  }
 
   async function fetchSettings() {
     loading.value = true;
     try {
       const data = await api.getSettings();
-      Object.assign(form, data);
+      applyData(data);
     } finally {
       loading.value = false;
     }
@@ -26,13 +37,8 @@ export const useSettingsStore = defineStore('settings', () => {
   async function saveSettings() {
     saving.value = true;
     try {
-      const data = await api.saveSettings({
-        baseUrl: form.baseUrl,
-        apiKey: form.apiKey,
-        languageModel: form.languageModel,
-        audioModel: form.audioModel,
-      });
-      Object.assign(form, data);
+      const data = await api.saveSettings({ models: form.models });
+      applyData(data);
     } finally {
       saving.value = false;
     }

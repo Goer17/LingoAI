@@ -16,10 +16,12 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS settings (
     id INTEGER PRIMARY KEY CHECK (id = 1),
-    base_url TEXT NOT NULL,
-    api_key TEXT NOT NULL,
-    language_model TEXT NOT NULL,
-    audio_model TEXT NOT NULL,
+    base_url TEXT NOT NULL DEFAULT '',
+    api_key TEXT NOT NULL DEFAULT '',
+    language_model TEXT NOT NULL DEFAULT '',
+    audio_model TEXT NOT NULL DEFAULT '',
+    image_model TEXT NOT NULL DEFAULT '',
+    payload_json TEXT NOT NULL DEFAULT '{}',
     updated_at TEXT
   );
 
@@ -110,6 +112,24 @@ try {
   db.exec(`
     ALTER TABLE quiz_sessions
     ADD COLUMN source_type TEXT NOT NULL DEFAULT 'vocabulary_task';
+  `);
+} catch {
+  // Column already exists.
+}
+
+try {
+  db.exec(`
+    ALTER TABLE settings
+    ADD COLUMN image_model TEXT NOT NULL DEFAULT '';
+  `);
+} catch {
+  // Column already exists.
+}
+
+try {
+  db.exec(`
+    ALTER TABLE settings
+    ADD COLUMN payload_json TEXT NOT NULL DEFAULT '{}';
   `);
 } catch {
   // Column already exists.

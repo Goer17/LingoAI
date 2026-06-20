@@ -41,11 +41,23 @@ export interface SearchResult {
     ttsText: string;
     notFoundMessage?: string;
 }
-export interface SettingsForm {
+export type SettingsModelCategoryKey = 'language' | 'audio' | 'image';
+export interface SettingsModelEntry {
+    id: string;
     baseUrl: string;
     apiKey: string;
-    languageModel: string;
-    audioModel: string;
+    model: string;
+}
+export interface SettingsModelCategory {
+    entries: SettingsModelEntry[];
+    activeId: string | null;
+}
+export interface SettingsForm {
+    models: {
+        language: SettingsModelCategory;
+        audio: SettingsModelCategory;
+        image: SettingsModelCategory;
+    };
     updatedAt: string | null;
 }
 export interface QuizQuestion {

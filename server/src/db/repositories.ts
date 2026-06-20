@@ -8,14 +8,11 @@ function parseJson<T>(value: string): T {
 export const settingsRepository = {
   get(): Settings | null {
     const row = db.prepare(`
-      SELECT base_url, api_key, language_model, audio_model, updated_at
+      SELECT payload_json, updated_at
       FROM settings
       WHERE id = 1
     `).get() as {
-      base_url: string;
-      api_key: string;
-      language_model: string;
-      audio_model: string;
+      payload_json: string;
       updated_at: string | null;
     } | undefined;
 
@@ -23,30 +20,32 @@ export const settingsRepository = {
       return null;
     }
 
+    let parsed: Partial<Settings>;
+    try {
+      parsed = row.payload_json ? (JSON.parse(row.payload_json) as Partial<Settings>) : {};
+    } catch {
+      parsed = {};
+    }
+
     return {
-      baseUrl: row.base_url,
-      apiKey: row.api_key,
-      languageModel: row.language_model,
-      audioModel: row.audio_model,
+      models: {
+        language: parsed.models?.language ?? { entries: [], activeId: null },
+        audio: parsed.models?.audio ?? { entries: [], activeId: null },
+        image: parsed.models?.image ?? { entries: [], activeId: null },
+      },
       updatedAt: row.updated_at,
     };
   },
 
   upsert(settings: Settings) {
     db.prepare(`
-      INSERT INTO settings (id, base_url, api_key, language_model, audio_model, updated_at)
-      VALUES (1, ?, ?, ?, ?, ?)
+      INSERT INTO settings (id, base_url, api_key, language_model, audio_model, image_model, payload_json, updated_at)
+      VALUES (1, '', '', '', '', '', ?, ?)
       ON CONFLICT(id) DO UPDATE SET
-        base_url = excluded.base_url,
-        api_key = excluded.api_key,
-        language_model = excluded.language_model,
-        audio_model = excluded.audio_model,
+        payload_json = excluded.payload_json,
         updated_at = excluded.updated_at
     `).run(
-      settings.baseUrl,
-      settings.apiKey,
-      settings.languageModel,
-      settings.audioModel,
+      JSON.stringify({ models: settings.models }),
       settings.updatedAt,
     );
   },

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { getSettings } from './settingsService.js';
+import { getActiveModelEntry } from './settingsService.js';
 import { generateAudioBase64 } from './openaiService.js';
 import { env } from '../config/env.js';
 
@@ -42,10 +42,10 @@ const audioDataUrlCache = new LruAudioCache();
 const MEDIA_ROUTE_PREFIX = '/api/media';
 
 function getCacheKey(input: string) {
-  const settings = getSettings();
+  const entry = getActiveModelEntry('audio');
   return [
-    settings.baseUrl,
-    settings.audioModel,
+    entry?.baseUrl ?? '',
+    entry?.model ?? '',
     input.trim(),
   ].join('::');
 }

@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
-import { getSettings } from './settingsService.js';
+import { getActiveModelEntry } from './settingsService.js';
 import type { PolishResult, QuizDraftQuestion, ScenarioSummary, SearchResult } from '../types/models.js';
 
 const meaningSchema = z.object({
@@ -87,26 +87,40 @@ const polishResultsSchema = z.object({
   })).min(1),
 });
 
-function getClient() {
-  const settings = getSettings();
-
-  if (!settings.baseUrl || !settings.apiKey || !settings.languageModel || !settings.audioModel) {
-    throw new Error('Model settings are incomplete. Please update them in Setting.');
+function getLanguageClient() {
+  const entry = getActiveModelEntry('language');
+  if (!entry || !entry.baseUrl || !entry.apiKey || !entry.model) {
+    throw new Error('Language model is not configured. Please pick one in Settings.');
   }
 
   return {
-    settings,
+    model: entry.model,
     client: new OpenAI({
-      baseURL: settings.baseUrl,
-      apiKey: settings.apiKey,
+      baseURL: entry.baseUrl,
+      apiKey: entry.apiKey,
+    }),
+  };
+}
+
+function getAudioClient() {
+  const entry = getActiveModelEntry('audio');
+  if (!entry || !entry.baseUrl || !entry.apiKey || !entry.model) {
+    throw new Error('Audio model is not configured. Please pick one in Settings.');
+  }
+
+  return {
+    model: entry.model,
+    client: new OpenAI({
+      baseURL: entry.baseUrl,
+      apiKey: entry.apiKey,
     }),
   };
 }
 
 async function requestJson<T>(prompt: string, parser: z.ZodSchema<T>): Promise<T> {
-  const { client, settings } = getClient();
+  const { client, model } = getLanguageClient();
   const response = await client.chat.completions.create({
-    model: settings.languageModel,
+    model,
     temperature: 0.3,
     response_format: { type: 'json_object' },
     messages: [
@@ -161,9 +175,9 @@ export async function streamScenarioChat(
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
   onDelta: (chunk: string) => void,
 ): Promise<string> {
-  const { client, settings } = getClient();
+  const { client, model } = getLanguageClient();
   const stream = await client.chat.completions.create({
-    model: settings.languageModel,
+    model,
     temperature: 0.7,
     stream: true,
     messages,
@@ -189,9 +203,9 @@ export async function streamScenarioChat(
 }
 
 export async function askWordChat(prompt: string): Promise<string> {
-  const { client, settings } = getClient();
+  const { client, model } = getLanguageClient();
   const response = await client.chat.completions.create({
-    model: settings.languageModel,
+    model,
     temperature: 0.6,
     messages: [
       {
@@ -213,9 +227,9 @@ export async function streamWordChat(
   prompt: string,
   onDelta: (chunk: string) => void,
 ): Promise<string> {
-  const { client, settings } = getClient();
+  const { client, model } = getLanguageClient();
   const stream = await client.chat.completions.create({
-    model: settings.languageModel,
+    model,
     temperature: 0.6,
     stream: true,
     messages: [
@@ -245,11 +259,48 @@ export async function streamWordChat(
   return output;
 }
 
+const OPENAI_TTS_VOICES = [
+  'alloy',
+  'ash',
+  'ballad',
+  'coral',
+  'echo',
+  'fable',
+  'nova',
+  'onyx',
+  'sage',
+  'shimmer',
+  'verse',
+] as const;
+
+function looksLikeOpenAITTS(model: string): boolean {
+  const normalized = model.trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+  return (
+    normalized === 'tts-1' ||
+    normalized === 'tts-1-hd' ||
+    normalized.startsWith('tts-') ||
+    normalized.includes('-tts') ||
+    normalized.includes('gpt-4o-mini-tts')
+  );
+}
+
+function pickVoiceForModel(model: string): string {
+  if (!looksLikeOpenAITTS(model)) {
+    return 'alloy';
+  }
+  const index = Math.floor(Math.random() * OPENAI_TTS_VOICES.length);
+  return OPENAI_TTS_VOICES[index];
+}
+
 export async function generateAudioBase64(input: string): Promise<string> {
-  const { client, settings } = getClient();
+  const { client, model } = getAudioClient();
+  const voice = pickVoiceForModel(model);
   const response = await client.audio.speech.create({
-    model: settings.audioModel,
-    voice: 'alloy',
+    model,
+    voice,
     input,
     response_format: 'mp3',
   });

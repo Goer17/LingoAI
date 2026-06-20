@@ -21,8 +21,13 @@ export const api = {
   getSettings() {
     return unwrap<SettingsForm>(http.get('/settings'));
   },
-  saveSettings(payload: Omit<SettingsForm, 'updatedAt'>) {
+  saveSettings(payload: Pick<SettingsForm, 'models'>) {
     return unwrap<SettingsForm>(http.post('/settings', payload));
+  },
+  testModelEntry(category: 'language' | 'audio' | 'image', entryId: string) {
+    return unwrap<{ ok: boolean; latencyMs: number; sample?: string; error?: string }>(
+      http.post('/settings/test', { category, entryId }),
+    );
   },
   getVocabulary() {
     return unwrap<VocabularyEntry[]>(http.get('/vocabulary'));

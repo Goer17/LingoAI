@@ -1,21 +1,71 @@
 export declare const useSettingsStore: import("pinia").StoreDefinition<"settings", Pick<{
     form: {
-        baseUrl: string;
-        apiKey: string;
-        languageModel: string;
-        audioModel: string;
+        models: {
+            language: {
+                entries: {
+                    id: string;
+                    baseUrl: string;
+                    apiKey: string;
+                    model: string;
+                }[];
+                activeId: string | null;
+            };
+            audio: {
+                entries: {
+                    id: string;
+                    baseUrl: string;
+                    apiKey: string;
+                    model: string;
+                }[];
+                activeId: string | null;
+            };
+            image: {
+                entries: {
+                    id: string;
+                    baseUrl: string;
+                    apiKey: string;
+                    model: string;
+                }[];
+                activeId: string | null;
+            };
+        };
         updatedAt: string | null;
     };
     loading: import("vue").Ref<boolean, boolean>;
     saving: import("vue").Ref<boolean, boolean>;
     fetchSettings: () => Promise<void>;
     saveSettings: () => Promise<void>;
-}, "loading" | "saving" | "form">, Pick<{
+}, "loading" | "form" | "saving">, Pick<{
     form: {
-        baseUrl: string;
-        apiKey: string;
-        languageModel: string;
-        audioModel: string;
+        models: {
+            language: {
+                entries: {
+                    id: string;
+                    baseUrl: string;
+                    apiKey: string;
+                    model: string;
+                }[];
+                activeId: string | null;
+            };
+            audio: {
+                entries: {
+                    id: string;
+                    baseUrl: string;
+                    apiKey: string;
+                    model: string;
+                }[];
+                activeId: string | null;
+            };
+            image: {
+                entries: {
+                    id: string;
+                    baseUrl: string;
+                    apiKey: string;
+                    model: string;
+                }[];
+                activeId: string | null;
+            };
+        };
         updatedAt: string | null;
     };
     loading: import("vue").Ref<boolean, boolean>;
@@ -24,10 +74,35 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
     saveSettings: () => Promise<void>;
 }, never>, Pick<{
     form: {
-        baseUrl: string;
-        apiKey: string;
-        languageModel: string;
-        audioModel: string;
+        models: {
+            language: {
+                entries: {
+                    id: string;
+                    baseUrl: string;
+                    apiKey: string;
+                    model: string;
+                }[];
+                activeId: string | null;
+            };
+            audio: {
+                entries: {
+                    id: string;
+                    baseUrl: string;
+                    apiKey: string;
+                    model: string;
+                }[];
+                activeId: string | null;
+            };
+            image: {
+                entries: {
+                    id: string;
+                    baseUrl: string;
+                    apiKey: string;
+                    model: string;
+                }[];
+                activeId: string | null;
+            };
+        };
         updatedAt: string | null;
     };
     loading: import("vue").Ref<boolean, boolean>;

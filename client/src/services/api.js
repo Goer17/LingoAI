@@ -9,6 +9,9 @@ export const api = {
     saveSettings(payload) {
         return unwrap(http.post('/settings', payload));
     },
+    testModelEntry(category, entryId) {
+        return unwrap(http.post('/settings/test', { category, entryId }));
+    },
     getVocabulary() {
         return unwrap(http.get('/vocabulary'));
     },

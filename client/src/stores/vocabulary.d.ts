@@ -454,7 +454,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
-}, "loading" | "items" | "selectedId" | "searchResult" | "searching" | "savingWord" | "quizSession" | "tasks" | "mistakes" | "tasksLoading" | "listeningItems" | "listeningLoading" | "selectedListeningId" | "writingTopics" | "selectedWritingTopicId" | "selectedWritingPointId" | "writingLoading">, Pick<{
+}, "items" | "selectedId" | "searchResult" | "loading" | "searching" | "savingWord" | "quizSession" | "tasks" | "mistakes" | "tasksLoading" | "listeningItems" | "listeningLoading" | "selectedListeningId" | "writingTopics" | "selectedWritingTopicId" | "selectedWritingPointId" | "writingLoading">, Pick<{
     items: import("vue").Ref<{
         id: string;
         text: string;

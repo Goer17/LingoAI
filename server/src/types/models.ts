@@ -35,11 +35,24 @@ export interface VocabularyEntry {
   chatHistory: ChatMessage[];
 }
 
-export interface Settings {
+export interface SettingsModelEntry {
+  id: string;
   baseUrl: string;
   apiKey: string;
-  languageModel: string;
-  audioModel: string;
+  model: string;
+}
+
+export interface SettingsModelCategory {
+  entries: SettingsModelEntry[];
+  activeId: string | null;
+}
+
+export interface Settings {
+  models: {
+    language: SettingsModelCategory;
+    audio: SettingsModelCategory;
+    image: SettingsModelCategory;
+  };
   updatedAt: string | null;
 }
 

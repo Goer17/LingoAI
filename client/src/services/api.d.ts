@@ -4,7 +4,13 @@ export declare const api: {
         token: string;
     }>;
     getSettings(): Promise<SettingsForm>;
-    saveSettings(payload: Omit<SettingsForm, "updatedAt">): Promise<SettingsForm>;
+    saveSettings(payload: Pick<SettingsForm, "models">): Promise<SettingsForm>;
+    testModelEntry(category: "language" | "audio" | "image", entryId: string): Promise<{
+        ok: boolean;
+        latencyMs: number;
+        sample?: string;
+        error?: string;
+    }>;
     getVocabulary(): Promise<VocabularyEntry[]>;
     getListening(): Promise<ListeningEntry[]>;
     addListeningSentence(sentence: string): Promise<{
