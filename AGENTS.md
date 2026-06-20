@@ -19,6 +19,8 @@ npm run dev --workspace server     # backend only (tsx watch)
 
 No test suite exists. Manual verification: `npm run build`, `npm run dev`, login with `.token`, test the changed flow end to end.
 
+For production update/deployment, use the `deploy` branch and follow `UPDATE.md`.
+
 Before every `git push`, prefix with `GIT_SSH_COMMAND="ssh -v"`.
 
 ## Architecture
