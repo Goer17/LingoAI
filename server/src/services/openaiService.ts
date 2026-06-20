@@ -261,16 +261,11 @@ export async function streamWordChat(
 
 const OPENAI_TTS_VOICES = [
   'alloy',
-  'ash',
-  'ballad',
-  'coral',
   'echo',
   'fable',
   'nova',
   'onyx',
-  'sage',
   'shimmer',
-  'verse',
 ] as const;
 
 function looksLikeOpenAITTS(model: string): boolean {
