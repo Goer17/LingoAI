@@ -40,6 +40,7 @@ export interface SettingsModelEntry {
   baseUrl: string;
   apiKey: string;
   model: string;
+  extraBody: string;
 }
 
 export interface SettingsModelCategory {

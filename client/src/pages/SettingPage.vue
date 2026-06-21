@@ -180,6 +180,16 @@
               :placeholder="editingGroup?.modelPlaceholder"
             />
           </label>
+          <label class="field">
+            <span>Extra body (JSON)</span>
+            <textarea
+              v-model="editingDraft.extraBody"
+              class="field-textarea"
+              rows="3"
+              placeholder='{"temperature": 0.5, "max_tokens": 200}'
+            />
+            <p class="field-hint">Optional JSON key-values merged into every request body.</p>
+          </label>
         </div>
 
         <footer class="modal-actions">
@@ -306,6 +316,7 @@ function addEntry(key: SettingsModelCategoryKey) {
     baseUrl: '',
     apiKey: '',
     model: '',
+    extraBody: '',
   };
   category.entries.push(entry);
   if (!category.activeId) {
@@ -367,6 +378,7 @@ function applyEdit() {
   entry.baseUrl = editingDraft.value.baseUrl;
   entry.apiKey = editingDraft.value.apiKey;
   entry.model = editingDraft.value.model;
+  entry.extraBody = editingDraft.value.extraBody;
   closeEdit();
 }
 

@@ -87,7 +87,24 @@ const polishResultsSchema = z.object({
   })).min(1),
 });
 
-function getLanguageClient() {
+interface LangClient {
+  model: string;
+  client: OpenAI;
+  extraBody: Record<string, unknown>;
+}
+
+function parseExtraBody(json: string | undefined): Record<string, unknown> {
+  if (!json) {
+    return {};
+  }
+  try {
+    return JSON.parse(json);
+  } catch {
+    return {};
+  }
+}
+
+function getLanguageClient(): LangClient {
   const entry = getActiveModelEntry('language');
   if (!entry || !entry.baseUrl || !entry.apiKey || !entry.model) {
     throw new Error('Language model is not configured. Please pick one in Settings.');
@@ -99,6 +116,7 @@ function getLanguageClient() {
       baseURL: entry.baseUrl,
       apiKey: entry.apiKey,
     }),
+    extraBody: parseExtraBody(entry.extraBody),
   };
 }
 
@@ -114,11 +132,12 @@ function getAudioClient() {
       baseURL: entry.baseUrl,
       apiKey: entry.apiKey,
     }),
+    extraBody: parseExtraBody(entry.extraBody),
   };
 }
 
 async function requestJson<T>(prompt: string, parser: z.ZodSchema<T>): Promise<T> {
-  const { client, model } = getLanguageClient();
+  const { client, model, extraBody } = getLanguageClient();
   const response = await client.chat.completions.create({
     model,
     temperature: 0.3,
@@ -133,6 +152,7 @@ async function requestJson<T>(prompt: string, parser: z.ZodSchema<T>): Promise<T
         content: prompt,
       },
     ],
+    ...extraBody,
   });
 
   const content = response.choices[0]?.message?.content;
@@ -175,12 +195,13 @@ export async function streamScenarioChat(
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
   onDelta: (chunk: string) => void,
 ): Promise<string> {
-  const { client, model } = getLanguageClient();
+  const { client, model, extraBody } = getLanguageClient();
   const stream = await client.chat.completions.create({
     model,
     temperature: 0.7,
     stream: true,
     messages,
+    ...extraBody,
   });
 
   let fullText = '';
@@ -203,7 +224,7 @@ export async function streamScenarioChat(
 }
 
 export async function askWordChat(prompt: string): Promise<string> {
-  const { client, model } = getLanguageClient();
+  const { client, model, extraBody } = getLanguageClient();
   const response = await client.chat.completions.create({
     model,
     temperature: 0.6,
@@ -213,6 +234,7 @@ export async function askWordChat(prompt: string): Promise<string> {
         content: prompt,
       },
     ],
+    ...extraBody,
   });
 
   const content = response.choices[0]?.message?.content?.trim();
@@ -227,7 +249,7 @@ export async function streamWordChat(
   prompt: string,
   onDelta: (chunk: string) => void,
 ): Promise<string> {
-  const { client, model } = getLanguageClient();
+  const { client, model, extraBody } = getLanguageClient();
   const stream = await client.chat.completions.create({
     model,
     temperature: 0.6,
@@ -238,6 +260,7 @@ export async function streamWordChat(
         content: prompt,
       },
     ],
+    ...extraBody,
   });
 
   let fullText = '';
@@ -291,13 +314,14 @@ function pickVoiceForModel(model: string): string {
 }
 
 export async function generateAudioBase64(input: string): Promise<string> {
-  const { client, model } = getAudioClient();
+  const { client, model, extraBody } = getAudioClient();
   const voice = pickVoiceForModel(model);
   const response = await client.audio.speech.create({
     model,
     voice,
     input,
     response_format: 'mp3',
+    ...extraBody,
   });
 
   const buffer = Buffer.from(await response.arrayBuffer());
