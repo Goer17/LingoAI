@@ -10,10 +10,6 @@ export function createScenarioChatMessages(
   history: ScenarioChatMessage[],
   userMessage: string,
 ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
-  const objectiveList = scenario.objectives
-    .map((obj, i) => `${i + 1}. ${obj.description}`)
-    .join('\n');
-
   const system = [
     `You are role-playing as: ${scenario.assistantRole}.`,
     `The user is playing: ${scenario.userRole}.`,
@@ -21,11 +17,7 @@ export function createScenarioChatMessages(
     '',
     'Stay in character throughout the conversation.',
     'Respond naturally as your character would in this situation.',
-    'Use clear, natural English. Keep responses concise (1-4 sentences typically).',
-    'Gently guide the conversation so the user has opportunities to accomplish these objectives:',
-    objectiveList,
-    '',
-    'Do NOT mention the objectives directly or break character.',
+    'Use clear, natural English. Keep responses very short — 1 to 2 sentences. No more.',
     'If the user makes grammar mistakes, respond naturally without correcting them — corrections will come later.',
   ].join('\n');
 

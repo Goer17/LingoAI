@@ -49,6 +49,7 @@ function buildSettingsFromLegacy(legacy: LegacySettings): Settings {
       baseUrl: sharedBaseUrl,
       apiKey: sharedApiKey,
       model: legacy.languageModel,
+      extraBody: '',
     };
     settings.models.language.entries.push(entry);
     settings.models.language.activeId = entry.id;
@@ -60,6 +61,7 @@ function buildSettingsFromLegacy(legacy: LegacySettings): Settings {
       baseUrl: sharedBaseUrl,
       apiKey: sharedApiKey,
       model: legacy.audioModel,
+      extraBody: '',
     };
     settings.models.audio.entries.push(entry);
     settings.models.audio.activeId = entry.id;

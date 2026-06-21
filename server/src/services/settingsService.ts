@@ -50,6 +50,7 @@ function mergeCategoryWithStored(
       baseUrl: entry.baseUrl,
       apiKey,
       model: entry.model,
+      extraBody: entry.extraBody ?? '',
     };
   });
 

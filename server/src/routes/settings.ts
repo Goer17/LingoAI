@@ -9,6 +9,21 @@ const modelEntrySchema = z.object({
   baseUrl: z.string().url().or(z.literal('')),
   apiKey: z.string(),
   model: z.string(),
+  extraBody: z.string().refine(
+    (value) => {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return true;
+      }
+      try {
+        const parsed = JSON.parse(trimmed);
+        return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed);
+      } catch {
+        return false;
+      }
+    },
+    { message: 'Extra body must be a JSON object or empty.' },
+  ),
 });
 
 const modelCategorySchema = z.object({
