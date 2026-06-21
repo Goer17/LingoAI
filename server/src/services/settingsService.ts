@@ -32,6 +32,7 @@ function redactCategory(category: SettingsModelCategory): SettingsModelCategory 
     entries: category.entries.map((entry) => ({
       ...entry,
       apiKey: entry.apiKey ? REDACTED_API_KEY : '',
+      extraBody: entry.extraBody ?? '',
     })),
   };
 }
