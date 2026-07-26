@@ -42,8 +42,14 @@ export const api = {
     ensureWordAudio(id) {
         return unwrap(http.post(`/vocabulary/${id}/audio`));
     },
+    regenerateWordAudio(id) {
+        return unwrap(http.post(`/vocabulary/${id}/audio`, { force: true }));
+    },
     ensureListeningAudio(id) {
         return unwrap(http.post(`/vocabulary/listening/${id}/audio`));
+    },
+    regenerateListeningAudio(id) {
+        return unwrap(http.post(`/vocabulary/listening/${id}/audio`, { force: true }));
     },
     updateListeningNote(id, note) {
         return unwrap(http.post(`/vocabulary/listening/${id}/note`, { note }));
@@ -166,6 +172,9 @@ export const api = {
     },
     generateAudio(input) {
         return unwrap(http.post('/vocabulary/generate-audio', { input }));
+    },
+    regenerateAudio(input) {
+        return unwrap(http.post('/vocabulary/generate-audio', { input, force: true }));
     },
     generateQuiz() {
         return unwrap(http.post('/vocabulary/generate-quiz'));

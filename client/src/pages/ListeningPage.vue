@@ -52,6 +52,7 @@
           :sentence="store.selectedListening"
           :loading="chatLoading"
           @play-audio="playSelectedSentence"
+          @regenerate-audio="regenerateListeningAudio"
           @save-note="handleSaveNote"
           @send-chat="handleSendChat"
           @clear-chat="handleClearChat"
@@ -78,6 +79,7 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import SentenceDetailPanel from '@/components/SentenceDetailPanel.vue';
 import { useVocabularyStore } from '@/stores/vocabulary';
+import { api } from '@/services/api';
 import { getStoredMediaAudioUrl } from '@/utils/audioCache';
 
 const store = useVocabularyStore();
@@ -136,6 +138,23 @@ async function playSelectedSentence() {
   }
 
   await playSentence(sentence.id, sentence.audioFile);
+}
+
+async function regenerateListeningAudio() {
+  error.value = '';
+  const sentence = store.selectedListening;
+  if (!sentence) {
+    return;
+  }
+
+  try {
+    const { audioUrl, audioFile } = await api.regenerateListeningAudio(sentence.id);
+    sentence.audioFile = audioFile;
+    const audio = new Audio(audioUrl + '?t=' + Date.now());
+    await audio.play();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Audio regeneration failed.';
+  }
 }
 
 async function handleSaveNote(note: string) {

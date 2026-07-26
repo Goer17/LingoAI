@@ -158,6 +158,17 @@ if (__VLS_ctx.word) {
         ...{ onClick: (...[$event]) => {
                 if (!(__VLS_ctx.word))
                     return;
+                __VLS_ctx.$emit('regenerate-audio');
+            } },
+        ...{ class: "icon-button" },
+        type: "button",
+        'aria-label': "Regenerate audio",
+        title: "Regenerate audio",
+    });
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+        ...{ onClick: (...[$event]) => {
+                if (!(__VLS_ctx.word))
+                    return;
                 __VLS_ctx.$emit('play-audio');
             } },
         ...{ class: "icon-button" },
@@ -307,6 +318,7 @@ else {
 /** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['result-actions']} */ ;
+/** @type {__VLS_StyleScopedClasses['icon-button']} */ ;
 /** @type {__VLS_StyleScopedClasses['icon-button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;

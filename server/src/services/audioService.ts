@@ -50,15 +50,18 @@ function getCacheKey(input: string) {
   ].join('::');
 }
 
-export async function createAudioDataUrl(input: string) {
-  const key = getCacheKey(input);
-  const cached = audioDataUrlCache.get(key);
-  if (cached) {
-    return cached;
+export async function createAudioDataUrl(input: string, force = false) {
+  if (!force) {
+    const key = getCacheKey(input);
+    const cached = audioDataUrlCache.get(key);
+    if (cached) {
+      return cached;
+    }
   }
 
   const base64 = await generateAudioBase64(input);
   const audioUrl = `data:audio/mp3;base64,${base64}`;
+  const key = getCacheKey(input);
   audioDataUrlCache.set(key, audioUrl);
   return audioUrl;
 }

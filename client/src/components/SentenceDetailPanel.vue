@@ -9,6 +9,9 @@
           <p class="subtle-copy">familiarity {{ sentence.familiarity }}</p>
         </div>
         <div class="result-actions">
+          <button class="icon-button" type="button" aria-label="Regenerate audio" title="Regenerate audio" @click="$emit('regenerate-audio')">
+            🔄
+          </button>
           <button class="icon-button" type="button" aria-label="Play sentence" title="Play sentence" @click="$emit('play-audio')">
             🔊
           </button>
@@ -80,6 +83,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'play-audio': [];
+  'regenerate-audio': [];
   'save-note': [note: string];
   'send-chat': [message: string];
   'clear-chat': [];

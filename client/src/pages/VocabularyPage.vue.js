@@ -5,6 +5,7 @@ import SearchResultCard from '@/components/SearchResultCard.vue';
 import WordDetailPanel from '@/components/WordDetailPanel.vue';
 import WordList from '@/components/WordList.vue';
 import { useVocabularyStore } from '@/stores/vocabulary';
+import { api } from '@/services/api';
 import { getAudioUrl, getStoredMediaAudioUrl } from '@/utils/audioCache';
 const store = useVocabularyStore();
 const router = useRouter();
@@ -98,6 +99,17 @@ async function playSearchAudio(input) {
         error.value = err instanceof Error ? err.message : 'Audio playback failed.';
     }
 }
+async function regenerateSearchAudio(input) {
+    error.value = '';
+    try {
+        const { audioUrl } = await api.regenerateAudio(input);
+        const audio = new Audio(audioUrl + '?t=' + Date.now());
+        await audio.play();
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Audio regeneration failed.';
+    }
+}
 async function playWordAudio() {
     error.value = '';
     const word = store.selectedWord;
@@ -112,6 +124,22 @@ async function playWordAudio() {
     }
     catch (err) {
         error.value = err instanceof Error ? err.message : 'Audio playback failed.';
+    }
+}
+async function regenerateWordAudio() {
+    error.value = '';
+    const word = store.selectedWord;
+    if (!word) {
+        return;
+    }
+    try {
+        const { audioUrl, audioFile } = await api.regenerateWordAudio(word.id);
+        word.audioFile = audioFile;
+        const audio = new Audio(audioUrl + '?t=' + Date.now());
+        await audio.play();
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Audio regeneration failed.';
     }
 }
 async function startLearning() {
@@ -172,6 +200,7 @@ const __VLS_7 = __VLS_asFunctionalComponent(SearchResultCard, new SearchResultCa
     ...{ 'onSave': {} },
     ...{ 'onToggleTranslation': {} },
     ...{ 'onPlayAudio': {} },
+    ...{ 'onRegenerateAudio': {} },
     result: (__VLS_ctx.store.searchResult),
     showChinese: (__VLS_ctx.showChinese),
     saving: (__VLS_ctx.store.savingWord),
@@ -180,6 +209,7 @@ const __VLS_8 = __VLS_7({
     ...{ 'onSave': {} },
     ...{ 'onToggleTranslation': {} },
     ...{ 'onPlayAudio': {} },
+    ...{ 'onRegenerateAudio': {} },
     result: (__VLS_ctx.store.searchResult),
     showChinese: (__VLS_ctx.showChinese),
     saving: (__VLS_ctx.store.savingWord),
@@ -198,34 +228,38 @@ const __VLS_14 = {
 const __VLS_15 = {
     onPlayAudio: (__VLS_ctx.playSearchAudio)
 };
+const __VLS_16 = {
+    onRegenerateAudio: (__VLS_ctx.regenerateSearchAudio)
+};
 var __VLS_9;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "workspace-grid" },
 });
 /** @type {[typeof WordList, ]} */ ;
 // @ts-ignore
-const __VLS_16 = __VLS_asFunctionalComponent(WordList, new WordList({
+const __VLS_17 = __VLS_asFunctionalComponent(WordList, new WordList({
     ...{ 'onSelect': {} },
     items: (__VLS_ctx.store.items),
     selectedId: (__VLS_ctx.store.selectedId),
 }));
-const __VLS_17 = __VLS_16({
+const __VLS_18 = __VLS_17({
     ...{ 'onSelect': {} },
     items: (__VLS_ctx.store.items),
     selectedId: (__VLS_ctx.store.selectedId),
-}, ...__VLS_functionalComponentArgsRest(__VLS_16));
-let __VLS_19;
+}, ...__VLS_functionalComponentArgsRest(__VLS_17));
 let __VLS_20;
 let __VLS_21;
-const __VLS_22 = {
+let __VLS_22;
+const __VLS_23 = {
     onSelect: (__VLS_ctx.store.selectWord)
 };
-var __VLS_18;
+var __VLS_19;
 /** @type {[typeof WordDetailPanel, ]} */ ;
 // @ts-ignore
-const __VLS_23 = __VLS_asFunctionalComponent(WordDetailPanel, new WordDetailPanel({
+const __VLS_24 = __VLS_asFunctionalComponent(WordDetailPanel, new WordDetailPanel({
     ...{ 'onToggleTranslation': {} },
     ...{ 'onPlayAudio': {} },
+    ...{ 'onRegenerateAudio': {} },
     ...{ 'onSaveNote': {} },
     ...{ 'onSendChat': {} },
     ...{ 'onClearChat': {} },
@@ -234,9 +268,10 @@ const __VLS_23 = __VLS_asFunctionalComponent(WordDetailPanel, new WordDetailPane
     showChinese: (__VLS_ctx.showChinese),
     loading: (__VLS_ctx.chatLoading),
 }));
-const __VLS_24 = __VLS_23({
+const __VLS_25 = __VLS_24({
     ...{ 'onToggleTranslation': {} },
     ...{ 'onPlayAudio': {} },
+    ...{ 'onRegenerateAudio': {} },
     ...{ 'onSaveNote': {} },
     ...{ 'onSendChat': {} },
     ...{ 'onClearChat': {} },
@@ -244,31 +279,34 @@ const __VLS_24 = __VLS_23({
     word: (__VLS_ctx.store.selectedWord),
     showChinese: (__VLS_ctx.showChinese),
     loading: (__VLS_ctx.chatLoading),
-}, ...__VLS_functionalComponentArgsRest(__VLS_23));
-let __VLS_26;
+}, ...__VLS_functionalComponentArgsRest(__VLS_24));
 let __VLS_27;
 let __VLS_28;
-const __VLS_29 = {
+let __VLS_29;
+const __VLS_30 = {
     onToggleTranslation: (...[$event]) => {
         __VLS_ctx.showChinese = !__VLS_ctx.showChinese;
     }
 };
-const __VLS_30 = {
+const __VLS_31 = {
     onPlayAudio: (__VLS_ctx.playWordAudio)
 };
-const __VLS_31 = {
-    onSaveNote: (__VLS_ctx.handleSaveNote)
-};
 const __VLS_32 = {
-    onSendChat: (__VLS_ctx.handleSendChat)
+    onRegenerateAudio: (__VLS_ctx.regenerateWordAudio)
 };
 const __VLS_33 = {
-    onClearChat: (__VLS_ctx.handleClearChat)
+    onSaveNote: (__VLS_ctx.handleSaveNote)
 };
 const __VLS_34 = {
+    onSendChat: (__VLS_ctx.handleSendChat)
+};
+const __VLS_35 = {
+    onClearChat: (__VLS_ctx.handleClearChat)
+};
+const __VLS_36 = {
     onDelete: (__VLS_ctx.handleDeleteWord)
 };
-var __VLS_25;
+var __VLS_26;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "learning-bar" },
 });
@@ -318,7 +356,9 @@ const __VLS_self = (await import('vue')).defineComponent({
             handleClearChat: handleClearChat,
             handleDeleteWord: handleDeleteWord,
             playSearchAudio: playSearchAudio,
+            regenerateSearchAudio: regenerateSearchAudio,
             playWordAudio: playWordAudio,
+            regenerateWordAudio: regenerateWordAudio,
             startLearning: startLearning,
         };
     },

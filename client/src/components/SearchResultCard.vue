@@ -8,6 +8,9 @@
         <p v-else class="subtle-copy">{{ result.type }} · Not Found</p>
       </div>
       <div v-if="result.found" class="result-actions">
+        <button class="icon-button" type="button" aria-label="Regenerate audio" title="Regenerate audio" @click="$emit('regenerate-audio', result.ttsText)">
+          🔄
+        </button>
         <button class="icon-button" type="button" aria-label="Play pronunciation" title="Play pronunciation" @click="$emit('play-audio', result.ttsText)">
           🔊
         </button>
@@ -59,5 +62,6 @@ defineEmits<{
   save: [];
   'toggle-translation': [];
   'play-audio': [text: string];
+  'regenerate-audio': [text: string];
 }>();
 </script>

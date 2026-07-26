@@ -11,6 +11,15 @@
           <button
             class="icon-button"
             type="button"
+            aria-label="Regenerate audio"
+            title="Regenerate audio"
+            @click="$emit('regenerate-audio')"
+          >
+            🔄
+          </button>
+          <button
+            class="icon-button"
+            type="button"
             aria-label="Play pronunciation"
             title="Play pronunciation"
             @click="$emit('play-audio')"
@@ -102,6 +111,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'toggle-translation': [];
   'play-audio': [];
+  'regenerate-audio': [];
   'save-note': [note: string];
   'send-chat': [message: string];
   'clear-chat': [];

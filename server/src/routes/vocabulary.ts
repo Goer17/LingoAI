@@ -4,7 +4,7 @@ import { createChatWordPrompt } from '../prompts/chatWordPrompt.js';
 import { createChatListeningSentencePrompt } from '../prompts/chatListeningSentencePrompt.js';
 import { createGenerateQuizPrompt } from '../prompts/generateQuizPrompt.js';
 import { createSearchWordPrompt } from '../prompts/searchWordPrompt.js';
-import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, getMediaUrl } from '../services/audioService.js';
+import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, deleteAudioFile, getMediaUrl } from '../services/audioService.js';
 import { askWordChat, generateQuiz, searchWord, streamWordChat } from '../services/openaiService.js';
 import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '../services/fillBlankService.js';
 import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningQuizDraft, getListeningEntryById, listListeningEntries, pickListeningEntries, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
@@ -195,9 +195,13 @@ vocabularyRouter.post('/listening/:id/audio', async (req, res) => {
     return fail(res, 404, 'Listening sentence not found.');
   }
 
+  const force = req.body?.force === true;
   const fileName = entry.audioFile ?? `listening-${entry.id}.mp3`;
   try {
-    if (!entry.audioFile || !audioFileExists(entry.audioFile)) {
+    if (force || !entry.audioFile || !audioFileExists(entry.audioFile)) {
+      if (force && entry.audioFile && audioFileExists(entry.audioFile)) {
+        deleteAudioFile(entry.audioFile);
+      }
       await createOrUpdateAudioFile(fileName, entry.sentence);
       setListeningAudioFile(entry.id, fileName);
     }
@@ -424,9 +428,13 @@ vocabularyRouter.post('/:id/audio', async (req, res) => {
     return fail(res, 404, 'Word not found.');
   }
 
+  const force = req.body?.force === true;
   const fileName = entry.audioFile ?? `word-${entry.id}.mp3`;
   try {
-    if (!entry.audioFile || !audioFileExists(entry.audioFile)) {
+    if (force || !entry.audioFile || !audioFileExists(entry.audioFile)) {
+      if (force && entry.audioFile && audioFileExists(entry.audioFile)) {
+        deleteAudioFile(entry.audioFile);
+      }
       await createOrUpdateAudioFile(fileName, entry.ttsText);
       setWordAudioFile(entry.id, fileName);
     }
@@ -529,8 +537,9 @@ vocabularyRouter.post('/generate-audio', async (req, res) => {
     return fail(res, 400, 'Input is required.');
   }
 
+  const force = req.body?.force === true;
   try {
-    const audioUrl = await createAudioDataUrl(parsed.data.input);
+    const audioUrl = await createAudioDataUrl(parsed.data.input, force);
     return ok(res, { audioUrl });
   } catch (error) {
     return fail(res, 500, error instanceof Error ? error.message : 'Audio generation failed.');

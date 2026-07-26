@@ -12,6 +12,7 @@
       @save="handleSaveWord"
       @toggle-translation="showChinese = !showChinese"
       @play-audio="playSearchAudio"
+      @regenerate-audio="regenerateSearchAudio"
     />
 
     <div class="workspace-grid">
@@ -22,6 +23,7 @@
         :loading="chatLoading"
         @toggle-translation="showChinese = !showChinese"
         @play-audio="playWordAudio"
+        @regenerate-audio="regenerateWordAudio"
         @save-note="handleSaveNote"
         @send-chat="handleSendChat"
         @clear-chat="handleClearChat"
@@ -50,6 +52,7 @@ import SearchResultCard from '@/components/SearchResultCard.vue';
 import WordDetailPanel from '@/components/WordDetailPanel.vue';
 import WordList from '@/components/WordList.vue';
 import { useVocabularyStore } from '@/stores/vocabulary';
+import { api } from '@/services/api';
 import { getAudioUrl, getStoredMediaAudioUrl } from '@/utils/audioCache';
 
 const store = useVocabularyStore();
@@ -144,6 +147,17 @@ async function playSearchAudio(input: string) {
   }
 }
 
+async function regenerateSearchAudio(input: string) {
+  error.value = '';
+  try {
+    const { audioUrl } = await api.regenerateAudio(input);
+    const audio = new Audio(audioUrl + '?t=' + Date.now());
+    await audio.play();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Audio regeneration failed.';
+  }
+}
+
 async function playWordAudio() {
   error.value = '';
   const word = store.selectedWord;
@@ -158,6 +172,23 @@ async function playWordAudio() {
     await audio.play();
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Audio playback failed.';
+  }
+}
+
+async function regenerateWordAudio() {
+  error.value = '';
+  const word = store.selectedWord;
+  if (!word) {
+    return;
+  }
+
+  try {
+    const { audioUrl, audioFile } = await api.regenerateWordAudio(word.id);
+    word.audioFile = audioFile;
+    const audio = new Audio(audioUrl + '?t=' + Date.now());
+    await audio.play();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Audio regeneration failed.';
   }
 }
 

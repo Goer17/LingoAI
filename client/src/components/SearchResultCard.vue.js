@@ -49,6 +49,19 @@ if (__VLS_ctx.result) {
                         return;
                     if (!(__VLS_ctx.result.found))
                         return;
+                    __VLS_ctx.$emit('regenerate-audio', __VLS_ctx.result.ttsText);
+                } },
+            ...{ class: "icon-button" },
+            type: "button",
+            'aria-label': "Regenerate audio",
+            title: "Regenerate audio",
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (...[$event]) => {
+                    if (!(__VLS_ctx.result))
+                        return;
+                    if (!(__VLS_ctx.result.found))
+                        return;
                     __VLS_ctx.$emit('play-audio', __VLS_ctx.result.ttsText);
                 } },
             ...{ class: "icon-button" },
@@ -149,6 +162,7 @@ if (__VLS_ctx.result) {
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['result-actions']} */ ;
+/** @type {__VLS_StyleScopedClasses['icon-button']} */ ;
 /** @type {__VLS_StyleScopedClasses['icon-button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;

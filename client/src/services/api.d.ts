@@ -34,7 +34,15 @@ export declare const api: {
         audioUrl: string;
         audioFile: string;
     }>;
+    regenerateWordAudio(id: string): Promise<{
+        audioUrl: string;
+        audioFile: string;
+    }>;
     ensureListeningAudio(id: string): Promise<{
+        audioUrl: string;
+        audioFile: string;
+    }>;
+    regenerateListeningAudio(id: string): Promise<{
         audioUrl: string;
         audioFile: string;
     }>;
@@ -52,6 +60,9 @@ export declare const api: {
     streamWordChat(id: string, message: string, onDelta: (chunk: string) => void): Promise<string>;
     clearWordChat(id: string): Promise<VocabularyEntry>;
     generateAudio(input: string): Promise<{
+        audioUrl: string;
+    }>;
+    regenerateAudio(input: string): Promise<{
         audioUrl: string;
     }>;
     generateQuiz(): Promise<QuizSession>;

@@ -2,6 +2,7 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import SentenceDetailPanel from '@/components/SentenceDetailPanel.vue';
 import { useVocabularyStore } from '@/stores/vocabulary';
+import { api } from '@/services/api';
 import { getStoredMediaAudioUrl } from '@/utils/audioCache';
 const store = useVocabularyStore();
 const router = useRouter();
@@ -57,6 +58,22 @@ async function playSelectedSentence() {
         return;
     }
     await playSentence(sentence.id, sentence.audioFile);
+}
+async function regenerateListeningAudio() {
+    error.value = '';
+    const sentence = store.selectedListening;
+    if (!sentence) {
+        return;
+    }
+    try {
+        const { audioUrl, audioFile } = await api.regenerateListeningAudio(sentence.id);
+        sentence.audioFile = audioFile;
+        const audio = new Audio(audioUrl + '?t=' + Date.now());
+        await audio.play();
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Audio regeneration failed.';
+    }
 }
 async function handleSaveNote(note) {
     error.value = '';
@@ -219,6 +236,7 @@ else {
 // @ts-ignore
 const __VLS_0 = __VLS_asFunctionalComponent(SentenceDetailPanel, new SentenceDetailPanel({
     ...{ 'onPlayAudio': {} },
+    ...{ 'onRegenerateAudio': {} },
     ...{ 'onSaveNote': {} },
     ...{ 'onSendChat': {} },
     ...{ 'onClearChat': {} },
@@ -228,6 +246,7 @@ const __VLS_0 = __VLS_asFunctionalComponent(SentenceDetailPanel, new SentenceDet
 }));
 const __VLS_1 = __VLS_0({
     ...{ 'onPlayAudio': {} },
+    ...{ 'onRegenerateAudio': {} },
     ...{ 'onSaveNote': {} },
     ...{ 'onSendChat': {} },
     ...{ 'onClearChat': {} },
@@ -242,15 +261,18 @@ const __VLS_6 = {
     onPlayAudio: (__VLS_ctx.playSelectedSentence)
 };
 const __VLS_7 = {
-    onSaveNote: (__VLS_ctx.handleSaveNote)
+    onRegenerateAudio: (__VLS_ctx.regenerateListeningAudio)
 };
 const __VLS_8 = {
-    onSendChat: (__VLS_ctx.handleSendChat)
+    onSaveNote: (__VLS_ctx.handleSaveNote)
 };
 const __VLS_9 = {
-    onClearChat: (__VLS_ctx.handleClearChat)
+    onSendChat: (__VLS_ctx.handleSendChat)
 };
 const __VLS_10 = {
+    onClearChat: (__VLS_ctx.handleClearChat)
+};
+const __VLS_11 = {
     onDelete: (__VLS_ctx.handleDeleteSentence)
 };
 var __VLS_2;
@@ -318,6 +340,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             chatLoading: chatLoading,
             handleAddSentence: handleAddSentence,
             playSelectedSentence: playSelectedSentence,
+            regenerateListeningAudio: regenerateListeningAudio,
             handleSaveNote: handleSaveNote,
             handleSendChat: handleSendChat,
             handleClearChat: handleClearChat,

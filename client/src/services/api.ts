@@ -59,8 +59,14 @@ export const api = {
   ensureWordAudio(id: string) {
     return unwrap<{ audioUrl: string; audioFile: string }>(http.post(`/vocabulary/${id}/audio`));
   },
+  regenerateWordAudio(id: string) {
+    return unwrap<{ audioUrl: string; audioFile: string }>(http.post(`/vocabulary/${id}/audio`, { force: true }));
+  },
   ensureListeningAudio(id: string) {
     return unwrap<{ audioUrl: string; audioFile: string }>(http.post(`/vocabulary/listening/${id}/audio`));
+  },
+  regenerateListeningAudio(id: string) {
+    return unwrap<{ audioUrl: string; audioFile: string }>(http.post(`/vocabulary/listening/${id}/audio`, { force: true }));
   },
   updateListeningNote(id: string, note: string) {
     return unwrap<ListeningEntry>(http.post(`/vocabulary/listening/${id}/note`, { note }));
@@ -215,6 +221,9 @@ export const api = {
   },
   generateAudio(input: string) {
     return unwrap<{ audioUrl: string }>(http.post('/vocabulary/generate-audio', { input }));
+  },
+  regenerateAudio(input: string) {
+    return unwrap<{ audioUrl: string }>(http.post('/vocabulary/generate-audio', { input, force: true }));
   },
   generateQuiz() {
     return unwrap<QuizSession>(http.post('/vocabulary/generate-quiz'));
