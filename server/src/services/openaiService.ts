@@ -307,6 +307,7 @@ function looksLikeOpenAITTS(model: string): boolean {
 const QWEN_TTS_VOICES = [
   'Cherry',
   'Stella',
+  'Ethan',
 ] as const;
 
 function looksLikeQwenTTS(model: string): boolean {

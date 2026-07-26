@@ -112,7 +112,7 @@ settingsRouter.post('/test', async (req, res) => {
         try { return JSON.parse(raw); } catch { return {}; }
       })();
       const isQwen = entry.model.toLowerCase().includes('qwen') && entry.model.toLowerCase().includes('tts');
-      const qwenVoices = ['Cherry', 'Stella'];
+      const qwenVoices = ['Cherry', 'Stella', 'Ethan'];
       const voice = isQwen ? qwenVoices[Math.floor(Math.random() * qwenVoices.length)] : 'alloy';
       const response = await client.audio.speech.create(
         {
