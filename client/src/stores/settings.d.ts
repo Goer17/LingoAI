@@ -7,6 +7,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     baseUrl: string;
                     apiKey: string;
                     model: string;
+                    extraBody: string;
                 }[];
                 activeId: string | null;
             };
@@ -16,6 +17,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     baseUrl: string;
                     apiKey: string;
                     model: string;
+                    extraBody: string;
                 }[];
                 activeId: string | null;
             };
@@ -25,6 +27,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     baseUrl: string;
                     apiKey: string;
                     model: string;
+                    extraBody: string;
                 }[];
                 activeId: string | null;
             };
@@ -35,7 +38,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
     saving: import("vue").Ref<boolean, boolean>;
     fetchSettings: () => Promise<void>;
     saveSettings: () => Promise<void>;
-}, "loading" | "form" | "saving">, Pick<{
+}, "loading" | "saving" | "form">, Pick<{
     form: {
         models: {
             language: {
@@ -44,6 +47,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     baseUrl: string;
                     apiKey: string;
                     model: string;
+                    extraBody: string;
                 }[];
                 activeId: string | null;
             };
@@ -53,6 +57,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     baseUrl: string;
                     apiKey: string;
                     model: string;
+                    extraBody: string;
                 }[];
                 activeId: string | null;
             };
@@ -62,6 +67,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     baseUrl: string;
                     apiKey: string;
                     model: string;
+                    extraBody: string;
                 }[];
                 activeId: string | null;
             };
@@ -81,6 +87,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     baseUrl: string;
                     apiKey: string;
                     model: string;
+                    extraBody: string;
                 }[];
                 activeId: string | null;
             };
@@ -90,6 +97,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     baseUrl: string;
                     apiKey: string;
                     model: string;
+                    extraBody: string;
                 }[];
                 activeId: string | null;
             };
@@ -99,6 +107,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     baseUrl: string;
                     apiKey: string;
                     model: string;
+                    extraBody: string;
                 }[];
                 activeId: string | null;
             };

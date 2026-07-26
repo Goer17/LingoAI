@@ -74,6 +74,7 @@ function addEntry(key) {
         baseUrl: '',
         apiKey: '',
         model: '',
+        extraBody: '',
     };
     category.entries.push(entry);
     if (!category.activeId) {
@@ -129,6 +130,7 @@ function applyEdit() {
     entry.baseUrl = editingDraft.value.baseUrl;
     entry.apiKey = editingDraft.value.apiKey;
     entry.model = editingDraft.value.model;
+    entry.extraBody = editingDraft.value.extraBody;
     closeEdit();
 }
 async function save() {
@@ -482,6 +484,19 @@ if (__VLS_ctx.editing && __VLS_ctx.editingDraft) {
         type: "text",
         placeholder: (__VLS_ctx.editingGroup?.modelPlaceholder),
     });
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
+        ...{ class: "field" },
+    });
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.textarea)({
+        value: (__VLS_ctx.editingDraft.extraBody),
+        ...{ class: "field-textarea" },
+        rows: "3",
+        placeholder: '{"temperature": 0.5, "max_tokens": 200}',
+    });
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+        ...{ class: "field-hint" },
+    });
     __VLS_asFunctionalElement(__VLS_intrinsicElements.footer, __VLS_intrinsicElements.footer)({
         ...{ class: "modal-actions" },
     });
@@ -554,6 +569,9 @@ if (__VLS_ctx.editing && __VLS_ctx.editingDraft) {
 /** @type {__VLS_StyleScopedClasses['field']} */ ;
 /** @type {__VLS_StyleScopedClasses['field']} */ ;
 /** @type {__VLS_StyleScopedClasses['field']} */ ;
+/** @type {__VLS_StyleScopedClasses['field']} */ ;
+/** @type {__VLS_StyleScopedClasses['field-textarea']} */ ;
+/** @type {__VLS_StyleScopedClasses['field-hint']} */ ;
 /** @type {__VLS_StyleScopedClasses['modal-actions']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;

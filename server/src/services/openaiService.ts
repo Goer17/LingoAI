@@ -299,31 +299,83 @@ function looksLikeOpenAITTS(model: string): boolean {
   return (
     normalized === 'tts-1' ||
     normalized === 'tts-1-hd' ||
-    normalized.startsWith('tts-') ||
-    normalized.includes('-tts') ||
-    normalized.includes('gpt-4o-mini-tts')
+    normalized === 'gpt-4o-mini-tts' ||
+    normalized.startsWith('tts-')
   );
 }
 
+const QWEN_TTS_VOICES = [
+  'Cherry',
+  'Stella',
+] as const;
+
+function looksLikeQwenTTS(model: string): boolean {
+  const normalized = model.trim().toLowerCase();
+  return normalized.includes('qwen') && normalized.includes('tts');
+}
+
 function pickVoiceForModel(model: string): string {
-  if (!looksLikeOpenAITTS(model)) {
-    return 'alloy';
+  if (looksLikeQwenTTS(model)) {
+    const index = Math.floor(Math.random() * QWEN_TTS_VOICES.length);
+    return QWEN_TTS_VOICES[index];
   }
-  const index = Math.floor(Math.random() * OPENAI_TTS_VOICES.length);
-  return OPENAI_TTS_VOICES[index];
+  if (looksLikeOpenAITTS(model)) {
+    const index = Math.floor(Math.random() * OPENAI_TTS_VOICES.length);
+    return OPENAI_TTS_VOICES[index];
+  }
+  return 'alloy';
+}
+
+function pickRequestHeaders(model: string): Record<string, string> | undefined {
+  if (looksLikeQwenTTS(model)) {
+    return { Accept: 'application/json' };
+  }
+  return undefined;
 }
 
 export async function generateAudioBase64(input: string): Promise<string> {
   const { client, model, extraBody } = getAudioClient();
   const voice = pickVoiceForModel(model);
-  const response = await client.audio.speech.create({
-    model,
-    voice,
-    input,
-    response_format: 'mp3',
-    ...extraBody,
-  });
+  const response = await client.audio.speech.create(
+    {
+      model,
+      voice,
+      input,
+      response_format: 'mp3',
+      ...extraBody,
+    },
+    pickRequestHeaders(model),
+  );
 
-  const buffer = Buffer.from(await response.arrayBuffer());
+  const buffer = await fetchAudioBytes(response);
   return buffer.toString('base64');
+}
+
+async function fetchAudioBytes(response: { headers: { get(name: string): string | null }; arrayBuffer(): Promise<ArrayBuffer>; json(): Promise<unknown> }): Promise<Buffer> {
+  const contentType = response.headers.get('content-type') ?? '';
+
+  if (contentType.includes('application/json')) {
+    const json = (await response.json()) as Record<string, unknown>;
+    const audioUrl = extractAudioUrl(json);
+    if (audioUrl) {
+      const audioResponse = await fetch(audioUrl);
+      if (!audioResponse.ok) {
+        throw new Error(`Failed to download TTS audio from URL (HTTP ${audioResponse.status})`);
+      }
+      return Buffer.from(await audioResponse.arrayBuffer());
+    }
+    throw new Error('TTS endpoint returned JSON but no audio URL was found in the response.');
+  }
+
+  return Buffer.from(await response.arrayBuffer());
+}
+
+function extractAudioUrl(json: Record<string, unknown>): string | null {
+  const output = json.output as Record<string, unknown> | undefined;
+  const audio = output?.audio as Record<string, unknown> | undefined;
+  const url = audio?.url;
+  if (typeof url === 'string' && url.length > 0) {
+    return url;
+  }
+  return null;
 }

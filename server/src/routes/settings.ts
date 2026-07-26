@@ -106,13 +106,45 @@ settingsRouter.post('/test', async (req, res) => {
     }
 
     if (parsed.data.category === 'audio') {
-      const response = await client.audio.speech.create({
-        model: entry.model,
-        voice: 'alloy',
-        input: 'ok',
-        response_format: 'mp3',
-      });
-      const buffer = Buffer.from(await response.arrayBuffer());
+      const extraBody = (() => {
+        const raw = entry.extraBody?.trim();
+        if (!raw) return {};
+        try { return JSON.parse(raw); } catch { return {}; }
+      })();
+      const isQwen = entry.model.toLowerCase().includes('qwen') && entry.model.toLowerCase().includes('tts');
+      const qwenVoices = ['Cherry', 'Stella'];
+      const voice = isQwen ? qwenVoices[Math.floor(Math.random() * qwenVoices.length)] : 'alloy';
+      const response = await client.audio.speech.create(
+        {
+          model: entry.model,
+          voice,
+          input: 'ok',
+          response_format: 'mp3',
+          ...extraBody,
+        },
+        isQwen ? { headers: { Accept: 'application/json' } } : undefined,
+      );
+
+      const contentType = response.headers.get('content-type') ?? '';
+      let buffer: Buffer;
+
+      if (contentType.includes('application/json')) {
+        const json = (await response.json()) as Record<string, unknown>;
+        const output = json.output as Record<string, unknown> | undefined;
+        const audio = output?.audio as Record<string, unknown> | undefined;
+        const audioUrl = audio?.url;
+        if (typeof audioUrl !== 'string' || !audioUrl) {
+          throw new Error('TTS returned JSON but no audio URL was found.');
+        }
+        const audioResponse = await fetch(audioUrl);
+        if (!audioResponse.ok) {
+          throw new Error(`Failed to download TTS audio from URL (HTTP ${audioResponse.status})`);
+        }
+        buffer = Buffer.from(await audioResponse.arrayBuffer());
+      } else {
+        buffer = Buffer.from(await response.arrayBuffer());
+      }
+
       if (!buffer.length) {
         throw new Error('Empty audio payload.');
       }
