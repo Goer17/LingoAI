@@ -326,9 +326,9 @@ function pickVoiceForModel(model: string): string {
   return 'alloy';
 }
 
-function pickRequestHeaders(model: string): Record<string, string> | undefined {
+function pickRequestHeaders(model: string): Record<string, Record<string, string>> | undefined {
   if (looksLikeQwenTTS(model)) {
-    return { Accept: 'application/json' };
+    return { headers: { Accept: 'application/json' } };
   }
   return undefined;
 }
