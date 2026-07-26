@@ -1,4 +1,4 @@
-import { onMounted, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import SearchBar from '@/components/SearchBar.vue';
 import SearchResultCard from '@/components/SearchResultCard.vue';
@@ -6,7 +6,7 @@ import WordDetailPanel from '@/components/WordDetailPanel.vue';
 import WordList from '@/components/WordList.vue';
 import { useVocabularyStore } from '@/stores/vocabulary';
 import { api } from '@/services/api';
-import { getAudioUrl, getStoredMediaAudioUrl } from '@/utils/audioCache';
+import { buildMediaUrl, clearCachedAudioUrl, clearCachedMediaUrl, getAudioUrl, getStoredMediaAudioUrl } from '@/utils/audioCache';
 const store = useVocabularyStore();
 const router = useRouter();
 const query = ref('');
@@ -15,6 +15,7 @@ const message = ref('');
 const showChinese = ref(false);
 const chatLoading = ref(false);
 const quizLoading = ref(false);
+const audioVersions = reactive({});
 onMounted(async () => {
     try {
         await store.fetchVocabulary();
@@ -102,8 +103,9 @@ async function playSearchAudio(input) {
 async function regenerateSearchAudio(input) {
     error.value = '';
     try {
+        clearCachedAudioUrl(input);
         const { audioUrl } = await api.regenerateAudio(input);
-        const audio = new Audio(audioUrl + '?t=' + Date.now());
+        const audio = new Audio(audioUrl);
         await audio.play();
     }
     catch (err) {
@@ -117,8 +119,15 @@ async function playWordAudio() {
         return;
     }
     try {
-        const directUrl = getStoredMediaAudioUrl(word.audioFile);
-        const audioUrl = directUrl || await store.ensureWordAudio(word.id);
+        const version = audioVersions[word.id];
+        let audioUrl;
+        if (version && word.audioFile) {
+            audioUrl = buildMediaUrl(word.audioFile, version);
+        }
+        else {
+            const directUrl = getStoredMediaAudioUrl(word.audioFile);
+            audioUrl = directUrl || await store.ensureWordAudio(word.id);
+        }
         const audio = new Audio(audioUrl);
         await audio.play();
     }
@@ -133,10 +142,16 @@ async function regenerateWordAudio() {
         return;
     }
     try {
-        const { audioUrl, audioFile } = await api.regenerateWordAudio(word.id);
+        const { audioFile } = await api.regenerateWordAudio(word.id);
         word.audioFile = audioFile;
-        const audio = new Audio(audioUrl + '?t=' + Date.now());
-        await audio.play();
+        if (audioFile) {
+            clearCachedMediaUrl(audioFile);
+            const version = (audioVersions[word.id] ?? 0) + 1;
+            audioVersions[word.id] = version;
+            const audioUrl = buildMediaUrl(audioFile, version);
+            const audio = new Audio(audioUrl);
+            await audio.play();
+        }
     }
     catch (err) {
         error.value = err instanceof Error ? err.message : 'Audio regeneration failed.';

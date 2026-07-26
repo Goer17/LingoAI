@@ -32,6 +32,10 @@ class LruAudioCache {
       this.store.delete(oldestKey);
     }
   }
+
+  delete(key: string) {
+    this.store.delete(key);
+  }
 }
 
 const audioUrlCache = new LruAudioCache();
@@ -62,4 +66,24 @@ export function getStoredMediaAudioUrl(audioFile?: string) {
   const mediaUrl = `/api/media/${encodeURIComponent(audioFile)}`;
   mediaUrlCache.set(audioFile, mediaUrl);
   return mediaUrl;
+}
+
+export function buildMediaUrl(audioFile: string, version: number) {
+  const cacheKey = `${audioFile}::v${version}`;
+  const cached = mediaUrlCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const mediaUrl = `/api/media/${encodeURIComponent(audioFile)}?v=${version}`;
+  mediaUrlCache.set(cacheKey, mediaUrl);
+  return mediaUrl;
+}
+
+export function clearCachedMediaUrl(audioFile: string) {
+  mediaUrlCache.delete(audioFile);
+}
+
+export function clearCachedAudioUrl(input: string) {
+  audioUrlCache.delete(input.trim());
 }

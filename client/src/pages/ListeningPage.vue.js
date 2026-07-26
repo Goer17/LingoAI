@@ -1,9 +1,9 @@
-import { onMounted, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import SentenceDetailPanel from '@/components/SentenceDetailPanel.vue';
 import { useVocabularyStore } from '@/stores/vocabulary';
 import { api } from '@/services/api';
-import { getStoredMediaAudioUrl } from '@/utils/audioCache';
+import { buildMediaUrl, clearCachedMediaUrl, getStoredMediaAudioUrl } from '@/utils/audioCache';
 const store = useVocabularyStore();
 const router = useRouter();
 const sentenceInput = ref('');
@@ -12,6 +12,7 @@ const message = ref('');
 const adding = ref(false);
 const taskLoading = ref(false);
 const chatLoading = ref(false);
+const audioVersions = reactive({});
 onMounted(async () => {
     try {
         await store.fetchListening();
@@ -43,8 +44,15 @@ async function handleAddSentence() {
 async function playSentence(id, audioFile) {
     error.value = '';
     try {
-        const directUrl = getStoredMediaAudioUrl(audioFile);
-        const audioUrl = directUrl || await store.ensureListeningAudio(id);
+        const version = audioVersions[id];
+        let audioUrl;
+        if (version && audioFile) {
+            audioUrl = buildMediaUrl(audioFile, version);
+        }
+        else {
+            const directUrl = getStoredMediaAudioUrl(audioFile);
+            audioUrl = directUrl || await store.ensureListeningAudio(id);
+        }
         const audio = new Audio(audioUrl);
         await audio.play();
     }
@@ -66,10 +74,16 @@ async function regenerateListeningAudio() {
         return;
     }
     try {
-        const { audioUrl, audioFile } = await api.regenerateListeningAudio(sentence.id);
+        const { audioFile } = await api.regenerateListeningAudio(sentence.id);
         sentence.audioFile = audioFile;
-        const audio = new Audio(audioUrl + '?t=' + Date.now());
-        await audio.play();
+        if (audioFile) {
+            clearCachedMediaUrl(audioFile);
+            const version = (audioVersions[sentence.id] ?? 0) + 1;
+            audioVersions[sentence.id] = version;
+            const audioUrl = buildMediaUrl(audioFile, version);
+            const audio = new Audio(audioUrl);
+            await audio.play();
+        }
     }
     catch (err) {
         error.value = err instanceof Error ? err.message : 'Audio regeneration failed.';
