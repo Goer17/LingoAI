@@ -369,6 +369,13 @@ if (__VLS_ctx.question) {
     });
     /** @type {typeof __VLS_ctx.submitButton} */ ;
     (__VLS_ctx.submitLabel);
+    if (__VLS_ctx.awaitingNext && __VLS_ctx.question) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+            ...{ class: "quiz-answer-reveal" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
+        (__VLS_ctx.question.answer);
+    }
     if (__VLS_ctx.feedback) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
             ...{ class: (__VLS_ctx.feedbackIsCorrect ? 'success-text quiz-inline-feedback' : 'error-text quiz-inline-feedback') },
@@ -400,6 +407,7 @@ if (__VLS_ctx.question) {
 /** @type {__VLS_StyleScopedClasses['inline-blank-correct-success']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
+/** @type {__VLS_StyleScopedClasses['quiz-answer-reveal']} */ ;
 var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {

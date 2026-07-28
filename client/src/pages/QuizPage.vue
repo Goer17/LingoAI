@@ -24,7 +24,7 @@
         @play-audio="playAudio"
       />
       <SearchResultCard
-        v-if="answerWordResult"
+        v-if="answerWordResult && !awaitingNext"
         class="quiz-answer-card"
         :result="answerWordResult"
         :show-chinese="showChinese"
@@ -34,18 +34,28 @@
         @toggle-translation="showChinese = !showChinese"
         @play-audio="playAnswerWordAudio"
       />
-      <QuizChatBox
-        v-if="awaitingNext && displayQuestion"
-        class="quiz-answer-card"
-        :word="displayQuestion.word"
-        :sentence="displayQuestion.sentence"
-        :type="displayQuestion.type"
-        :answer="displayQuestion.answer"
-        :user-response="submittedAnswer"
-        :is-correct="feedbackIsCorrect"
-        :question-index="displayIndex"
-        :question-total="total"
-      />
+      <div v-if="awaitingNext && displayQuestion" class="quiz-connected-stack">
+        <SearchResultCard
+          v-if="answerWordResult"
+          :result="answerWordResult"
+          :show-chinese="showChinese"
+          :saving="false"
+          :allow-save="false"
+          :show-header-label="false"
+          @toggle-translation="showChinese = !showChinese"
+          @play-audio="playAnswerWordAudio"
+        />
+        <QuizChatBox
+          :word="displayQuestion.word"
+          :sentence="displayQuestion.sentence"
+          :type="displayQuestion.type"
+          :answer="displayQuestion.answer"
+          :user-response="submittedAnswer"
+          :is-correct="feedbackIsCorrect"
+          :question-index="displayIndex"
+          :question-total="total"
+        />
+      </div>
       <p v-if="error" class="error-text quiz-error">{{ error }}</p>
     </template>
   </div>

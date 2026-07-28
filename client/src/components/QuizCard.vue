@@ -97,6 +97,12 @@
       </button>
     </form>
     <p
+      v-if="awaitingNext && question"
+      class="quiz-answer-reveal"
+    >
+      Answer: <strong>{{ question.answer }}</strong>
+    </p>
+    <p
       v-if="feedback"
       :class="feedbackIsCorrect ? 'success-text quiz-inline-feedback' : 'error-text quiz-inline-feedback'"
     >
