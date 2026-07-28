@@ -50,6 +50,28 @@ function buildBracketBlankSentence(sentence: string, answer: string) {
   return `${normalizedSentence.slice(0, start)}[BLANK]${normalizedSentence.slice(end)}`;
 }
 
+/**
+ * When the LLM puts underscores directly into the sentence field (instead of
+ * using a separate maskedSentence), extract the blank position from the
+ * sentence and build a proper [BLANK]-style maskedSentence.
+ */
+function buildBracketBlankFromSentenceUnderscores(sentence: string, answer: string) {
+  const underscoreMatch = sentence.match(/_{3,}/);
+  if (!underscoreMatch || underscoreMatch.index == null) {
+    return null;
+  }
+
+  // Verify the expected blank length roughly matches the answer length.
+  const expectedLen = underscoreMatch[0].length;
+  if (expectedLen < Math.max(MIN_BLANK_LENGTH, answer.length) && expectedLen < answer.length) {
+    return null;
+  }
+
+  const start = underscoreMatch.index;
+  const end = start + underscoreMatch[0].length;
+  return `${sentence.slice(0, start)}[BLANK]${sentence.slice(end)}`;
+}
+
 function countBlankRuns(maskedSentence: string) {
   const matches = maskedSentence.match(/_{3,}/g);
   return matches ? matches.length : 0;
@@ -151,6 +173,20 @@ export async function ensureFillBlankMaskedSentence(question: QuizDraftQuestion)
       sentence,
       answer,
       maskedSentence: bracketBlank,
+      answerVariants: normalizedVariants,
+      candidates: normalizedCandidates.length > 0 ? normalizedCandidates : normalizedVariants,
+    };
+  }
+
+  // If the LLM put underscores into the sentence itself (instead of using
+  // a separate maskedSentence), extract the blank position from there.
+  const bracketBlankFromUnderscores = buildBracketBlankFromSentenceUnderscores(sentence, answer);
+  if (bracketBlankFromUnderscores) {
+    return {
+      ...question,
+      sentence,
+      answer,
+      maskedSentence: bracketBlankFromUnderscores,
       answerVariants: normalizedVariants,
       candidates: normalizedCandidates.length > 0 ? normalizedCandidates : normalizedVariants,
     };

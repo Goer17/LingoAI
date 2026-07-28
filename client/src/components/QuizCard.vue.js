@@ -334,6 +334,12 @@ if (__VLS_ctx.question) {
         }
         else {
             (__VLS_ctx.maskedSentence);
+            if (__VLS_ctx.awaitingNext && !__VLS_ctx.feedbackIsCorrect && __VLS_ctx.question.type === 'fill_blank') {
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                    ...{ class: "inline-blank-correct inline-blank-correct-success" },
+                });
+                (__VLS_ctx.question.answer);
+            }
         }
     }
     if (!__VLS_ctx.showInlineListeningBlanks && !__VLS_ctx.awaitingNext) {
@@ -388,6 +394,8 @@ if (__VLS_ctx.question) {
 /** @type {__VLS_StyleScopedClasses['inline-blank-readonly']} */ ;
 /** @type {__VLS_StyleScopedClasses['inline-blank-review-wrong']} */ ;
 /** @type {__VLS_StyleScopedClasses['fill-blank-inline-answer']} */ ;
+/** @type {__VLS_StyleScopedClasses['inline-blank-correct']} */ ;
+/** @type {__VLS_StyleScopedClasses['inline-blank-correct-success']} */ ;
 /** @type {__VLS_StyleScopedClasses['inline-blank-correct']} */ ;
 /** @type {__VLS_StyleScopedClasses['inline-blank-correct-success']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;

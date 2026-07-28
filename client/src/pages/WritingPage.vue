@@ -248,6 +248,7 @@
                         v-model="chatDraft"
                         rows="3"
                         placeholder="Ask about grammar, topic ideas, organization, or better expressions..."
+                        @keydown.enter.exact.prevent="handleSendChat"
                       />
                       <button
                         class="button button-primary"

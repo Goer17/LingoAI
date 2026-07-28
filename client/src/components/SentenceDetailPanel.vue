@@ -54,7 +54,12 @@
           <p v-if="chatItems.length === 0" class="empty-copy">No discussion yet.</p>
         </div>
         <form class="chat-form" @submit.prevent="submit">
-          <textarea v-model="draft" rows="3" placeholder="Ask about grammar, nuance, or alternatives..." />
+          <textarea
+            v-model="draft"
+            rows="3"
+            placeholder="Ask about grammar, nuance, or alternatives..."
+            @keydown.enter.exact.prevent="submit"
+          />
           <button class="button button-primary" type="submit" :disabled="loading || !draft.trim()">
             {{ loading ? 'Sending...' : 'Send' }}
           </button>

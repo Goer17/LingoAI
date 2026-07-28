@@ -69,6 +69,12 @@
         </template>
         <template v-else>
           {{ maskedSentence }}
+          <span
+            v-if="awaitingNext && !feedbackIsCorrect && question.type === 'fill_blank'"
+            class="inline-blank-correct inline-blank-correct-success"
+          >
+            ({{ question.answer }})
+          </span>
         </template>
       </div>
       <input

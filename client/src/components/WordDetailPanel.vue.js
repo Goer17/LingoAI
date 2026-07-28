@@ -288,6 +288,7 @@ if (__VLS_ctx.word) {
         ...{ class: "chat-form" },
     });
     __VLS_asFunctionalElement(__VLS_intrinsicElements.textarea)({
+        ...{ onKeydown: (__VLS_ctx.submit) },
         value: (__VLS_ctx.draft),
         rows: "3",
         placeholder: "Ask about collocations, tone, or common mistakes...",

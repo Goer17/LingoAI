@@ -87,6 +87,19 @@ export declare const api: {
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
+    streamQuizQuestionChat(payload: {
+        messages: Array<{
+            role: "user" | "assistant";
+            content: string;
+        }>;
+        word: string;
+        sentence: string;
+        type: string;
+        answer: string;
+        userResponse: string;
+        isCorrect: boolean;
+        newMessage: string;
+    }, onDelta: (chunk: string) => void): Promise<string>;
     getWritingTopics(): Promise<WritingTopic[]>;
     addWritingTopic(title: string): Promise<{
         created: boolean;

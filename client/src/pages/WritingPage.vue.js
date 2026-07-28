@@ -739,6 +739,7 @@ if (__VLS_ctx.selectedTopic) {
             ...{ class: "chat-form" },
         });
         __VLS_asFunctionalElement(__VLS_intrinsicElements.textarea)({
+            ...{ onKeydown: (__VLS_ctx.handleSendChat) },
             value: (__VLS_ctx.chatDraft),
             rows: "3",
             placeholder: "Ask about grammar, topic ideas, organization, or better expressions...",

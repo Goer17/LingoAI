@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createChatWordPrompt } from '../prompts/chatWordPrompt.js';
 import { createChatListeningSentencePrompt } from '../prompts/chatListeningSentencePrompt.js';
 import { createGenerateQuizPrompt } from '../prompts/generateQuizPrompt.js';
+import { createQuizQuestionChatPrompt } from '../prompts/quizQuestionChatPrompt.js';
 import { createSearchWordPrompt } from '../prompts/searchWordPrompt.js';
 import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, deleteAudioFile, getMediaUrl } from '../services/audioService.js';
 import { askWordChat, generateQuiz, searchWord, streamWordChat } from '../services/openaiService.js';
@@ -619,4 +620,57 @@ vocabularyRouter.post('/quiz/:id/answer', (req, res) => {
   }
 
   return ok(res, { session: updated });
+});
+
+const quizQuestionChatSchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string(),
+  })),
+  word: z.string().min(1),
+  sentence: z.string().min(1),
+  type: z.enum(['fill_blank', 'listening']),
+  answer: z.string().min(1),
+  userResponse: z.string(),
+  isCorrect: z.boolean(),
+  newMessage: z.string().min(1),
+});
+
+vocabularyRouter.post('/quiz/question-chat/stream', async (req, res) => {
+  const parsed = quizQuestionChatSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return fail(res, 400, 'Invalid chat payload.');
+  }
+
+  const { messages, word, sentence, type, answer, userResponse, isCorrect, newMessage } = parsed.data;
+
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  try {
+    const prompt = createQuizQuestionChatPrompt(
+      { word, sentence, type, answer, userResponse, isCorrect },
+      messages,
+      newMessage,
+    );
+
+    const reply = await streamWordChat(prompt, (chunk) => {
+      if (!res.writableEnded) {
+        res.write(`data: ${JSON.stringify({ type: 'delta', content: chunk })}\n\n`);
+      }
+    });
+
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+      res.end();
+    }
+  } catch (error) {
+    if (!res.writableEnded) {
+      const message = error instanceof Error ? error.message : 'Chat failed.';
+      res.write(`data: ${JSON.stringify({ type: 'error', error: message })}\n\n`);
+      res.end();
+    }
+  }
 });

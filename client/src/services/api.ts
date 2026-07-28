@@ -252,6 +252,86 @@ export const api = {
   submitQuizAnswer(id: string, questionId: string, response: string) {
     return unwrap<{ session: QuizSession; vocabulary?: VocabularyEntry[]; listening?: ListeningEntry[] }>(http.post(`/vocabulary/quiz/${id}/answer`, { questionId, response }));
   },
+  async streamQuizQuestionChat(
+    payload: {
+      messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+      word: string;
+      sentence: string;
+      type: string;
+      answer: string;
+      userResponse: string;
+      isCorrect: boolean;
+      newMessage: string;
+    },
+    onDelta: (chunk: string) => void,
+  ) {
+    const token = getStoredAccessToken();
+    const response = await fetch('/api/vocabulary/quiz/question-chat/stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'x-access-token': token } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok || !response.body) {
+      throw new Error('Chat failed.');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullReply = '';
+    let doneReceived = false;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop() ?? '';
+
+      for (const event of events) {
+        const dataLine = event
+          .split('\n')
+          .map((line) => line.trim())
+          .find((line) => line.startsWith('data:'));
+
+        if (!dataLine) {
+          continue;
+        }
+
+        const parsed = JSON.parse(dataLine.slice(5).trim()) as {
+          type: 'delta' | 'done' | 'error';
+          content?: string;
+          error?: string;
+        };
+
+        if (parsed.type === 'delta' && parsed.content) {
+          fullReply += parsed.content;
+          onDelta(parsed.content);
+        }
+
+        if (parsed.type === 'error') {
+          throw new Error(parsed.error || 'Chat failed.');
+        }
+
+        if (parsed.type === 'done') {
+          doneReceived = true;
+        }
+      }
+    }
+
+    if (!doneReceived) {
+      throw new Error('Chat stream ended unexpectedly.');
+    }
+
+    return fullReply.trim();
+  },
   getWritingTopics() {
     return unwrap<WritingTopic[]>(http.get('/writing/topics'));
   },
