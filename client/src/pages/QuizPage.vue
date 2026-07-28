@@ -8,60 +8,44 @@
     </section>
 
     <template v-else>
-      <div class="quiz-grid">
-        <div class="quiz-main">
-          <QuizCard
-            v-model="answer"
-            :submitted-answer="submittedAnswer"
-            :submitted-listening-answers="submittedListeningAnswers"
-            :feedback="feedback"
-            :feedback-is-correct="feedbackIsCorrect"
-            :question="displayQuestion"
-            :index="displayIndex"
-            :total="total"
-            :submitting="submitting"
-            :awaiting-next="awaitingNext"
-            :source-type="store.quizSession?.sourceType ?? 'vocabulary_task'"
-            @submit="submit"
-            @play-audio="playAudio"
-          />
-          <SearchResultCard
-            v-if="answerWordResult && !awaitingNext"
-            class="quiz-answer-card"
-            :result="answerWordResult"
-            :show-chinese="showChinese"
-            :saving="false"
-            :allow-save="false"
-            :show-header-label="false"
-            @toggle-translation="showChinese = !showChinese"
-            @play-audio="playAnswerWordAudio"
-          />
-        </div>
-        <div v-if="awaitingNext" class="quiz-side">
-          <SearchResultCard
-            v-if="answerWordResult"
-            class="quiz-answer-card"
-            :result="answerWordResult"
-            :show-chinese="showChinese"
-            :saving="false"
-            :allow-save="false"
-            :show-header-label="false"
-            @toggle-translation="showChinese = !showChinese"
-            @play-audio="playAnswerWordAudio"
-          />
-          <QuizChatBox
-            v-if="displayQuestion"
-            :word="displayQuestion.word"
-            :sentence="displayQuestion.sentence"
-            :type="displayQuestion.type"
-            :answer="displayQuestion.answer"
-            :user-response="submittedAnswer"
-            :is-correct="feedbackIsCorrect"
-            :question-index="displayIndex"
-            :question-total="total"
-          />
-        </div>
-      </div>
+      <QuizCard
+        v-model="answer"
+        :submitted-answer="submittedAnswer"
+        :submitted-listening-answers="submittedListeningAnswers"
+        :feedback="feedback"
+        :feedback-is-correct="feedbackIsCorrect"
+        :question="displayQuestion"
+        :index="displayIndex"
+        :total="total"
+        :submitting="submitting"
+        :awaiting-next="awaitingNext"
+        :source-type="store.quizSession?.sourceType ?? 'vocabulary_task'"
+        @submit="submit"
+        @play-audio="playAudio"
+      />
+      <SearchResultCard
+        v-if="answerWordResult"
+        class="quiz-answer-card"
+        :result="answerWordResult"
+        :show-chinese="showChinese"
+        :saving="false"
+        :allow-save="false"
+        :show-header-label="false"
+        @toggle-translation="showChinese = !showChinese"
+        @play-audio="playAnswerWordAudio"
+      />
+      <QuizChatBox
+        v-if="awaitingNext && displayQuestion"
+        class="quiz-answer-card"
+        :word="displayQuestion.word"
+        :sentence="displayQuestion.sentence"
+        :type="displayQuestion.type"
+        :answer="displayQuestion.answer"
+        :user-response="submittedAnswer"
+        :is-correct="feedbackIsCorrect"
+        :question-index="displayIndex"
+        :question-total="total"
+      />
       <p v-if="error" class="error-text quiz-error">{{ error }}</p>
     </template>
   </div>

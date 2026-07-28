@@ -206,12 +206,6 @@ if (__VLS_ctx.showSummary) {
     var __VLS_3;
 }
 else {
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "quiz-grid" },
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "quiz-main" },
-    });
     /** @type {[typeof QuizCard, ]} */ ;
     // @ts-ignore
     const __VLS_4 = __VLS_asFunctionalComponent(QuizCard, new QuizCard({
@@ -254,7 +248,7 @@ else {
         onPlayAudio: (__VLS_ctx.playAudio)
     };
     var __VLS_6;
-    if (__VLS_ctx.answerWordResult && !__VLS_ctx.awaitingNext) {
+    if (__VLS_ctx.answerWordResult) {
         /** @type {[typeof SearchResultCard, ]} */ ;
         // @ts-ignore
         const __VLS_12 = __VLS_asFunctionalComponent(SearchResultCard, new SearchResultCard({
@@ -284,7 +278,7 @@ else {
             onToggleTranslation: (...[$event]) => {
                 if (!!(__VLS_ctx.showSummary))
                     return;
-                if (!(__VLS_ctx.answerWordResult && !__VLS_ctx.awaitingNext))
+                if (!(__VLS_ctx.answerWordResult))
                     return;
                 __VLS_ctx.showChinese = !__VLS_ctx.showChinese;
             }
@@ -294,76 +288,31 @@ else {
         };
         var __VLS_14;
     }
-    if (__VLS_ctx.awaitingNext) {
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            ...{ class: "quiz-side" },
-        });
-        if (__VLS_ctx.answerWordResult) {
-            /** @type {[typeof SearchResultCard, ]} */ ;
-            // @ts-ignore
-            const __VLS_20 = __VLS_asFunctionalComponent(SearchResultCard, new SearchResultCard({
-                ...{ 'onToggleTranslation': {} },
-                ...{ 'onPlayAudio': {} },
-                ...{ class: "quiz-answer-card" },
-                result: (__VLS_ctx.answerWordResult),
-                showChinese: (__VLS_ctx.showChinese),
-                saving: (false),
-                allowSave: (false),
-                showHeaderLabel: (false),
-            }));
-            const __VLS_21 = __VLS_20({
-                ...{ 'onToggleTranslation': {} },
-                ...{ 'onPlayAudio': {} },
-                ...{ class: "quiz-answer-card" },
-                result: (__VLS_ctx.answerWordResult),
-                showChinese: (__VLS_ctx.showChinese),
-                saving: (false),
-                allowSave: (false),
-                showHeaderLabel: (false),
-            }, ...__VLS_functionalComponentArgsRest(__VLS_20));
-            let __VLS_23;
-            let __VLS_24;
-            let __VLS_25;
-            const __VLS_26 = {
-                onToggleTranslation: (...[$event]) => {
-                    if (!!(__VLS_ctx.showSummary))
-                        return;
-                    if (!(__VLS_ctx.awaitingNext))
-                        return;
-                    if (!(__VLS_ctx.answerWordResult))
-                        return;
-                    __VLS_ctx.showChinese = !__VLS_ctx.showChinese;
-                }
-            };
-            const __VLS_27 = {
-                onPlayAudio: (__VLS_ctx.playAnswerWordAudio)
-            };
-            var __VLS_22;
-        }
-        if (__VLS_ctx.displayQuestion) {
-            /** @type {[typeof QuizChatBox, ]} */ ;
-            // @ts-ignore
-            const __VLS_28 = __VLS_asFunctionalComponent(QuizChatBox, new QuizChatBox({
-                word: (__VLS_ctx.displayQuestion.word),
-                sentence: (__VLS_ctx.displayQuestion.sentence),
-                type: (__VLS_ctx.displayQuestion.type),
-                answer: (__VLS_ctx.displayQuestion.answer),
-                userResponse: (__VLS_ctx.submittedAnswer),
-                isCorrect: (__VLS_ctx.feedbackIsCorrect),
-                questionIndex: (__VLS_ctx.displayIndex),
-                questionTotal: (__VLS_ctx.total),
-            }));
-            const __VLS_29 = __VLS_28({
-                word: (__VLS_ctx.displayQuestion.word),
-                sentence: (__VLS_ctx.displayQuestion.sentence),
-                type: (__VLS_ctx.displayQuestion.type),
-                answer: (__VLS_ctx.displayQuestion.answer),
-                userResponse: (__VLS_ctx.submittedAnswer),
-                isCorrect: (__VLS_ctx.feedbackIsCorrect),
-                questionIndex: (__VLS_ctx.displayIndex),
-                questionTotal: (__VLS_ctx.total),
-            }, ...__VLS_functionalComponentArgsRest(__VLS_28));
-        }
+    if (__VLS_ctx.awaitingNext && __VLS_ctx.displayQuestion) {
+        /** @type {[typeof QuizChatBox, ]} */ ;
+        // @ts-ignore
+        const __VLS_20 = __VLS_asFunctionalComponent(QuizChatBox, new QuizChatBox({
+            ...{ class: "quiz-answer-card" },
+            word: (__VLS_ctx.displayQuestion.word),
+            sentence: (__VLS_ctx.displayQuestion.sentence),
+            type: (__VLS_ctx.displayQuestion.type),
+            answer: (__VLS_ctx.displayQuestion.answer),
+            userResponse: (__VLS_ctx.submittedAnswer),
+            isCorrect: (__VLS_ctx.feedbackIsCorrect),
+            questionIndex: (__VLS_ctx.displayIndex),
+            questionTotal: (__VLS_ctx.total),
+        }));
+        const __VLS_21 = __VLS_20({
+            ...{ class: "quiz-answer-card" },
+            word: (__VLS_ctx.displayQuestion.word),
+            sentence: (__VLS_ctx.displayQuestion.sentence),
+            type: (__VLS_ctx.displayQuestion.type),
+            answer: (__VLS_ctx.displayQuestion.answer),
+            userResponse: (__VLS_ctx.submittedAnswer),
+            isCorrect: (__VLS_ctx.feedbackIsCorrect),
+            questionIndex: (__VLS_ctx.displayIndex),
+            questionTotal: (__VLS_ctx.total),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_20));
     }
     if (__VLS_ctx.error) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
@@ -379,10 +328,7 @@ else {
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
-/** @type {__VLS_StyleScopedClasses['quiz-grid']} */ ;
-/** @type {__VLS_StyleScopedClasses['quiz-main']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-answer-card']} */ ;
-/** @type {__VLS_StyleScopedClasses['quiz-side']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-answer-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['error-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-error']} */ ;
