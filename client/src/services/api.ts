@@ -2,6 +2,7 @@ import { getStoredAccessToken, http, unwrap } from './http';
 import type {
   LearningTask,
   ListeningEntry,
+  ListeningGroup,
   MistakeEntry,
   PolishResult,
   QuizSession,
@@ -32,11 +33,21 @@ export const api = {
   getVocabulary() {
     return unwrap<VocabularyEntry[]>(http.get('/vocabulary'));
   },
-  getListening() {
-    return unwrap<ListeningEntry[]>(http.get('/vocabulary/listening'));
+  getListening(groupId?: string) {
+    const params = groupId ? `?groupId=${encodeURIComponent(groupId)}` : '';
+    return unwrap<ListeningEntry[]>(http.get(`/vocabulary/listening${params}`));
   },
-  addListeningSentence(sentence: string) {
-    return unwrap<{ created: boolean; entry: ListeningEntry }>(http.post('/vocabulary/listening', { sentence }));
+  addListeningSentence(sentence: string, groupId?: string) {
+    return unwrap<{ created: boolean; entry: ListeningEntry }>(http.post('/vocabulary/listening', { sentence, groupId }));
+  },
+  getListeningGroups() {
+    return unwrap<ListeningGroup[]>(http.get('/vocabulary/listening/groups'));
+  },
+  createListeningGroup(name: string) {
+    return unwrap<{ created: boolean; group: ListeningGroup }>(http.post('/vocabulary/listening/groups', { name }));
+  },
+  deleteListeningGroup(id: string) {
+    return unwrap<{ removed: boolean }>(http.post(`/vocabulary/listening/groups/${id}/delete`));
   },
   deleteListeningSentence(id: string) {
     return unwrap<{ removed: boolean }>(http.post(`/vocabulary/listening/${id}/delete`));
@@ -233,6 +244,9 @@ export const api = {
   },
   createListeningTask() {
     return unwrap<LearningTask>(http.post('/vocabulary/tasks/listening'));
+  },
+  createListeningTaskForGroup(groupId: string) {
+    return unwrap<LearningTask>(http.post(`/vocabulary/tasks/listening/${encodeURIComponent(groupId)}`));
   },
   getTasks() {
     return unwrap<{ tasks: LearningTask[]; mistakes: MistakeEntry[] }>(http.get('/vocabulary/tasks'));

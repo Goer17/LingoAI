@@ -116,6 +116,12 @@ export interface MistakeEntry {
     audioUrl?: string;
     blanks?: QuizBlank[];
 }
+export interface ListeningGroup {
+    id: string;
+    name: string;
+    createdAt: string;
+    updatedAt: string;
+}
 export interface ListeningEntry {
     id: string;
     sentence: string;
@@ -125,6 +131,7 @@ export interface ListeningEntry {
     audioFile?: string;
     note: string;
     chatHistory: ChatMessage[];
+    groupId: string;
 }
 export interface WritingKnowledgePoint {
     id: string;

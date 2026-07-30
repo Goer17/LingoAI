@@ -1,4 +1,4 @@
-import type { LearningTask, ListeningEntry, MistakeEntry, PolishResult, QuizSession, ScenarioData, ScenarioSummary, SearchResult, SettingsForm, VocabularyEntry, WritingKnowledgePoint, WritingTopic } from '@/types/models';
+import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, PolishResult, QuizSession, ScenarioData, ScenarioSummary, SearchResult, SettingsForm, VocabularyEntry, WritingKnowledgePoint, WritingTopic } from '@/types/models';
 export declare const api: {
     login(token: string): Promise<{
         token: string;
@@ -12,10 +12,18 @@ export declare const api: {
         error?: string;
     }>;
     getVocabulary(): Promise<VocabularyEntry[]>;
-    getListening(): Promise<ListeningEntry[]>;
-    addListeningSentence(sentence: string): Promise<{
+    getListening(groupId?: string): Promise<ListeningEntry[]>;
+    addListeningSentence(sentence: string, groupId?: string): Promise<{
         created: boolean;
         entry: ListeningEntry;
+    }>;
+    getListeningGroups(): Promise<ListeningGroup[]>;
+    createListeningGroup(name: string): Promise<{
+        created: boolean;
+        group: ListeningGroup;
+    }>;
+    deleteListeningGroup(id: string): Promise<{
+        removed: boolean;
     }>;
     deleteListeningSentence(id: string): Promise<{
         removed: boolean;
@@ -68,6 +76,7 @@ export declare const api: {
     generateQuiz(): Promise<QuizSession>;
     createVocabularyTask(): Promise<LearningTask>;
     createListeningTask(): Promise<LearningTask>;
+    createListeningTaskForGroup(groupId: string): Promise<LearningTask>;
     getTasks(): Promise<{
         tasks: LearningTask[];
         mistakes: MistakeEntry[];

@@ -141,6 +141,13 @@ export interface SearchResult {
   notFoundMessage?: string;
 }
 
+export interface ListeningGroup {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ListeningEntry {
   id: string;
   sentence: string;
@@ -150,6 +157,7 @@ export interface ListeningEntry {
   audioFile?: string;
   note: string;
   chatHistory: ChatMessage[];
+  groupId: string;
 }
 
 export interface WritingKnowledgePoint {

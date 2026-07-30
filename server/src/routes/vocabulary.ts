@@ -8,7 +8,7 @@ import { createSearchWordPrompt } from '../prompts/searchWordPrompt.js';
 import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, deleteAudioFile, getMediaUrl } from '../services/audioService.js';
 import { askWordChat, generateQuiz, searchWord, streamWordChat } from '../services/openaiService.js';
 import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '../services/fillBlankService.js';
-import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningQuizDraft, getListeningEntryById, listListeningEntries, pickListeningEntries, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
+import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningGroup, createListeningQuizDraft, deleteListeningGroup, getListeningEntryById, listListeningEntries, listListeningGroups, pickListeningEntries, pickListeningEntriesByGroup, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
 import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, removeWord, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
 import { createQuizSession, getQuizSession, pickQuizEntries, submitQuizAnswer } from '../services/quizService.js';
 import {
@@ -69,6 +69,11 @@ const answerSchema = z.object({
 
 const listeningSentenceSchema = z.object({
   sentence: z.string().min(1),
+  groupId: z.string().optional(),
+});
+
+const listeningGroupSchema = z.object({
+  name: z.string().min(1).max(100),
 });
 
 export const vocabularyRouter = Router();
@@ -120,8 +125,10 @@ async function processVocabularyTask(taskId: string) {
   }
 }
 
-async function generateListeningQuizSession() {
-  const entries = pickListeningEntries(listListeningEntries());
+async function generateListeningQuizSession(groupId?: string) {
+  const entries = groupId
+    ? pickListeningEntriesByGroup(groupId)
+    : pickListeningEntries(listListeningEntries());
   if (entries.length === 0) {
     throw new Error('No listening sentences available for learning.');
   }
@@ -140,9 +147,9 @@ async function generateListeningQuizSession() {
   return createQuizSession(questions, 'listening_task');
 }
 
-async function processListeningTask(taskId: string) {
+async function processListeningTask(taskId: string, groupId?: string) {
   try {
-    const session = await generateListeningQuizSession();
+    const session = await generateListeningQuizSession(groupId);
     markLearningTaskReady(taskId, {
       quizSessionId: session.id,
       questionCount: session.questions.length,
@@ -169,7 +176,35 @@ vocabularyRouter.get('/tasks', (_req, res) => ok(res, {
   mistakes: listMistakeEntries(),
 }));
 
-vocabularyRouter.get('/listening', (_req, res) => ok(res, listListeningEntries()));
+vocabularyRouter.get('/listening/groups', (_req, res) => ok(res, listListeningGroups()));
+
+vocabularyRouter.post('/listening/groups', (req, res) => {
+  const parsed = listeningGroupSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return fail(res, 400, 'Group name is required.');
+  }
+
+  try {
+    const data = createListeningGroup(parsed.data.name);
+    return ok(res, data);
+  } catch (error) {
+    return fail(res, 400, error instanceof Error ? error.message : 'Failed to create group.');
+  }
+});
+
+vocabularyRouter.post('/listening/groups/:id/delete', (req, res) => {
+  const removed = deleteListeningGroup(req.params.id);
+  if (!removed) {
+    return fail(res, 404, 'Group not found or cannot be deleted.');
+  }
+
+  return ok(res, { removed: true });
+});
+
+vocabularyRouter.get('/listening', (req, res) => {
+  const groupId = typeof req.query.groupId === 'string' ? req.query.groupId : undefined;
+  return ok(res, listListeningEntries(groupId));
+});
 
 vocabularyRouter.post('/listening', (req, res) => {
   const parsed = listeningSentenceSchema.safeParse(req.body);
@@ -177,7 +212,7 @@ vocabularyRouter.post('/listening', (req, res) => {
     return fail(res, 400, 'Sentence is required.');
   }
 
-  const data = addListeningSentence(parsed.data.sentence);
+  const data = addListeningSentence(parsed.data.sentence, parsed.data.groupId);
   return ok(res, data);
 });
 
@@ -332,6 +367,18 @@ vocabularyRouter.post('/tasks/listening', (_req, res) => {
 
   const task = createLearningTask('listening');
   void processListeningTask(task.id);
+  return ok(res, task);
+});
+
+vocabularyRouter.post('/tasks/listening/:groupId', (req, res) => {
+  const groupId = req.params.groupId;
+  const entries = pickListeningEntriesByGroup(groupId);
+  if (entries.length === 0) {
+    return fail(res, 400, 'No listening sentences available in this group for learning.');
+  }
+
+  const task = createLearningTask('listening');
+  void processListeningTask(task.id, groupId);
   return ok(res, task);
 });
 

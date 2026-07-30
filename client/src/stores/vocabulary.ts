@@ -5,6 +5,7 @@ import { getAudioUrl } from '@/utils/audioCache';
 import type {
   LearningTask,
   ListeningEntry,
+  ListeningGroup,
   MistakeEntry,
   QuizSession,
   SearchResult,
@@ -27,6 +28,8 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
   const listeningItems = ref<ListeningEntry[]>([]);
   const listeningLoading = ref(false);
   const selectedListeningId = ref('');
+  const listeningGroups = ref<ListeningGroup[]>([]);
+  const selectedListeningGroupId = ref('');
   const writingTopics = ref<WritingTopic[]>([]);
   const selectedWritingTopicId = ref('');
   const selectedWritingPointId = ref('');
@@ -226,7 +229,8 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
   async function fetchListening() {
     listeningLoading.value = true;
     try {
-      listeningItems.value = await api.getListening();
+      const groupId = selectedListeningGroupId.value || undefined;
+      listeningItems.value = await api.getListening(groupId);
       if (!selectedListeningId.value && listeningItems.value.length > 0) {
         selectedListeningId.value = listeningItems.value[0].id;
       }
@@ -235,9 +239,41 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     }
   }
 
+  async function fetchListeningGroups() {
+    listeningGroups.value = await api.getListeningGroups();
+    if (!selectedListeningGroupId.value && listeningGroups.value.length > 0) {
+      selectedListeningGroupId.value = listeningGroups.value[0].id;
+    }
+  }
+
+  async function createListeningGroup(name: string) {
+    const data = await api.createListeningGroup(name);
+    listeningGroups.value = await api.getListeningGroups();
+    if (data.created) {
+      selectedListeningGroupId.value = data.group.id;
+      await fetchListening();
+    }
+    return data;
+  }
+
+  async function deleteListeningGroup(id: string) {
+    await api.deleteListeningGroup(id);
+    listeningGroups.value = await api.getListeningGroups();
+    if (selectedListeningGroupId.value === id) {
+      selectedListeningGroupId.value = listeningGroups.value[0]?.id ?? '';
+      await fetchListening();
+    }
+  }
+
+  function selectListeningGroup(id: string) {
+    selectedListeningGroupId.value = id;
+    fetchListening();
+  }
+
   async function addListeningSentence(sentence: string) {
-    const data = await api.addListeningSentence(sentence);
-    listeningItems.value = await api.getListening();
+    const groupId = selectedListeningGroupId.value || undefined;
+    const data = await api.addListeningSentence(sentence, groupId);
+    listeningItems.value = await api.getListening(groupId);
     selectedListeningId.value = data.entry.id;
     return data;
   }
@@ -252,6 +288,12 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
 
   async function createListeningTask() {
     const task = await api.createListeningTask();
+    tasks.value = [task, ...tasks.value.filter((item) => item.id !== task.id)];
+    return task;
+  }
+
+  async function createListeningTaskForGroup(groupId: string) {
+    const task = await api.createListeningTaskForGroup(groupId);
     tasks.value = [task, ...tasks.value.filter((item) => item.id !== task.id)];
     return task;
   }
@@ -577,6 +619,8 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     listeningLoading,
     selectedListeningId,
     selectedListening,
+    listeningGroups,
+    selectedListeningGroupId,
     writingTopics,
     selectedWritingTopicId,
     selectedWritingPointId,
@@ -595,6 +639,11 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     fetchTasks,
     createVocabularyTask,
     createListeningTask,
+    createListeningTaskForGroup,
+    fetchListeningGroups,
+    createListeningGroup,
+    deleteListeningGroup,
+    selectListeningGroup,
     fetchWritingTopics,
     addWritingTopic,
     updateWritingTopicTitle,

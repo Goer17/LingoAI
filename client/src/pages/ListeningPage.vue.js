@@ -1,4 +1,4 @@
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import SentenceDetailPanel from '@/components/SentenceDetailPanel.vue';
 import { useVocabularyStore } from '@/stores/vocabulary';
@@ -12,15 +12,62 @@ const message = ref('');
 const adding = ref(false);
 const taskLoading = ref(false);
 const chatLoading = ref(false);
+const creatingGroup = ref(false);
+const deleteGroupConfirm = ref(false);
+const newGroupName = ref('');
 const audioVersions = reactive({});
+const activeGroupId = computed({
+    get: () => store.selectedListeningGroupId,
+    set: (val) => { store.selectListeningGroup(val); },
+});
+const activeGroup = computed(() => (store.listeningGroups.find((g) => g.id === store.selectedListeningGroupId) ?? null));
 onMounted(async () => {
     try {
+        await store.fetchListeningGroups();
         await store.fetchListening();
     }
     catch (err) {
         error.value = err instanceof Error ? err.message : 'Failed to load listening sentences.';
     }
 });
+function onGroupChange() {
+    store.selectListening(store.listeningItems[0]?.id ?? '');
+}
+async function handleCreateGroup() {
+    const name = newGroupName.value.trim();
+    if (!name) {
+        return;
+    }
+    error.value = '';
+    message.value = '';
+    creatingGroup.value = true;
+    try {
+        const data = await store.createListeningGroup(name);
+        message.value = data.created ? `Group "${data.group.name}" created.` : `Group "${data.group.name}" already exists.`;
+        newGroupName.value = '';
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Failed to create group.';
+    }
+    finally {
+        creatingGroup.value = false;
+    }
+}
+async function handleDeleteGroupClick() {
+    if (deleteGroupConfirm.value) {
+        error.value = '';
+        try {
+            await store.deleteListeningGroup(store.selectedListeningGroupId);
+            message.value = 'Group deleted. Sentences moved to Default.';
+            deleteGroupConfirm.value = false;
+        }
+        catch (err) {
+            error.value = err instanceof Error ? err.message : 'Failed to delete group.';
+        }
+        return;
+    }
+    deleteGroupConfirm.value = true;
+}
 async function handleAddSentence() {
     const sentence = sentenceInput.value.trim();
     if (!sentence) {
@@ -147,10 +194,28 @@ async function startLearning() {
         taskLoading.value = false;
     }
 }
+async function startLearningInGroup() {
+    error.value = '';
+    taskLoading.value = true;
+    try {
+        await store.createListeningTaskForGroup(store.selectedListeningGroupId);
+        await router.push('/tasks');
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Failed to create listening task for group.';
+    }
+    finally {
+        taskLoading.value = false;
+    }
+}
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
 let __VLS_components;
 let __VLS_directives;
+/** @type {__VLS_StyleScopedClasses['group-selector']} */ ;
+/** @type {__VLS_StyleScopedClasses['new-group-form']} */ ;
+// CSS variable injection 
+// CSS variable injection end 
 __VLS_asFunctionalElement(__VLS_intrinsicElements.section, __VLS_intrinsicElements.section)({
     ...{ class: "vocabulary-page" },
 });
@@ -167,6 +232,53 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.h2, __VLS_intrinsicElements.h2
 __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
     ...{ class: "subtle-copy" },
 });
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "group-bar" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "group-selector" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
+    ...{ class: "field" },
+    ...{ style: {} },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.select, __VLS_intrinsicElements.select)({
+    ...{ onChange: (__VLS_ctx.onGroupChange) },
+    value: (__VLS_ctx.activeGroupId),
+});
+for (const [g] of __VLS_getVForSourceType((__VLS_ctx.store.listeningGroups))) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.option, __VLS_intrinsicElements.option)({
+        key: (g.id),
+        value: (g.id),
+    });
+    (g.name);
+}
+__VLS_asFunctionalElement(__VLS_intrinsicElements.form, __VLS_intrinsicElements.form)({
+    ...{ onSubmit: (__VLS_ctx.handleCreateGroup) },
+    ...{ class: "new-group-form" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.input)({
+    value: (__VLS_ctx.newGroupName),
+    type: "text",
+    placeholder: "New group name",
+    disabled: (__VLS_ctx.creatingGroup),
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+    ...{ class: "button button-secondary" },
+    type: "submit",
+    disabled: (__VLS_ctx.creatingGroup || !__VLS_ctx.newGroupName.trim()),
+});
+(__VLS_ctx.creatingGroup ? 'Creating...' : 'Create Group');
+if (__VLS_ctx.activeGroup && __VLS_ctx.activeGroup.name !== 'Default') {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+        ...{ onClick: (__VLS_ctx.handleDeleteGroupClick) },
+        ...{ class: "button button-secondary delete-group-btn" },
+        type: "button",
+        ...{ class: ({ confirm: __VLS_ctx.deleteGroupConfirm }) },
+    });
+    (__VLS_ctx.deleteGroupConfirm ? 'Confirm Delete' : 'Delete Group');
+}
 __VLS_asFunctionalElement(__VLS_intrinsicElements.form, __VLS_intrinsicElements.form)({
     ...{ onSubmit: (__VLS_ctx.handleAddSentence) },
     ...{ class: "listening-form" },
@@ -216,6 +328,7 @@ if (__VLS_ctx.store.listeningItems.length === 0) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
         ...{ class: "empty-copy" },
     });
+    (__VLS_ctx.activeGroup ? ' in this group' : '');
 }
 else {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -301,19 +414,40 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.h2, __VLS_intrinsicElements.h2
 __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
     ...{ class: "subtle-copy" },
 });
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "learning-bar-actions" },
+});
 __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
     ...{ onClick: (__VLS_ctx.startLearning) },
     ...{ class: "button button-primary" },
     type: "button",
     disabled: (__VLS_ctx.taskLoading),
 });
-(__VLS_ctx.taskLoading ? 'Preparing...' : 'Learning');
+(__VLS_ctx.taskLoading ? 'Preparing...' : 'Learning (All)');
+if (__VLS_ctx.store.listeningItems.length > 0) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+        ...{ onClick: (__VLS_ctx.startLearningInGroup) },
+        ...{ class: "button button-secondary" },
+        type: "button",
+        disabled: (__VLS_ctx.taskLoading),
+    });
+    (__VLS_ctx.taskLoading ? 'Preparing...' : `Learning (${__VLS_ctx.activeGroup?.name ?? 'Group'})`);
+}
 /** @type {__VLS_StyleScopedClasses['vocabulary-page']} */ ;
 /** @type {__VLS_StyleScopedClasses['card']} */ ;
 /** @type {__VLS_StyleScopedClasses['listening-input-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['section-heading']} */ ;
 /** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
+/** @type {__VLS_StyleScopedClasses['group-bar']} */ ;
+/** @type {__VLS_StyleScopedClasses['group-selector']} */ ;
+/** @type {__VLS_StyleScopedClasses['field']} */ ;
+/** @type {__VLS_StyleScopedClasses['new-group-form']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
+/** @type {__VLS_StyleScopedClasses['delete-group-btn']} */ ;
 /** @type {__VLS_StyleScopedClasses['listening-form']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
@@ -338,8 +472,11 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElement
 /** @type {__VLS_StyleScopedClasses['learning-bar']} */ ;
 /** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
+/** @type {__VLS_StyleScopedClasses['learning-bar-actions']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
 var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
@@ -352,6 +489,14 @@ const __VLS_self = (await import('vue')).defineComponent({
             adding: adding,
             taskLoading: taskLoading,
             chatLoading: chatLoading,
+            creatingGroup: creatingGroup,
+            deleteGroupConfirm: deleteGroupConfirm,
+            newGroupName: newGroupName,
+            activeGroupId: activeGroupId,
+            activeGroup: activeGroup,
+            onGroupChange: onGroupChange,
+            handleCreateGroup: handleCreateGroup,
+            handleDeleteGroupClick: handleDeleteGroupClick,
             handleAddSentence: handleAddSentence,
             playSelectedSentence: playSelectedSentence,
             regenerateListeningAudio: regenerateListeningAudio,
@@ -360,6 +505,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             handleClearChat: handleClearChat,
             handleDeleteSentence: handleDeleteSentence,
             startLearning: startLearning,
+            startLearningInGroup: startLearningInGroup,
         };
     },
 });

@@ -15,11 +15,21 @@ export const api = {
     getVocabulary() {
         return unwrap(http.get('/vocabulary'));
     },
-    getListening() {
-        return unwrap(http.get('/vocabulary/listening'));
+    getListening(groupId) {
+        const params = groupId ? `?groupId=${encodeURIComponent(groupId)}` : '';
+        return unwrap(http.get(`/vocabulary/listening${params}`));
     },
-    addListeningSentence(sentence) {
-        return unwrap(http.post('/vocabulary/listening', { sentence }));
+    addListeningSentence(sentence, groupId) {
+        return unwrap(http.post('/vocabulary/listening', { sentence, groupId }));
+    },
+    getListeningGroups() {
+        return unwrap(http.get('/vocabulary/listening/groups'));
+    },
+    createListeningGroup(name) {
+        return unwrap(http.post('/vocabulary/listening/groups', { name }));
+    },
+    deleteListeningGroup(id) {
+        return unwrap(http.post(`/vocabulary/listening/groups/${id}/delete`));
     },
     deleteListeningSentence(id) {
         return unwrap(http.post(`/vocabulary/listening/${id}/delete`));
@@ -184,6 +194,9 @@ export const api = {
     },
     createListeningTask() {
         return unwrap(http.post('/vocabulary/tasks/listening'));
+    },
+    createListeningTaskForGroup(groupId) {
+        return unwrap(http.post(`/vocabulary/tasks/listening/${encodeURIComponent(groupId)}`));
     },
     getTasks() {
         return unwrap(http.get('/vocabulary/tasks'));

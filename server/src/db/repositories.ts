@@ -1,5 +1,5 @@
 import { db } from './database.js';
-import type { LearningTask, ListeningEntry, MistakeEntry, QuizSession, Settings, VocabularyEntry, WritingTopic } from '../types/models.js';
+import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, QuizSession, Settings, VocabularyEntry, WritingTopic } from '../types/models.js';
 
 function parseJson<T>(value: string): T {
   return JSON.parse(value) as T;
@@ -283,6 +283,56 @@ export const mistakeRepository = {
   },
 };
 
+export const listeningGroupRepository = {
+  list(): ListeningGroup[] {
+    const rows = db.prepare(`
+      SELECT id, name, created_at, updated_at
+      FROM listening_groups
+      ORDER BY created_at ASC
+    `).all() as Array<{ id: string; name: string; created_at: string; updated_at: string }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+  },
+
+  getById(id: string): ListeningGroup | null {
+    const row = db.prepare(`
+      SELECT id, name, created_at, updated_at
+      FROM listening_groups
+      WHERE id = ?
+    `).get(id) as { id: string; name: string; created_at: string; updated_at: string } | undefined;
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      name: row.name,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  },
+
+  save(group: ListeningGroup) {
+    db.prepare(`
+      INSERT INTO listening_groups (id, name, created_at, updated_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        updated_at = excluded.updated_at
+    `).run(group.id, group.name, group.createdAt, group.updatedAt);
+  },
+
+  remove(id: string) {
+    db.prepare('DELETE FROM listening_groups WHERE id = ?').run(id);
+  },
+};
+
 export const listeningRepository = {
   list(): ListeningEntry[] {
     const rows = db.prepare(`
@@ -292,6 +342,11 @@ export const listeningRepository = {
     `).all() as Array<{ payload_json: string }>;
 
     return rows.map((row) => parseJson<ListeningEntry>(row.payload_json));
+  },
+
+  listByGroup(groupId: string): ListeningEntry[] {
+    const all = listeningRepository.list();
+    return all.filter((entry) => (entry.groupId || '') === groupId);
   },
 
   getById(id: string): ListeningEntry | null {

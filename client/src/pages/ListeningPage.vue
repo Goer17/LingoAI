@@ -6,6 +6,44 @@
         <h2>Add Practice Sentences</h2>
         <p class="subtle-copy">Each sentence starts at familiarity 0 and grows to 20.</p>
       </div>
+
+      <div class="group-bar">
+        <div class="group-selector">
+          <label class="field" style="margin-bottom: 0;">
+            <span>Group</span>
+            <select v-model="activeGroupId" @change="onGroupChange">
+              <option v-for="g in store.listeningGroups" :key="g.id" :value="g.id">
+                {{ g.name }}
+              </option>
+            </select>
+          </label>
+        </div>
+        <form class="new-group-form" @submit.prevent="handleCreateGroup">
+          <input
+            v-model="newGroupName"
+            type="text"
+            placeholder="New group name"
+            :disabled="creatingGroup"
+          />
+          <button
+            class="button button-secondary"
+            type="submit"
+            :disabled="creatingGroup || !newGroupName.trim()"
+          >
+            {{ creatingGroup ? 'Creating...' : 'Create Group' }}
+          </button>
+        </form>
+        <button
+          v-if="activeGroup && activeGroup.name !== 'Default'"
+          class="button button-secondary delete-group-btn"
+          type="button"
+          :class="{ confirm: deleteGroupConfirm }"
+          @click="handleDeleteGroupClick"
+        >
+          {{ deleteGroupConfirm ? 'Confirm Delete' : 'Delete Group' }}
+        </button>
+      </div>
+
       <form class="listening-form" @submit.prevent="handleAddSentence">
         <input
           v-model="sentenceInput"
@@ -30,7 +68,7 @@
             <span class="muted-text">{{ store.listeningItems.length }} items</span>
           </div>
 
-          <p v-if="store.listeningItems.length === 0" class="empty-copy">No listening sentences yet.</p>
+          <p v-if="store.listeningItems.length === 0" class="empty-copy">No listening sentences yet{{ activeGroup ? ' in this group' : '' }}.</p>
 
           <div v-else class="list-scroller">
             <button
@@ -67,15 +105,31 @@
         <h2>Generate a Listening Session</h2>
         <p class="subtle-copy">Blank ratio increases with familiarity. At 20, you fill the whole sentence.</p>
       </div>
-      <button class="button button-primary" type="button" :disabled="taskLoading" @click="startLearning">
-        {{ taskLoading ? 'Preparing...' : 'Learning' }}
-      </button>
+      <div class="learning-bar-actions">
+        <button
+          class="button button-primary"
+          type="button"
+          :disabled="taskLoading"
+          @click="startLearning"
+        >
+          {{ taskLoading ? 'Preparing...' : 'Learning (All)' }}
+        </button>
+        <button
+          v-if="store.listeningItems.length > 0"
+          class="button button-secondary"
+          type="button"
+          :disabled="taskLoading"
+          @click="startLearningInGroup"
+        >
+          {{ taskLoading ? 'Preparing...' : `Learning (${activeGroup?.name ?? 'Group'})` }}
+        </button>
+      </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import SentenceDetailPanel from '@/components/SentenceDetailPanel.vue';
 import { useVocabularyStore } from '@/stores/vocabulary';
@@ -90,15 +144,68 @@ const message = ref('');
 const adding = ref(false);
 const taskLoading = ref(false);
 const chatLoading = ref(false);
+const creatingGroup = ref(false);
+const deleteGroupConfirm = ref(false);
+const newGroupName = ref('');
 const audioVersions = reactive<Record<string, number>>({});
+
+const activeGroupId = computed({
+  get: () => store.selectedListeningGroupId,
+  set: (val: string) => { store.selectListeningGroup(val); },
+});
+
+const activeGroup = computed(() => (
+  store.listeningGroups.find((g) => g.id === store.selectedListeningGroupId) ?? null
+));
 
 onMounted(async () => {
   try {
+    await store.fetchListeningGroups();
     await store.fetchListening();
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load listening sentences.';
   }
 });
+
+function onGroupChange() {
+  store.selectListening(store.listeningItems[0]?.id ?? '');
+}
+
+async function handleCreateGroup() {
+  const name = newGroupName.value.trim();
+  if (!name) {
+    return;
+  }
+
+  error.value = '';
+  message.value = '';
+  creatingGroup.value = true;
+  try {
+    const data = await store.createListeningGroup(name);
+    message.value = data.created ? `Group "${data.group.name}" created.` : `Group "${data.group.name}" already exists.`;
+    newGroupName.value = '';
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Failed to create group.';
+  } finally {
+    creatingGroup.value = false;
+  }
+}
+
+async function handleDeleteGroupClick() {
+  if (deleteGroupConfirm.value) {
+    error.value = '';
+    try {
+      await store.deleteListeningGroup(store.selectedListeningGroupId);
+      message.value = 'Group deleted. Sentences moved to Default.';
+      deleteGroupConfirm.value = false;
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to delete group.';
+    }
+    return;
+  }
+
+  deleteGroupConfirm.value = true;
+}
 
 async function handleAddSentence() {
   const sentence = sentenceInput.value.trim();
@@ -225,4 +332,60 @@ async function startLearning() {
     taskLoading.value = false;
   }
 }
+
+async function startLearningInGroup() {
+  error.value = '';
+  taskLoading.value = true;
+  try {
+    await store.createListeningTaskForGroup(store.selectedListeningGroupId);
+    await router.push('/tasks');
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Failed to create listening task for group.';
+  } finally {
+    taskLoading.value = false;
+  }
+}
 </script>
+
+<style scoped>
+.group-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.group-selector {
+  flex: 0 0 auto;
+  min-width: 200px;
+}
+
+.group-selector select {
+  width: 100%;
+}
+
+.new-group-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+  flex: 1;
+  min-width: 250px;
+}
+
+.new-group-form input {
+  flex: 1;
+}
+
+.delete-group-btn.confirm {
+  background: var(--color-error, #dc2626);
+  color: #fff;
+  border-color: var(--color-error, #dc2626);
+}
+
+.learning-bar-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+</style>

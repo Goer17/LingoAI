@@ -1,7 +1,41 @@
-import { listeningRepository } from '../db/repositories.js';
-import type { ChatMessage, ListeningEntry, QuizDraftQuestion } from '../types/models.js';
+import { listeningRepository, listeningGroupRepository } from '../db/repositories.js';
+import type { ChatMessage, ListeningEntry, ListeningGroup, QuizDraftQuestion } from '../types/models.js';
 import { createId } from '../utils/id.js';
 import { deleteAudioFile } from './audioService.js';
+
+const DEFAULT_GROUP_NAME = 'Default';
+
+function ensureDefaultGroup(): ListeningGroup {
+  const existing = listeningGroupRepository.list();
+  const defaultGroup = existing.find((g) => g.name === DEFAULT_GROUP_NAME);
+  if (defaultGroup) {
+    return defaultGroup;
+  }
+
+  const now = new Date().toISOString();
+  const group: ListeningGroup = {
+    id: createId('lgroup'),
+    name: DEFAULT_GROUP_NAME,
+    createdAt: now,
+    updatedAt: now,
+  };
+  listeningGroupRepository.save(group);
+  return group;
+}
+
+function getDefaultGroupId(): string {
+  return ensureDefaultGroup().id;
+}
+
+function normalizeEntryGroupId(entry: ListeningEntry): ListeningEntry {
+  if (entry.groupId) {
+    return entry;
+  }
+
+  const updated = { ...entry, groupId: getDefaultGroupId() };
+  listeningRepository.save(updated);
+  return updated;
+}
 
 function normalizeSentence(sentence: string) {
   return sentence.trim().replace(/\s+/g, ' ').toLowerCase();
@@ -10,7 +44,8 @@ function normalizeSentence(sentence: string) {
 function normalizeListeningEntry(entry: ListeningEntry): ListeningEntry {
   const note = typeof entry.note === 'string' ? entry.note : '';
   const chatHistory = Array.isArray(entry.chatHistory) ? entry.chatHistory : [];
-  if (note === entry.note && chatHistory === entry.chatHistory) {
+  const groupId = typeof entry.groupId === 'string' && entry.groupId ? entry.groupId : '';
+  if (note === entry.note && chatHistory === entry.chatHistory && groupId === entry.groupId) {
     return entry;
   }
 
@@ -18,25 +53,90 @@ function normalizeListeningEntry(entry: ListeningEntry): ListeningEntry {
     ...entry,
     note,
     chatHistory,
+    groupId,
   };
 }
 
-export function listListeningEntries() {
-  return listeningRepository.list().map((item) => normalizeListeningEntry(item));
+export function listListeningEntries(groupId?: string) {
+  const all = listeningRepository.list().map((item) => {
+    const normalized = normalizeListeningEntry(item);
+    return normalizeEntryGroupId(normalized);
+  });
+
+  if (groupId) {
+    return all.filter((entry) => entry.groupId === groupId);
+  }
+
+  return all;
+}
+
+export function listListeningGroups() {
+  ensureDefaultGroup();
+  return listeningGroupRepository.list();
 }
 
 export function getListeningEntryById(id: string) {
   const entry = listeningRepository.getById(id);
-  return entry ? normalizeListeningEntry(entry) : null;
+  if (!entry) {
+    return null;
+  }
+  const normalized = normalizeListeningEntry(entry);
+  return normalizeEntryGroupId(normalized);
 }
 
-export function addListeningSentence(sentence: string) {
+export function createListeningGroup(name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new Error('Group name is required.');
+  }
+
+  const existing = listeningGroupRepository.list().find(
+    (g) => g.name.toLowerCase() === trimmed.toLowerCase(),
+  );
+  if (existing) {
+    return { created: false as const, group: existing };
+  }
+
+  const now = new Date().toISOString();
+  const group: ListeningGroup = {
+    id: createId('lgroup'),
+    name: trimmed,
+    createdAt: now,
+    updatedAt: now,
+  };
+  listeningGroupRepository.save(group);
+  return { created: true as const, group };
+}
+
+export function deleteListeningGroup(id: string) {
+  const group = listeningGroupRepository.getById(id);
+  if (!group) {
+    return false;
+  }
+
+  if (group.name === DEFAULT_GROUP_NAME) {
+    return false;
+  }
+
+  const defaultGroupId = getDefaultGroupId();
+  const entries = listeningRepository.listByGroup(id);
+  for (const entry of entries) {
+    listeningRepository.save({ ...entry, groupId: defaultGroupId, updatedAt: new Date().toISOString() });
+  }
+
+  listeningGroupRepository.remove(id);
+  return true;
+}
+
+export function addListeningSentence(sentence: string, groupId?: string) {
   const normalized = normalizeSentence(sentence);
   const existing = listeningRepository.getByNormalizedSentence(normalized);
   if (existing) {
-    return { created: false as const, entry: existing };
+    const resolved = normalizeEntryGroupId(normalizeListeningEntry(existing));
+    return { created: false as const, entry: resolved };
   }
 
+  const effectiveGroupId = groupId || getDefaultGroupId();
   const now = new Date().toISOString();
   const entry: ListeningEntry = {
     id: createId('listen'),
@@ -47,6 +147,7 @@ export function addListeningSentence(sentence: string) {
     audioFile: undefined,
     note: '',
     chatHistory: [],
+    groupId: effectiveGroupId,
   };
 
   listeningRepository.save(entry);
@@ -71,6 +172,11 @@ export function pickListeningEntries(entries: ListeningEntry[]) {
     .slice(0, 10);
 }
 
+export function pickListeningEntriesByGroup(groupId: string) {
+  const entries = listListeningEntries(groupId);
+  return pickListeningEntries(entries);
+}
+
 export function applyListeningQuizResults(results: Array<{ sentence: string; isCorrect: boolean }>) {
   const resultMap = new Map(results.map((item) => [item.sentence.toLowerCase(), item.isCorrect]));
 
@@ -90,14 +196,17 @@ export function applyListeningQuizResults(results: Array<{ sentence: string; isC
       continue;
     }
 
+    const entry = normalizeEntryGroupId(normalizeListeningEntry(item));
+
     listeningRepository.save({
       ...item,
+      groupId: entry.groupId,
       familiarity,
       updatedAt: new Date().toISOString(),
     });
   }
 
-  return listeningRepository.list();
+  return listListeningEntries();
 }
 
 export function setListeningAudioFile(id: string, audioFile: string) {
@@ -170,7 +279,7 @@ export function clearListeningChatHistory(id: string) {
 
 export function rewardListeningFamiliarity(sentences: string[]) {
   if (sentences.length === 0) {
-    return listeningRepository.list();
+    return listListeningEntries();
   }
 
   const targetSet = new Set(sentences.map((item) => normalizeSentence(item)).filter(Boolean));
@@ -186,8 +295,11 @@ export function rewardListeningFamiliarity(sentences: string[]) {
       continue;
     }
 
+    const entry = normalizeEntryGroupId(normalizeListeningEntry(item));
+
     listeningRepository.save({
       ...item,
+      groupId: entry.groupId,
       familiarity,
       updatedAt: new Date().toISOString(),
     });
