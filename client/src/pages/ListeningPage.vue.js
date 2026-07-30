@@ -212,7 +212,6 @@ debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
 let __VLS_components;
 let __VLS_directives;
-/** @type {__VLS_StyleScopedClasses['group-selector']} */ ;
 /** @type {__VLS_StyleScopedClasses['new-group-form']} */ ;
 // CSS variable injection 
 // CSS variable injection end 

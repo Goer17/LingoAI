@@ -358,11 +358,7 @@ async function startLearningInGroup() {
 
 .group-selector {
   flex: 0 0 auto;
-  min-width: 200px;
-}
-
-.group-selector select {
-  width: 100%;
+  width: 200px;
 }
 
 .new-group-form {

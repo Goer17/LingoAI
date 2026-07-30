@@ -43,7 +43,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -52,7 +53,8 @@ button {
 }
 
 input,
-textarea {
+textarea,
+select {
   width: 100%;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.92);
@@ -60,10 +62,20 @@ textarea {
   border-radius: 14px;
   padding: 0.85rem 1rem;
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  appearance: none;
+}
+
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+  cursor: pointer;
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   outline: none;
   border-color: var(--line-strong);
   box-shadow: 0 0 0 4px rgba(17, 17, 17, 0.06);
