@@ -11,11 +11,13 @@
           <button
             class="icon-button"
             type="button"
-            aria-label="Regenerate audio"
-            title="Regenerate audio"
-            @click="$emit('regenerate-audio')"
+            :class="{ confirm: regenerateConfirm }"
+            :aria-label="regenerateConfirm ? 'Confirm regenerate audio' : 'Regenerate audio'"
+            :title="regenerateConfirm ? 'Click again to confirm' : 'Regenerate audio'"
+            @click="handleRegenerateClick"
           >
-            🔄
+            <RefreshCw v-if="!regenerateConfirm" :size="18" />
+            <Check v-else :size="18" />
           </button>
           <button
             class="icon-button"
@@ -24,7 +26,7 @@
             title="Play pronunciation"
             @click="$emit('play-audio')"
           >
-            🔊
+            <Volume2 :size="18" />
           </button>
           <button class="button button-secondary" type="button" @click="$emit('toggle-translation')">
             {{ showChinese ? 'Hide Chinese' : 'Show Chinese' }}
@@ -103,6 +105,7 @@
 
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue';
+import { Check, RefreshCw, Volume2 } from 'lucide-vue-next';
 import type { VocabularyEntry } from '@/types/models';
 
 const draft = ref('');
@@ -124,6 +127,7 @@ const emit = defineEmits<{
 }>();
 
 const deleteConfirm = ref(false);
+const regenerateConfirm = ref(false);
 
 function submit() {
   if (!draft.value.trim() || !props.word) {
@@ -153,10 +157,21 @@ function handleDeleteClick() {
   deleteConfirm.value = true;
 }
 
+function handleRegenerateClick() {
+  if (regenerateConfirm.value) {
+    emit('regenerate-audio');
+    regenerateConfirm.value = false;
+    return;
+  }
+
+  regenerateConfirm.value = true;
+}
+
 watch(
   () => props.word?.id,
   () => {
     deleteConfirm.value = false;
+    regenerateConfirm.value = false;
   },
 );
 

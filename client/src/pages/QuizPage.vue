@@ -191,10 +191,10 @@ async function submit(payload?: { response: string; blankAnswers: string[] }) {
 
     if (answerRecord?.isCorrect) {
       feedbackIsCorrect.value = true;
-      feedback.value = `✅ ${nextHint}`;
+      feedback.value = nextHint;
     } else {
       feedbackIsCorrect.value = false;
-      feedback.value = `❌ ${nextHint}`;
+      feedback.value = nextHint;
     }
   } catch (err) {
     frozenQuestion.value = null;

@@ -9,11 +9,19 @@
           <p class="subtle-copy">familiarity {{ sentence.familiarity }}</p>
         </div>
         <div class="result-actions">
-          <button class="icon-button" type="button" aria-label="Regenerate audio" title="Regenerate audio" @click="$emit('regenerate-audio')">
-            🔄
+          <button
+            class="icon-button"
+            type="button"
+            :class="{ confirm: regenerateConfirm }"
+            :aria-label="regenerateConfirm ? 'Confirm regenerate audio' : 'Regenerate audio'"
+            :title="regenerateConfirm ? 'Click again to confirm' : 'Regenerate audio'"
+            @click="handleRegenerateClick"
+          >
+            <RefreshCw v-if="!regenerateConfirm" :size="18" />
+            <Check v-else :size="18" />
           </button>
           <button class="icon-button" type="button" aria-label="Play sentence" title="Play sentence" @click="$emit('play-audio')">
-            🔊
+            <Volume2 :size="18" />
           </button>
           <button
             class="button button-secondary delete-action"
@@ -77,6 +85,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
+import { Check, RefreshCw, Volume2 } from 'lucide-vue-next';
 import type { ListeningEntry } from '@/types/models';
 
 const draft = ref('');
@@ -97,6 +106,7 @@ const emit = defineEmits<{
 
 const chatItems = computed(() => props.sentence?.chatHistory ?? []);
 const deleteConfirm = ref(false);
+const regenerateConfirm = ref(false);
 
 function submit() {
   if (!draft.value.trim() || !props.sentence) {
@@ -126,10 +136,21 @@ function handleDeleteClick() {
   deleteConfirm.value = true;
 }
 
+function handleRegenerateClick() {
+  if (regenerateConfirm.value) {
+    emit('regenerate-audio');
+    regenerateConfirm.value = false;
+    return;
+  }
+
+  regenerateConfirm.value = true;
+}
+
 watch(
   () => props.sentence?.id,
   () => {
     deleteConfirm.value = false;
+    regenerateConfirm.value = false;
   },
 );
 

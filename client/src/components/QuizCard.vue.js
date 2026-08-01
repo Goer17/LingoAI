@@ -1,4 +1,5 @@
 import { computed, nextTick, ref, watch } from 'vue';
+import { Check, Volume2, X } from 'lucide-vue-next';
 const model = defineModel({ required: true });
 const props = defineProps();
 const emit = defineEmits();
@@ -245,6 +246,15 @@ if (__VLS_ctx.question) {
             'aria-label': "Play audio",
             title: "Play audio",
         });
+        const __VLS_0 = {}.Volume2;
+        /** @type {[typeof __VLS_components.Volume2, ]} */ ;
+        // @ts-ignore
+        const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
+            size: (18),
+        }));
+        const __VLS_2 = __VLS_1({
+            size: (18),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_1));
     }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.form, __VLS_intrinsicElements.form)({
         ...{ onSubmit: (__VLS_ctx.handleSubmit) },
@@ -380,6 +390,32 @@ if (__VLS_ctx.question) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
             ...{ class: (__VLS_ctx.feedbackIsCorrect ? 'success-text quiz-inline-feedback' : 'error-text quiz-inline-feedback') },
         });
+        if (__VLS_ctx.feedbackIsCorrect) {
+            const __VLS_4 = {}.Check;
+            /** @type {[typeof __VLS_components.Check, ]} */ ;
+            // @ts-ignore
+            const __VLS_5 = __VLS_asFunctionalComponent(__VLS_4, new __VLS_4({
+                size: (14),
+                ...{ class: "feedback-icon" },
+            }));
+            const __VLS_6 = __VLS_5({
+                size: (14),
+                ...{ class: "feedback-icon" },
+            }, ...__VLS_functionalComponentArgsRest(__VLS_5));
+        }
+        else {
+            const __VLS_8 = {}.X;
+            /** @type {[typeof __VLS_components.X, ]} */ ;
+            // @ts-ignore
+            const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
+                size: (14),
+                ...{ class: "feedback-icon" },
+            }));
+            const __VLS_10 = __VLS_9({
+                size: (14),
+                ...{ class: "feedback-icon" },
+            }, ...__VLS_functionalComponentArgsRest(__VLS_9));
+        }
         (__VLS_ctx.feedback);
     }
 }
@@ -408,10 +444,15 @@ if (__VLS_ctx.question) {
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-answer-reveal']} */ ;
+/** @type {__VLS_StyleScopedClasses['feedback-icon']} */ ;
+/** @type {__VLS_StyleScopedClasses['feedback-icon']} */ ;
 var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
+            Check: Check,
+            Volume2: Volume2,
+            X: X,
             model: model,
             maskedSentence: maskedSentence,
             showInlineListeningBlanks: showInlineListeningBlanks,

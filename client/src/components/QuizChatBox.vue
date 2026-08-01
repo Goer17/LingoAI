@@ -6,7 +6,9 @@
         <p class="quiz-chat-word"><strong>{{ word }}</strong></p>
         <p class="muted-text quiz-chat-sentence">"{{ sentence }}"</p>
         <p class="quiz-chat-outcome" :class="isCorrect ? 'success-text' : 'error-text'">
-          {{ isCorrect ? '✅ Correct!' : `❌ Your answer: "${userResponse}" → Correct: "${answer}"` }}
+          <Check v-if="isCorrect" :size="14" class="feedback-icon" />
+          <X v-else :size="14" class="feedback-icon" />
+          {{ isCorrect ? 'Correct!' : `Your answer: "${userResponse}" → Correct: "${answer}"` }}
         </p>
       </div>
 
@@ -43,6 +45,7 @@
 
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue';
+import { Check, X } from 'lucide-vue-next';
 import { api } from '@/services/api';
 
 interface ChatMsg {

@@ -14,7 +14,7 @@
     </p>
     <div v-if="question.type === 'listening'" class="audio-box">
       <button class="icon-button" type="button" aria-label="Play audio" title="Play audio" @click="$emit('play-audio')">
-        🔊
+        <Volume2 :size="18" />
       </button>
     </div>
     <form class="quiz-form" @submit.prevent="handleSubmit">
@@ -106,6 +106,8 @@
       v-if="feedback"
       :class="feedbackIsCorrect ? 'success-text quiz-inline-feedback' : 'error-text quiz-inline-feedback'"
     >
+      <Check v-if="feedbackIsCorrect" :size="14" class="feedback-icon" />
+      <X v-else :size="14" class="feedback-icon" />
       {{ feedback }}
     </p>
   </section>
@@ -113,6 +115,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
+import { Check, Volume2, X } from 'lucide-vue-next';
 import type { QuizQuestion } from '@/types/models';
 
 const model = defineModel<string>({ required: true });

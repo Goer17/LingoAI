@@ -8,11 +8,19 @@
         <p v-else class="subtle-copy">{{ result.type }} · Not Found</p>
       </div>
       <div v-if="result.found" class="result-actions">
-        <button class="icon-button" type="button" aria-label="Regenerate audio" title="Regenerate audio" @click="$emit('regenerate-audio', result.ttsText)">
-          🔄
+        <button
+          class="icon-button"
+          type="button"
+          :class="{ confirm: regenerateConfirm }"
+          :aria-label="regenerateConfirm ? 'Confirm regenerate audio' : 'Regenerate audio'"
+          :title="regenerateConfirm ? 'Click again to confirm' : 'Regenerate audio'"
+          @click="handleRegenerateClick"
+        >
+          <RefreshCw v-if="!regenerateConfirm" :size="18" />
+          <Check v-else :size="18" />
         </button>
         <button class="icon-button" type="button" aria-label="Play pronunciation" title="Play pronunciation" @click="$emit('play-audio', result.ttsText)">
-          🔊
+          <Volume2 :size="18" />
         </button>
         <button class="button button-secondary" type="button" @click="$emit('toggle-translation')">
           {{ showChinese ? 'Hide Chinese' : 'Show Chinese' }}
@@ -45,9 +53,11 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
+import { Check, RefreshCw, Volume2 } from 'lucide-vue-next';
 import type { SearchResult } from '@/types/models';
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   result: SearchResult | null;
   showChinese: boolean;
   saving: boolean;
@@ -58,10 +68,22 @@ withDefaults(defineProps<{
   showHeaderLabel: true,
 });
 
-defineEmits<{
+const emit = defineEmits<{
   save: [];
   'toggle-translation': [];
   'play-audio': [text: string];
   'regenerate-audio': [text: string];
 }>();
+
+const regenerateConfirm = ref(false);
+
+function handleRegenerateClick() {
+  if (regenerateConfirm.value) {
+    emit('regenerate-audio', props.result?.ttsText ?? '');
+    regenerateConfirm.value = false;
+    return;
+  }
+
+  regenerateConfirm.value = true;
+}
 </script>

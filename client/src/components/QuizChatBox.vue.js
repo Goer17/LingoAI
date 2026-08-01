@@ -1,4 +1,5 @@
 import { nextTick, ref, watch } from 'vue';
+import { Check, X } from 'lucide-vue-next';
 import { api } from '@/services/api';
 const props = defineProps();
 const draft = ref('');
@@ -172,7 +173,33 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)(
     ...{ class: "quiz-chat-outcome" },
     ...{ class: (__VLS_ctx.isCorrect ? 'success-text' : 'error-text') },
 });
-(__VLS_ctx.isCorrect ? '✅ Correct!' : `❌ Your answer: "${__VLS_ctx.userResponse}" → Correct: "${__VLS_ctx.answer}"`);
+if (__VLS_ctx.isCorrect) {
+    const __VLS_0 = {}.Check;
+    /** @type {[typeof __VLS_components.Check, ]} */ ;
+    // @ts-ignore
+    const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
+        size: (14),
+        ...{ class: "feedback-icon" },
+    }));
+    const __VLS_2 = __VLS_1({
+        size: (14),
+        ...{ class: "feedback-icon" },
+    }, ...__VLS_functionalComponentArgsRest(__VLS_1));
+}
+else {
+    const __VLS_4 = {}.X;
+    /** @type {[typeof __VLS_components.X, ]} */ ;
+    // @ts-ignore
+    const __VLS_5 = __VLS_asFunctionalComponent(__VLS_4, new __VLS_4({
+        size: (14),
+        ...{ class: "feedback-icon" },
+    }));
+    const __VLS_6 = __VLS_5({
+        size: (14),
+        ...{ class: "feedback-icon" },
+    }, ...__VLS_functionalComponentArgsRest(__VLS_5));
+}
+(__VLS_ctx.isCorrect ? 'Correct!' : `Your answer: "${__VLS_ctx.userResponse}" → Correct: "${__VLS_ctx.answer}"`);
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ref: "chatHistoryRef",
     ...{ class: "chat-history quiz-chat-history" },
@@ -224,6 +251,8 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElement
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-chat-sentence']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-chat-outcome']} */ ;
+/** @type {__VLS_StyleScopedClasses['feedback-icon']} */ ;
+/** @type {__VLS_StyleScopedClasses['feedback-icon']} */ ;
 /** @type {__VLS_StyleScopedClasses['chat-history']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-chat-history']} */ ;
 /** @type {__VLS_StyleScopedClasses['chat-bubble']} */ ;
@@ -238,6 +267,8 @@ var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
+            Check: Check,
+            X: X,
             draft: draft,
             loading: loading,
             chatMessages: chatMessages,

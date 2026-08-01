@@ -31,8 +31,12 @@
               class="polish-feedback"
               :class="{ perfect: polishResults.get(index)!.isPerfect }"
             >
-              <span v-if="polishResults.get(index)!.isPerfect" class="polish-text">✅ Perfect!</span>
-              <span v-else class="polish-text">✏️ {{ polishResults.get(index)!.polished }}</span>
+              <span v-if="polishResults.get(index)!.isPerfect" class="polish-text">
+                <Check :size="14" class="feedback-icon" /> Perfect!
+              </span>
+              <span v-else class="polish-text">
+                <Pencil :size="14" class="feedback-icon" /> {{ polishResults.get(index)!.polished }}
+              </span>
               <span
                 v-if="!polishResults.get(index)!.isPerfect && polishResults.get(index)!.explanation"
                 class="polish-tooltip"
@@ -98,6 +102,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue';
+import { Check, Pencil } from 'lucide-vue-next';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/services/api';
 import { useVocabularyStore } from '@/stores/vocabulary';

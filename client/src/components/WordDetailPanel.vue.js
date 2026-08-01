@@ -1,9 +1,11 @@
 import { nextTick, ref, watch } from 'vue';
+import { Check, RefreshCw, Volume2 } from 'lucide-vue-next';
 const draft = ref('');
 const chatHistoryRef = ref(null);
 const props = defineProps();
 const emit = defineEmits();
 const deleteConfirm = ref(false);
+const regenerateConfirm = ref(false);
 function submit() {
     if (!draft.value.trim() || !props.word) {
         return;
@@ -26,8 +28,17 @@ function handleDeleteClick() {
     }
     deleteConfirm.value = true;
 }
+function handleRegenerateClick() {
+    if (regenerateConfirm.value) {
+        emit('regenerate-audio');
+        regenerateConfirm.value = false;
+        return;
+    }
+    regenerateConfirm.value = true;
+}
 watch(() => props.word?.id, () => {
     deleteConfirm.value = false;
+    regenerateConfirm.value = false;
 });
 watch(() => {
     const history = props.word?.chatHistory ?? [];
@@ -155,16 +166,35 @@ if (__VLS_ctx.word) {
         ...{ class: "result-actions" },
     });
     __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
-        ...{ onClick: (...[$event]) => {
-                if (!(__VLS_ctx.word))
-                    return;
-                __VLS_ctx.$emit('regenerate-audio');
-            } },
+        ...{ onClick: (__VLS_ctx.handleRegenerateClick) },
         ...{ class: "icon-button" },
         type: "button",
-        'aria-label': "Regenerate audio",
-        title: "Regenerate audio",
+        ...{ class: ({ confirm: __VLS_ctx.regenerateConfirm }) },
+        'aria-label': (__VLS_ctx.regenerateConfirm ? 'Confirm regenerate audio' : 'Regenerate audio'),
+        title: (__VLS_ctx.regenerateConfirm ? 'Click again to confirm' : 'Regenerate audio'),
     });
+    if (!__VLS_ctx.regenerateConfirm) {
+        const __VLS_0 = {}.RefreshCw;
+        /** @type {[typeof __VLS_components.RefreshCw, ]} */ ;
+        // @ts-ignore
+        const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
+            size: (18),
+        }));
+        const __VLS_2 = __VLS_1({
+            size: (18),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_1));
+    }
+    else {
+        const __VLS_4 = {}.Check;
+        /** @type {[typeof __VLS_components.Check, ]} */ ;
+        // @ts-ignore
+        const __VLS_5 = __VLS_asFunctionalComponent(__VLS_4, new __VLS_4({
+            size: (18),
+        }));
+        const __VLS_6 = __VLS_5({
+            size: (18),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_5));
+    }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
         ...{ onClick: (...[$event]) => {
                 if (!(__VLS_ctx.word))
@@ -176,6 +206,15 @@ if (__VLS_ctx.word) {
         'aria-label': "Play pronunciation",
         title: "Play pronunciation",
     });
+    const __VLS_8 = {}.Volume2;
+    /** @type {[typeof __VLS_components.Volume2, ]} */ ;
+    // @ts-ignore
+    const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
+        size: (18),
+    }));
+    const __VLS_10 = __VLS_9({
+        size: (18),
+    }, ...__VLS_functionalComponentArgsRest(__VLS_9));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
         ...{ onClick: (...[$event]) => {
                 if (!(__VLS_ctx.word))
@@ -356,12 +395,17 @@ var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
+            Check: Check,
+            RefreshCw: RefreshCw,
+            Volume2: Volume2,
             draft: draft,
             chatHistoryRef: chatHistoryRef,
             deleteConfirm: deleteConfirm,
+            regenerateConfirm: regenerateConfirm,
             submit: submit,
             handleNoteChange: handleNoteChange,
             handleDeleteClick: handleDeleteClick,
+            handleRegenerateClick: handleRegenerateClick,
             renderMarkdown: renderMarkdown,
         };
     },

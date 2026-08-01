@@ -1,4 +1,5 @@
 import { computed, nextTick, onMounted, ref } from 'vue';
+import { Check, Pencil } from 'lucide-vue-next';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/services/api';
 import { useVocabularyStore } from '@/stores/vocabulary';
@@ -238,11 +239,33 @@ if (__VLS_ctx.scenario && !__VLS_ctx.loading) {
                 __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                     ...{ class: "polish-text" },
                 });
+                const __VLS_0 = {}.Check;
+                /** @type {[typeof __VLS_components.Check, ]} */ ;
+                // @ts-ignore
+                const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
+                    size: (14),
+                    ...{ class: "feedback-icon" },
+                }));
+                const __VLS_2 = __VLS_1({
+                    size: (14),
+                    ...{ class: "feedback-icon" },
+                }, ...__VLS_functionalComponentArgsRest(__VLS_1));
             }
             else {
                 __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                     ...{ class: "polish-text" },
                 });
+                const __VLS_4 = {}.Pencil;
+                /** @type {[typeof __VLS_components.Pencil, ]} */ ;
+                // @ts-ignore
+                const __VLS_5 = __VLS_asFunctionalComponent(__VLS_4, new __VLS_4({
+                    size: (14),
+                    ...{ class: "feedback-icon" },
+                }));
+                const __VLS_6 = __VLS_5({
+                    size: (14),
+                    ...{ class: "feedback-icon" },
+                }, ...__VLS_functionalComponentArgsRest(__VLS_5));
                 (__VLS_ctx.polishResults.get(index).polished);
             }
             if (!__VLS_ctx.polishResults.get(index).isPerfect && __VLS_ctx.polishResults.get(index).explanation) {
@@ -347,7 +370,9 @@ if (__VLS_ctx.scenario && !__VLS_ctx.loading) {
 /** @type {__VLS_StyleScopedClasses['chat-content']} */ ;
 /** @type {__VLS_StyleScopedClasses['polish-feedback']} */ ;
 /** @type {__VLS_StyleScopedClasses['polish-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['feedback-icon']} */ ;
 /** @type {__VLS_StyleScopedClasses['polish-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['feedback-icon']} */ ;
 /** @type {__VLS_StyleScopedClasses['polish-tooltip']} */ ;
 /** @type {__VLS_StyleScopedClasses['empty-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['chat-form']} */ ;
@@ -370,6 +395,8 @@ var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
+            Check: Check,
+            Pencil: Pencil,
             loading: loading,
             error: error,
             sending: sending,
