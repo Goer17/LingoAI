@@ -1,6 +1,6 @@
 <template>
   <section class="vocabulary-page">
-    <SearchBar v-model="query" :loading="store.searching" @search="handleSearch" />
+    <SearchBar v-model="query" :loading="store.searching" :suggest="fetchSuggestions" @search="handleSearch" />
 
     <p v-if="message" class="success-text">{{ message }}</p>
     <p v-if="error" class="error-text">{{ error }}</p>
@@ -9,6 +9,7 @@
       :result="store.searchResult"
       :show-chinese="showChinese"
       :saving="store.savingWord"
+      :has-common-audio="!!searchCommonUrl"
       @save="handleSaveWord"
       @toggle-translation="showChinese = !showChinese"
       @play-audio="playSearchAudio"
@@ -21,6 +22,7 @@
         :word="store.selectedWord"
         :show-chinese="showChinese"
         :loading="chatLoading"
+        :has-common-audio="!!wordCommonUrl"
         @toggle-translation="showChinese = !showChinese"
         @play-audio="playWordAudio"
         @regenerate-audio="regenerateWordAudio"
@@ -45,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import SearchBar from '@/components/SearchBar.vue';
 import SearchResultCard from '@/components/SearchResultCard.vue';
@@ -64,6 +66,48 @@ const showChinese = ref(false);
 const chatLoading = ref(false);
 const quizLoading = ref(false);
 const audioVersions = reactive<Record<string, number>>({});
+const searchCommonUrl = ref<string | null>(null);
+const wordCommonUrl = ref<string | null>(null);
+
+async function refreshSearchCommonAudio() {
+  const result = store.searchResult;
+  if (!result || !result.found) {
+    searchCommonUrl.value = null;
+    return;
+  }
+
+  try {
+    const { audioUrl } = await api.hasCommonAudio(result.text);
+    searchCommonUrl.value = audioUrl;
+  } catch {
+    searchCommonUrl.value = null;
+  }
+}
+
+async function refreshWordCommonAudio() {
+  const word = store.selectedWord;
+  if (!word) {
+    wordCommonUrl.value = null;
+    return;
+  }
+
+  try {
+    const { audioUrl } = await api.hasCommonAudio(word.text);
+    wordCommonUrl.value = audioUrl;
+  } catch {
+    wordCommonUrl.value = null;
+  }
+}
+
+watch(
+  () => store.searchResult,
+  () => void refreshSearchCommonAudio(),
+);
+
+watch(
+  () => store.selectedWord?.id,
+  () => void refreshWordCommonAudio(),
+);
 
 onMounted(async () => {
   try {
@@ -72,6 +116,15 @@ onMounted(async () => {
     error.value = err instanceof Error ? err.message : 'Failed to load vocabulary.';
   }
 });
+
+async function fetchSuggestions(prefix: string): Promise<string[]> {
+  try {
+    const { suggestions } = await api.suggestWords(prefix);
+    return suggestions;
+  } catch {
+    return [];
+  }
+}
 
 async function handleSearch() {
   error.value = '';
@@ -140,7 +193,7 @@ async function handleDeleteWord(id: string) {
 async function playSearchAudio(input: string) {
   error.value = '';
   try {
-    const audioUrl = await getAudioUrl(input);
+    const audioUrl = searchCommonUrl.value ?? await getAudioUrl(input);
     const audio = new Audio(audioUrl);
     await audio.play();
   } catch (err) {
@@ -168,6 +221,12 @@ async function playWordAudio() {
   }
 
   try {
+    if (wordCommonUrl.value) {
+      const audio = new Audio(wordCommonUrl.value);
+      await audio.play();
+      return;
+    }
+
     const version = audioVersions[word.id];
     let audioUrl: string;
     if (version && word.audioFile) {

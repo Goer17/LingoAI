@@ -43,6 +43,12 @@ export const api = {
     searchWord(query) {
         return unwrap(http.post('/vocabulary/search-word', { query }));
     },
+    hasCommonAudio(word) {
+        return unwrap(http.get('/vocabulary/common-audio', { params: { word } }));
+    },
+    suggestWords(query, limit = 8) {
+        return unwrap(http.get('/vocabulary/suggest', { params: { query, limit } }));
+    },
     saveWord(result) {
         return unwrap(http.post('/vocabulary', { result }));
     },

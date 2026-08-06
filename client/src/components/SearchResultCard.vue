@@ -9,6 +9,7 @@
       </div>
       <div v-if="result.found" class="result-actions">
         <button
+          v-if="!hasCommonAudio"
           class="icon-button"
           type="button"
           :class="{ confirm: regenerateConfirm }"
@@ -63,9 +64,11 @@ const props = withDefaults(defineProps<{
   saving: boolean;
   allowSave?: boolean;
   showHeaderLabel?: boolean;
+  hasCommonAudio?: boolean;
 }>(), {
   allowSave: true,
   showHeaderLabel: true,
+  hasCommonAudio: false,
 });
 
 const emit = defineEmits<{

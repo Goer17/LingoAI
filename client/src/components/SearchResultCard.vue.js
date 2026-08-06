@@ -3,6 +3,7 @@ import { Check, RefreshCw, Volume2 } from 'lucide-vue-next';
 const props = withDefaults(defineProps(), {
     allowSave: true,
     showHeaderLabel: true,
+    hasCommonAudio: false,
 });
 const emit = defineEmits();
 const regenerateConfirm = ref(false);
@@ -18,6 +19,7 @@ debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_withDefaultsArg = (function (t) { return t; })({
     allowSave: true,
     showHeaderLabel: true,
+    hasCommonAudio: false,
 });
 const __VLS_ctx = {};
 let __VLS_components;
@@ -54,35 +56,37 @@ if (__VLS_ctx.result) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "result-actions" },
         });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
-            ...{ onClick: (__VLS_ctx.handleRegenerateClick) },
-            ...{ class: "icon-button" },
-            type: "button",
-            ...{ class: ({ confirm: __VLS_ctx.regenerateConfirm }) },
-            'aria-label': (__VLS_ctx.regenerateConfirm ? 'Confirm regenerate audio' : 'Regenerate audio'),
-            title: (__VLS_ctx.regenerateConfirm ? 'Click again to confirm' : 'Regenerate audio'),
-        });
-        if (!__VLS_ctx.regenerateConfirm) {
-            const __VLS_0 = {}.RefreshCw;
-            /** @type {[typeof __VLS_components.RefreshCw, ]} */ ;
-            // @ts-ignore
-            const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
-                size: (18),
-            }));
-            const __VLS_2 = __VLS_1({
-                size: (18),
-            }, ...__VLS_functionalComponentArgsRest(__VLS_1));
-        }
-        else {
-            const __VLS_4 = {}.Check;
-            /** @type {[typeof __VLS_components.Check, ]} */ ;
-            // @ts-ignore
-            const __VLS_5 = __VLS_asFunctionalComponent(__VLS_4, new __VLS_4({
-                size: (18),
-            }));
-            const __VLS_6 = __VLS_5({
-                size: (18),
-            }, ...__VLS_functionalComponentArgsRest(__VLS_5));
+        if (!__VLS_ctx.hasCommonAudio) {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+                ...{ onClick: (__VLS_ctx.handleRegenerateClick) },
+                ...{ class: "icon-button" },
+                type: "button",
+                ...{ class: ({ confirm: __VLS_ctx.regenerateConfirm }) },
+                'aria-label': (__VLS_ctx.regenerateConfirm ? 'Confirm regenerate audio' : 'Regenerate audio'),
+                title: (__VLS_ctx.regenerateConfirm ? 'Click again to confirm' : 'Regenerate audio'),
+            });
+            if (!__VLS_ctx.regenerateConfirm) {
+                const __VLS_0 = {}.RefreshCw;
+                /** @type {[typeof __VLS_components.RefreshCw, ]} */ ;
+                // @ts-ignore
+                const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
+                    size: (18),
+                }));
+                const __VLS_2 = __VLS_1({
+                    size: (18),
+                }, ...__VLS_functionalComponentArgsRest(__VLS_1));
+            }
+            else {
+                const __VLS_4 = {}.Check;
+                /** @type {[typeof __VLS_components.Check, ]} */ ;
+                // @ts-ignore
+                const __VLS_5 = __VLS_asFunctionalComponent(__VLS_4, new __VLS_4({
+                    size: (18),
+                }));
+                const __VLS_6 = __VLS_5({
+                    size: (18),
+                }, ...__VLS_functionalComponentArgsRest(__VLS_5));
+            }
         }
         __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
             ...{ onClick: (...[$event]) => {

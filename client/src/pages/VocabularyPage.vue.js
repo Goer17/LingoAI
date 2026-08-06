@@ -1,4 +1,4 @@
-import { onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import SearchBar from '@/components/SearchBar.vue';
 import SearchResultCard from '@/components/SearchResultCard.vue';
@@ -16,6 +16,38 @@ const showChinese = ref(false);
 const chatLoading = ref(false);
 const quizLoading = ref(false);
 const audioVersions = reactive({});
+const searchCommonUrl = ref(null);
+const wordCommonUrl = ref(null);
+async function refreshSearchCommonAudio() {
+    const result = store.searchResult;
+    if (!result || !result.found) {
+        searchCommonUrl.value = null;
+        return;
+    }
+    try {
+        const { audioUrl } = await api.hasCommonAudio(result.text);
+        searchCommonUrl.value = audioUrl;
+    }
+    catch {
+        searchCommonUrl.value = null;
+    }
+}
+async function refreshWordCommonAudio() {
+    const word = store.selectedWord;
+    if (!word) {
+        wordCommonUrl.value = null;
+        return;
+    }
+    try {
+        const { audioUrl } = await api.hasCommonAudio(word.text);
+        wordCommonUrl.value = audioUrl;
+    }
+    catch {
+        wordCommonUrl.value = null;
+    }
+}
+watch(() => store.searchResult, () => void refreshSearchCommonAudio());
+watch(() => store.selectedWord?.id, () => void refreshWordCommonAudio());
 onMounted(async () => {
     try {
         await store.fetchVocabulary();
@@ -24,6 +56,15 @@ onMounted(async () => {
         error.value = err instanceof Error ? err.message : 'Failed to load vocabulary.';
     }
 });
+async function fetchSuggestions(prefix) {
+    try {
+        const { suggestions } = await api.suggestWords(prefix);
+        return suggestions;
+    }
+    catch {
+        return [];
+    }
+}
 async function handleSearch() {
     error.value = '';
     message.value = '';
@@ -92,7 +133,7 @@ async function handleDeleteWord(id) {
 async function playSearchAudio(input) {
     error.value = '';
     try {
-        const audioUrl = await getAudioUrl(input);
+        const audioUrl = searchCommonUrl.value ?? await getAudioUrl(input);
         const audio = new Audio(audioUrl);
         await audio.play();
     }
@@ -119,6 +160,11 @@ async function playWordAudio() {
         return;
     }
     try {
+        if (wordCommonUrl.value) {
+            const audio = new Audio(wordCommonUrl.value);
+            await audio.play();
+            return;
+        }
         const version = audioVersions[word.id];
         let audioUrl;
         if (version && word.audioFile) {
@@ -184,11 +230,13 @@ const __VLS_0 = __VLS_asFunctionalComponent(SearchBar, new SearchBar({
     ...{ 'onSearch': {} },
     modelValue: (__VLS_ctx.query),
     loading: (__VLS_ctx.store.searching),
+    suggest: (__VLS_ctx.fetchSuggestions),
 }));
 const __VLS_1 = __VLS_0({
     ...{ 'onSearch': {} },
     modelValue: (__VLS_ctx.query),
     loading: (__VLS_ctx.store.searching),
+    suggest: (__VLS_ctx.fetchSuggestions),
 }, ...__VLS_functionalComponentArgsRest(__VLS_0));
 let __VLS_3;
 let __VLS_4;
@@ -219,6 +267,7 @@ const __VLS_7 = __VLS_asFunctionalComponent(SearchResultCard, new SearchResultCa
     result: (__VLS_ctx.store.searchResult),
     showChinese: (__VLS_ctx.showChinese),
     saving: (__VLS_ctx.store.savingWord),
+    hasCommonAudio: (!!__VLS_ctx.searchCommonUrl),
 }));
 const __VLS_8 = __VLS_7({
     ...{ 'onSave': {} },
@@ -228,6 +277,7 @@ const __VLS_8 = __VLS_7({
     result: (__VLS_ctx.store.searchResult),
     showChinese: (__VLS_ctx.showChinese),
     saving: (__VLS_ctx.store.savingWord),
+    hasCommonAudio: (!!__VLS_ctx.searchCommonUrl),
 }, ...__VLS_functionalComponentArgsRest(__VLS_7));
 let __VLS_10;
 let __VLS_11;
@@ -282,6 +332,7 @@ const __VLS_24 = __VLS_asFunctionalComponent(WordDetailPanel, new WordDetailPane
     word: (__VLS_ctx.store.selectedWord),
     showChinese: (__VLS_ctx.showChinese),
     loading: (__VLS_ctx.chatLoading),
+    hasCommonAudio: (!!__VLS_ctx.wordCommonUrl),
 }));
 const __VLS_25 = __VLS_24({
     ...{ 'onToggleTranslation': {} },
@@ -294,6 +345,7 @@ const __VLS_25 = __VLS_24({
     word: (__VLS_ctx.store.selectedWord),
     showChinese: (__VLS_ctx.showChinese),
     loading: (__VLS_ctx.chatLoading),
+    hasCommonAudio: (!!__VLS_ctx.wordCommonUrl),
 }, ...__VLS_functionalComponentArgsRest(__VLS_24));
 let __VLS_27;
 let __VLS_28;
@@ -364,6 +416,9 @@ const __VLS_self = (await import('vue')).defineComponent({
             showChinese: showChinese,
             chatLoading: chatLoading,
             quizLoading: quizLoading,
+            searchCommonUrl: searchCommonUrl,
+            wordCommonUrl: wordCommonUrl,
+            fetchSuggestions: fetchSuggestions,
             handleSearch: handleSearch,
             handleSaveWord: handleSaveWord,
             handleSaveNote: handleSaveNote,

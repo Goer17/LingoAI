@@ -5,7 +5,9 @@ import { createChatListeningSentencePrompt } from '../prompts/chatListeningSente
 import { createGenerateQuizPrompt } from '../prompts/generateQuizPrompt.js';
 import { createQuizQuestionChatPrompt } from '../prompts/quizQuestionChatPrompt.js';
 import { createSearchWordPrompt } from '../prompts/searchWordPrompt.js';
+import { suggestWords } from '../services/suggestionService.js';
 import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, deleteAudioFile, getMediaUrl } from '../services/audioService.js';
+import { getCommonAudioUrl, hasCommonAudio } from '../services/commonAudioService.js';
 import { askWordChat, generateQuiz, searchWord, streamWordChat } from '../services/openaiService.js';
 import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '../services/fillBlankService.js';
 import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningGroup, createListeningQuizDraft, deleteListeningGroup, getListeningEntryById, listListeningEntries, listListeningGroups, pickListeningEntries, pickListeningEntriesByGroup, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
@@ -411,6 +413,22 @@ vocabularyRouter.post('/tasks/:id/clear', (req, res) => {
   }
 
   return ok(res, { removed: true });
+});
+
+vocabularyRouter.get('/common-audio', (req, res) => {
+  const word = typeof req.query.word === 'string' ? req.query.word : '';
+  const hasCommon = hasCommonAudio(word);
+  return ok(res, {
+    hasCommon,
+    audioUrl: hasCommon ? getCommonAudioUrl(word) : null,
+  });
+});
+
+vocabularyRouter.get('/suggest', (req, res) => {
+  const prefix = typeof req.query.query === 'string' ? req.query.query : '';
+  const limitParam = Number(req.query.limit);
+  const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 20) : 8;
+  return ok(res, { suggestions: suggestWords(prefix, limit), query: prefix });
 });
 
 vocabularyRouter.post('/search-word', async (req, res) => {

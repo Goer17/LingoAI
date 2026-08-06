@@ -61,6 +61,16 @@ export const api = {
   searchWord(query: string) {
     return unwrap<SearchResult>(http.post('/vocabulary/search-word', { query }));
   },
+  hasCommonAudio(word: string) {
+    return unwrap<{ hasCommon: boolean; audioUrl: string | null }>(
+      http.get('/vocabulary/common-audio', { params: { word } }),
+    );
+  },
+  suggestWords(query: string, limit = 8) {
+    return unwrap<{ suggestions: string[]; query: string }>(
+      http.get('/vocabulary/suggest', { params: { query, limit } }),
+    );
+  },
   saveWord(result: SearchResult) {
     return unwrap<{ created: boolean; entry: VocabularyEntry }>(http.post('/vocabulary', { result }));
   },

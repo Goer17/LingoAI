@@ -9,6 +9,7 @@
         </div>
         <div class="result-actions">
           <button
+            v-if="!hasCommonAudio"
             class="icon-button"
             type="button"
             :class="{ confirm: regenerateConfirm }"
@@ -114,6 +115,7 @@ const props = defineProps<{
   word: VocabularyEntry | null;
   showChinese: boolean;
   loading: boolean;
+  hasCommonAudio?: boolean;
 }>();
 
 const emit = defineEmits<{

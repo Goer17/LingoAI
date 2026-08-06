@@ -33,6 +33,14 @@ export declare const api: {
         removed: boolean;
     }>;
     searchWord(query: string): Promise<SearchResult>;
+    hasCommonAudio(word: string): Promise<{
+        hasCommon: boolean;
+        audioUrl: string | null;
+    }>;
+    suggestWords(query: string, limit?: number): Promise<{
+        suggestions: string[];
+        query: string;
+    }>;
     saveWord(result: SearchResult): Promise<{
         created: boolean;
         entry: VocabularyEntry;
