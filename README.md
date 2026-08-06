@@ -1,138 +1,54 @@
 # LingoAI
 
-LingoAI is a full-stack English learning web app focused on vocabulary collection, AI-assisted explanations, tutor chat, pronunciation audio, and quizzes.
-
-## Stack
-
-- Frontend: Vue 3, Vite, Vue Router, Pinia, Axios
-- Backend: Express, TypeScript
-- Persistence: SQLite via `node:sqlite`
-- AI integration: OpenAI-compatible Chat Completions and Speech APIs
+A full-stack English learning app. Look up words, save vocabulary, get AI explanations and pronunciation, and practise through quizzes, listening, writing, and scenario conversations.
 
 ## Features
 
-- Access-token login with `.token`
-- Model settings managed in the app `Setting` page
-- Search word/phrase with structured AI output
-- Save vocabulary with familiarity score
-- Tutor chat per word with clear-history support
-- TTS pronunciation playback (`🔊`) with LRU cache
-- Quiz generation from low-familiarity words
-- Familiarity update after answers
+- **Search & autocomplete** — type to get instant word suggestions, for both words and phrases
+- **Pronunciation** — a bundled library of 40,000+ real voice recordings for common words, with AI speech fallback for everything else
+- **AI explanations** — structured definitions, examples, parts of speech, and derivatives, in English or Chinese
+- **AI tutor chat** — ask any word, sentence, or concept a follow-up question at any time
+- **Vocabulary notebook** — save words, track familiarity, and review the ones you know least first
+- **Quizzes** — auto-generated fill-in-the-blank and listening questions, with a mistakes notebook for review
+- **Listening practice** — collect sentences, practise masked fill-in exercises, and track familiarity
+- **Writing & expression** — build topic knowledge points, then train through role-play scenario conversations with AI feedback on your writing
 
-## Project Structure
+## Quick Start
 
-```text
-client/   Vue app
-server/   Express API and SQLite persistence
-plan.md   Original product plan
-DEV.md    Development guide and conventions
-```
-
-## Requirements
-
-- Node.js 25+
-- npm 11+
-
-## Access Token
-
-The app requires a token from root `.token`.
-
-If it does not exist:
+Requires **Node.js 25+**.
 
 ```bash
-openssl rand -base64 24 | tr -d '\n' > .token
-```
-
-## Install
-
-```bash
+# 1. Install dependencies
 npm install
-```
 
-## Run in Development
+# 2. Generate an access token (first run only)
+openssl rand -base64 24 | tr -d '\n' > .token
 
-```bash
+# 3. Start the dev environment (frontend :5173, backend :3000)
 npm run dev
 ```
 
-- Frontend: `http://localhost:5173`
-- Backend: `http://localhost:3000`
+Open `http://localhost:5173` and log in with the token from `.token`.
 
-## First-Run Setup
+> On first use, open **Settings** to configure your AI models (Base URL, API key, language model, audio model). Settings are stored locally in SQLite — no environment variables required.
 
-1. Login with the token from `.token`.
-2. Open `Setting` page.
-3. Fill and save:
-   - `Base URL`
-   - `API Key`
-   - `Language Model`
-   - `Audio Model`
-
-Model configuration is persisted in SQLite. No `.env` file is required for model settings.
-
-## Optional Runtime Environment Variables
-
-These are optional process env vars for server runtime only:
-
-- `PORT` (default `3000`)
-- `CLIENT_ORIGIN` (default `http://localhost:5173`)
-- `DATABASE_PATH` (default `server/data/lingoai.sqlite`)
-
-Example:
+## Production
 
 ```bash
-PORT=3000 CLIENT_ORIGIN=http://localhost:5173 npm run dev
+npm run build   # build client and server
+npm run start   # run the production server on :3000
 ```
 
-## Build
+Optional env vars: `PORT`, `CLIENT_ORIGIN`, `DATABASE_PATH`.
 
-```bash
-npm run build
-```
-
-## Run Production Server
-
-```bash
-npm run start
-```
-
-Starts backend from `server/dist`. Frontend static hosting should be handled separately.
-
-## Persistence
-
-Database file (default):
+## Project Layout
 
 ```text
-server/data/lingoai.sqlite
+client/   Vue 3 frontend
+server/   Express + TypeScript backend, SQLite storage
 ```
 
-Stored data:
+## Docs
 
-- app settings
-- vocabulary entries
-- quiz sessions
-- migration metadata
-
-On first startup, legacy JSON files in `server/data/` are imported once.
-
-## API Overview
-
-- `POST /api/auth/login`
-- `GET /api/settings`
-- `POST /api/settings`
-- `GET /api/vocabulary`
-- `POST /api/vocabulary/search-word`
-- `POST /api/vocabulary`
-- `GET /api/vocabulary/:id`
-- `POST /api/vocabulary/:id/note`
-- `POST /api/vocabulary/:id/chat-word`
-- `POST /api/vocabulary/:id/chat-word/clear`
-- `POST /api/vocabulary/generate-audio`
-- `POST /api/vocabulary/generate-quiz`
-- `GET /api/vocabulary/quiz/:id`
-- `POST /api/vocabulary/quiz/:id/answer`
-
-## Development Notes
-
-See `DEV.md` for architecture and extension rules.
+- `DEV.md` — architecture and development conventions
+- `UPDATE.md` — production update and deployment flow
