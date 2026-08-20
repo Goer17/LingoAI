@@ -31,6 +31,7 @@
         :saving="false"
         :allow-save="false"
         :show-header-label="false"
+        :has-common-audio="!!answerCommonUrl"
         @toggle-translation="showChinese = !showChinese"
         @play-audio="playAnswerWordAudio"
       />
@@ -42,6 +43,7 @@
           :saving="false"
           :allow-save="false"
           :show-header-label="false"
+          :has-common-audio="!!answerCommonUrl"
           @toggle-translation="showChinese = !showChinese"
           @play-audio="playAnswerWordAudio"
         />
@@ -68,6 +70,7 @@ import { RouterLink, useRoute } from 'vue-router';
 import QuizCard from '@/components/QuizCard.vue';
 import QuizChatBox from '@/components/QuizChatBox.vue';
 import SearchResultCard from '@/components/SearchResultCard.vue';
+import { api } from '@/services/api';
 import { useVocabularyStore } from '@/stores/vocabulary';
 import { getAudioUrl } from '@/utils/audioCache';
 
@@ -85,6 +88,7 @@ const submittedListeningAnswers = ref<string[]>([]);
 const lastAutoPlayedQuestionId = ref('');
 const autoPlayArmed = ref(true);
 const showChinese = ref(false);
+const answerCommonUrl = ref<string | null>(null);
 
 onMounted(async () => {
   try {
@@ -228,6 +232,24 @@ async function playAnswerWordAudio(input: string) {
     error.value = err instanceof Error ? err.message : 'Audio playback failed.';
   }
 }
+
+watch(
+  () => answerWordResult.value?.text ?? '',
+  async (text) => {
+    if (!text) {
+      answerCommonUrl.value = null;
+      return;
+    }
+
+    try {
+      const { audioUrl } = await api.hasCommonAudio(text);
+      answerCommonUrl.value = audioUrl;
+    } catch {
+      answerCommonUrl.value = null;
+    }
+  },
+  { immediate: true },
+);
 
 watch(
   () => [displayQuestion.value?.id, awaitingNext.value] as const,

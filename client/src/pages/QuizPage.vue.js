@@ -3,6 +3,7 @@ import { RouterLink, useRoute } from 'vue-router';
 import QuizCard from '@/components/QuizCard.vue';
 import QuizChatBox from '@/components/QuizChatBox.vue';
 import SearchResultCard from '@/components/SearchResultCard.vue';
+import { api } from '@/services/api';
 import { useVocabularyStore } from '@/stores/vocabulary';
 import { getAudioUrl } from '@/utils/audioCache';
 const route = useRoute();
@@ -19,6 +20,7 @@ const submittedListeningAnswers = ref([]);
 const lastAutoPlayedQuestionId = ref('');
 const autoPlayArmed = ref(true);
 const showChinese = ref(false);
+const answerCommonUrl = ref(null);
 onMounted(async () => {
     try {
         await store.loadQuiz(String(route.params.id));
@@ -153,6 +155,19 @@ async function playAnswerWordAudio(input) {
         error.value = err instanceof Error ? err.message : 'Audio playback failed.';
     }
 }
+watch(() => answerWordResult.value?.text ?? '', async (text) => {
+    if (!text) {
+        answerCommonUrl.value = null;
+        return;
+    }
+    try {
+        const { audioUrl } = await api.hasCommonAudio(text);
+        answerCommonUrl.value = audioUrl;
+    }
+    catch {
+        answerCommonUrl.value = null;
+    }
+}, { immediate: true });
 watch(() => [displayQuestion.value?.id, awaitingNext.value], async ([questionId, waiting]) => {
     const question = displayQuestion.value;
     if (!questionId || !question || waiting || !autoPlayArmed.value || question.type !== 'listening' || !question.audioUrl) {
@@ -260,6 +275,7 @@ else {
             saving: (false),
             allowSave: (false),
             showHeaderLabel: (false),
+            hasCommonAudio: (!!__VLS_ctx.answerCommonUrl),
         }));
         const __VLS_13 = __VLS_12({
             ...{ 'onToggleTranslation': {} },
@@ -270,6 +286,7 @@ else {
             saving: (false),
             allowSave: (false),
             showHeaderLabel: (false),
+            hasCommonAudio: (!!__VLS_ctx.answerCommonUrl),
         }, ...__VLS_functionalComponentArgsRest(__VLS_12));
         let __VLS_15;
         let __VLS_16;
@@ -303,6 +320,7 @@ else {
                 saving: (false),
                 allowSave: (false),
                 showHeaderLabel: (false),
+                hasCommonAudio: (!!__VLS_ctx.answerCommonUrl),
             }));
             const __VLS_21 = __VLS_20({
                 ...{ 'onToggleTranslation': {} },
@@ -312,6 +330,7 @@ else {
                 saving: (false),
                 allowSave: (false),
                 showHeaderLabel: (false),
+                hasCommonAudio: (!!__VLS_ctx.answerCommonUrl),
             }, ...__VLS_functionalComponentArgsRest(__VLS_20));
             let __VLS_23;
             let __VLS_24;
@@ -391,6 +410,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             submittedAnswer: submittedAnswer,
             submittedListeningAnswers: submittedListeningAnswers,
             showChinese: showChinese,
+            answerCommonUrl: answerCommonUrl,
             total: total,
             showSummary: showSummary,
             score: score,
