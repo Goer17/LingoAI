@@ -225,7 +225,8 @@ async function playAudio() {
 async function playAnswerWordAudio(input: string) {
   error.value = '';
   try {
-    const audioUrl = await getAudioUrl(input);
+    // Prefer the real dictionary recording when available; fall back to TTS.
+    const audioUrl = answerCommonUrl.value ?? await getAudioUrl(input);
     const audio = new Audio(audioUrl);
     await audio.play();
   } catch (err) {
