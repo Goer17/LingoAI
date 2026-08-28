@@ -183,7 +183,7 @@ async function handleExampleImage(example) {
         error: '',
     };
     try {
-        const result = await api.generateSentenceImage(example, force);
+        const result = await api.generateSentenceImage(example, props.word?.text, force);
         exampleImages.value[example] = {
             url: result.imageUrl,
             loading: false,

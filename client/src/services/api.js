@@ -195,8 +195,8 @@ export const api = {
     checkSentenceImage(sentence) {
         return unwrap(http.post('/vocabulary/check-image', { sentence }));
     },
-    generateSentenceImage(sentence, force = false) {
-        return unwrap(http.post('/vocabulary/generate-image', { sentence, force }));
+    generateSentenceImage(sentence, word, force = false) {
+        return unwrap(http.post('/vocabulary/generate-image', { sentence, word, force }));
     },
     generateQuiz() {
         return unwrap(http.post('/vocabulary/generate-quiz'));

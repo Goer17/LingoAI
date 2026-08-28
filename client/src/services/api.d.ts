@@ -84,7 +84,7 @@ export declare const api: {
     checkSentenceImage(sentence: string): Promise<{
         imageUrl: string | null;
     }>;
-    generateSentenceImage(sentence: string, force?: boolean): Promise<{
+    generateSentenceImage(sentence: string, word?: string, force?: boolean): Promise<{
         imageUrl: string;
         cached: boolean;
         source: "exact" | "fuzzy" | "generated";

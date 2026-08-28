@@ -115,6 +115,7 @@ export interface MistakeEntry {
     answer: string;
     ttsText?: string;
     audioUrl?: string;
+    imageUrl?: string;
     blanks?: QuizBlank[];
 }
 export interface ListeningGroup {

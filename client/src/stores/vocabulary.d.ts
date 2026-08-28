@@ -224,6 +224,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         answer: string;
         ttsText?: string | undefined;
         audioUrl?: string | undefined;
+        imageUrl?: string | undefined;
         blanks?: {
             start: number;
             end: number;
@@ -239,6 +240,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         answer: string;
         ttsText?: string | undefined;
         audioUrl?: string | undefined;
+        imageUrl?: string | undefined;
         blanks?: {
             start: number;
             end: number;
@@ -705,6 +707,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         answer: string;
         ttsText?: string | undefined;
         audioUrl?: string | undefined;
+        imageUrl?: string | undefined;
         blanks?: {
             start: number;
             end: number;
@@ -720,6 +723,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         answer: string;
         ttsText?: string | undefined;
         audioUrl?: string | undefined;
+        imageUrl?: string | undefined;
         blanks?: {
             start: number;
             end: number;
@@ -1186,6 +1190,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         answer: string;
         ttsText?: string | undefined;
         audioUrl?: string | undefined;
+        imageUrl?: string | undefined;
         blanks?: {
             start: number;
             end: number;
@@ -1201,6 +1206,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         answer: string;
         ttsText?: string | undefined;
         audioUrl?: string | undefined;
+        imageUrl?: string | undefined;
         blanks?: {
             start: number;
             end: number;

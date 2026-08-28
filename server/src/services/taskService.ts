@@ -2,6 +2,7 @@ import { mistakeRepository, taskRepository } from '../db/repositories.js';
 import type { LearningTask, MistakeEntry, QuizSession, ScenarioData } from '../types/models.js';
 import { createId } from '../utils/id.js';
 import { createQuizSession } from './quizService.js';
+import { getOrCreateSentenceImage } from './imageService.js';
 
 function sameMistake(a: MistakeEntry, b: Omit<MistakeEntry, 'id' | 'createdAt' | 'updatedAt'>) {
   return (
@@ -132,6 +133,7 @@ export function upsertMistakesFromSession(session: QuizSession) {
       answer: question.answer,
       ttsText: question.ttsText,
       audioUrl: question.audioUrl,
+      imageUrl: question.imageUrl,
       blanks: question.blanks,
     };
 
@@ -166,22 +168,42 @@ export function removeMistakeEntries(ids: string[]) {
   return mistakeRepository.list();
 }
 
-export function createMistakeReviewSession() {
+export async function createMistakeReviewSession() {
   const mistakes = mistakeRepository.list().slice(0, 10);
   if (mistakes.length === 0) {
     return null;
   }
 
-  const questions = mistakes.map((entry) => ({
-    id: createId('question'),
-    type: entry.type,
-    word: entry.word,
-    sentence: entry.sentence,
-    answer: entry.answer,
-    ttsText: entry.ttsText,
-    audioUrl: entry.audioUrl,
-    blanks: entry.blanks,
-    mistakeId: entry.id,
+  const questions = await Promise.all(mistakes.map(async (entry) => {
+    let imageUrl = entry.imageUrl;
+    if (entry.type === 'fill_blank' && !entry.audioUrl) {
+      try {
+        const image = await getOrCreateSentenceImage(entry.sentence, { word: entry.word });
+        imageUrl = image.imageUrl;
+        if (imageUrl !== entry.imageUrl) {
+          mistakeRepository.save({
+            ...entry,
+            imageUrl,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      } catch {
+        // Image generation is best-effort: the question stays usable without it.
+      }
+    }
+
+    return {
+      id: createId('question'),
+      type: entry.type,
+      word: entry.word,
+      sentence: entry.sentence,
+      answer: entry.answer,
+      ttsText: entry.ttsText,
+      audioUrl: entry.audioUrl,
+      imageUrl,
+      blanks: entry.blanks,
+      mistakeId: entry.id,
+    };
   }));
 
   return createQuizSession(questions, 'mistake_review');

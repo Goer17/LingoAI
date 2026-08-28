@@ -1,15 +1,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { sentenceImageRepository } from '../db/repositories.js';
-import { createSentenceImagePrompt } from '../prompts/sentenceImagePrompt.js';
+import { REALISTIC_IMAGE_STYLE, createSentenceImagePolishPrompt, createSentenceImagePrompt } from '../prompts/sentenceImagePrompt.js';
 import { createMatchSentencePrompt } from '../prompts/matchSentencePrompt.js';
-import { generateImageBase64, matchSentenceCandidates } from './openaiService.js';
+import { askWordChat, generateImageBase64, matchSentenceCandidates } from './openaiService.js';
 import { getMediaUrl } from './audioService.js';
 import { createId } from '../utils/id.js';
 import { env } from '../config/env.js';
 import type { SentenceImage } from '../types/models.js';
 
 const FUZZY_MATCH_CANDIDATE_LIMIT = 24;
+
+export interface SentenceImageOptions {
+  word?: string;
+  force?: boolean;
+}
 
 export interface SentenceImageResult {
   imageUrl: string;
@@ -35,7 +40,8 @@ export function checkSentenceImage(sentence: string): SentenceImageResult | null
   };
 }
 
-export async function getOrCreateSentenceImage(sentence: string, force = false): Promise<SentenceImageResult> {
+export async function getOrCreateSentenceImage(sentence: string, options: SentenceImageOptions = {}): Promise<SentenceImageResult> {
+  const { word, force } = options;
   const normalized = normalizeSentence(sentence);
   if (!normalized) {
     throw new Error('Sentence is required.');
@@ -64,7 +70,7 @@ export async function getOrCreateSentenceImage(sentence: string, force = false):
     }
   }
 
-  const base64 = await generateImageBase64(createSentenceImagePrompt(sentence));
+  const base64 = await generateImageBase64(await buildImagePrompt(sentence, word));
   const imageFile = writeImageFile(base64);
   const now = new Date().toISOString();
   const entry: SentenceImage = {
@@ -129,6 +135,19 @@ function saveAlias(normalizedSentence: string, sentence: string, imageFile: stri
     createdAt: now,
     updatedAt: now,
   });
+}
+
+async function buildImagePrompt(sentence: string, word?: string): Promise<string> {
+  try {
+    const description = (await askWordChat(createSentenceImagePolishPrompt(sentence, word))).trim();
+    if (description) {
+      return `${REALISTIC_IMAGE_STYLE}\nScene: ${description}`;
+    }
+  } catch {
+    // If the polish step fails, fall back to the raw sentence so generation still works.
+  }
+
+  return createSentenceImagePrompt(sentence);
 }
 
 function writeImageFile(base64: string): string {

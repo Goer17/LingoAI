@@ -226,10 +226,6 @@ if (__VLS_ctx.question) {
         ...{ class: "quiz-instruction" },
     });
     if (__VLS_ctx.question.type === 'fill_blank') {
-        if (__VLS_ctx.question.imageUrl) {
-        }
-        else {
-        }
     }
     else {
     }

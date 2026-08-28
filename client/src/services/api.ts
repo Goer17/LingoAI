@@ -249,9 +249,9 @@ export const api = {
   checkSentenceImage(sentence: string) {
     return unwrap<{ imageUrl: string | null }>(http.post('/vocabulary/check-image', { sentence }));
   },
-  generateSentenceImage(sentence: string, force = false) {
+  generateSentenceImage(sentence: string, word?: string, force = false) {
     return unwrap<{ imageUrl: string; cached: boolean; source: 'exact' | 'fuzzy' | 'generated'; matchedSentence?: string }>(
-      http.post('/vocabulary/generate-image', { sentence, force }),
+      http.post('/vocabulary/generate-image', { sentence, word, force }),
     );
   },
   generateQuiz() {

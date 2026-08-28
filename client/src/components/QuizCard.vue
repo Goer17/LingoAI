@@ -6,12 +6,7 @@
     </div>
     <p class="quiz-instruction">
       <template v-if="question.type === 'fill_blank'">
-        <template v-if="question.imageUrl">
-          Study the image and sentence, then complete the missing word. Keep the original spelling.
-        </template>
-        <template v-else>
-          Complete the missing word. Keep the original spelling.
-        </template>
+        Complete the missing word. Keep the original spelling.
       </template>
       <template v-else>
         Listen to the sentence and type the missing part.

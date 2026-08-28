@@ -67,6 +67,7 @@ const audioSchema = z.object({
 
 const sentenceImageSchema = z.object({
   sentence: z.string().min(1),
+  word: z.string().optional(),
   force: z.boolean().optional(),
 });
 
@@ -113,7 +114,7 @@ async function generateVocabularyQuizSession() {
     let imageUrl: string | undefined;
     if (question.type === 'fill_blank' && !audioUrl) {
       try {
-        const image = await getOrCreateSentenceImage(question.sentence);
+        const image = await getOrCreateSentenceImage(question.sentence, { word: question.word });
         imageUrl = image.imageUrl;
       } catch {
         // Image generation is best-effort: the question stays usable without it.
@@ -402,8 +403,8 @@ vocabularyRouter.post('/tasks/listening/:groupId', (req, res) => {
   return ok(res, task);
 });
 
-vocabularyRouter.post('/tasks/mistakes/start', (_req, res) => {
-  const session = createMistakeReviewSession();
+vocabularyRouter.post('/tasks/mistakes/start', async (_req, res) => {
+  const session = await createMistakeReviewSession();
   if (!session) {
     return fail(res, 400, 'No mistakes available.');
   }
@@ -647,7 +648,10 @@ vocabularyRouter.post('/generate-image', async (req, res) => {
   }
 
   try {
-    const result = await getOrCreateSentenceImage(parsed.data.sentence, parsed.data.force);
+    const result = await getOrCreateSentenceImage(parsed.data.sentence, {
+      word: parsed.data.word,
+      force: parsed.data.force,
+    });
     return ok(res, result);
   } catch (error) {
     return fail(res, 500, error instanceof Error ? error.message : 'Image generation failed.');
