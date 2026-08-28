@@ -1,5 +1,6 @@
 import { nextTick, ref, watch } from 'vue';
-import { Check, RefreshCw, Volume2 } from 'lucide-vue-next';
+import { Check, Image, Loader2, RefreshCw, Volume2 } from 'lucide-vue-next';
+import { api } from '@/services/api';
 const draft = ref('');
 const chatHistoryRef = ref(null);
 const props = defineProps();
@@ -136,10 +137,98 @@ function escapeHtml(value) {
         .replaceAll('"', '&quot;')
         .replaceAll('\'', '&#39;');
 }
+const exampleImages = ref({});
+const checkedWords = ref(new Set());
+function exampleImageState(example) {
+    return exampleImages.value[example] ?? null;
+}
+function exampleImageUrl(example) {
+    return exampleImages.value[example]?.url ?? '';
+}
+function isExampleImageLoading(example) {
+    return Boolean(exampleImages.value[example]?.loading);
+}
+function exampleImageError(example) {
+    return exampleImages.value[example]?.error ?? '';
+}
+function exampleImageLabel(example) {
+    const state = exampleImages.value[example];
+    if (!state) {
+        return 'Generate image';
+    }
+    if (state.loading) {
+        return 'Generating...';
+    }
+    return state.url ? 'Image ready' : 'Generate image';
+}
+function exampleImageButtonTitle(example) {
+    const state = exampleImages.value[example];
+    if (!state || !state.url) {
+        return 'Generate an image for this sentence';
+    }
+    if (state.loading) {
+        return 'Generating...';
+    }
+    return 'Regenerate image';
+}
+async function handleExampleImage(example) {
+    const current = exampleImages.value[example];
+    if (current?.loading) {
+        return;
+    }
+    const force = Boolean(current?.url);
+    exampleImages.value[example] = {
+        url: current?.url ?? '',
+        loading: true,
+        error: '',
+    };
+    try {
+        const result = await api.generateSentenceImage(example, force);
+        exampleImages.value[example] = {
+            url: result.imageUrl,
+            loading: false,
+            error: '',
+        };
+    }
+    catch (err) {
+        exampleImages.value[example] = {
+            url: current?.url ?? '',
+            loading: false,
+            error: err instanceof Error ? err.message : 'Image generation failed.',
+        };
+    }
+}
+watch(() => props.word?.id, async (id) => {
+    if (!id || checkedWords.value.has(id)) {
+        return;
+    }
+    checkedWords.value.add(id);
+    const word = props.word;
+    if (!word) {
+        return;
+    }
+    const examples = [...new Set(word.meanings.map((meaning) => meaning.example.trim()).filter(Boolean))];
+    if (examples.length === 0) {
+        return;
+    }
+    for (const example of examples) {
+        try {
+            const { imageUrl } = await api.checkSentenceImage(example);
+            if (imageUrl) {
+                exampleImages.value[example] = { url: imageUrl, loading: false, error: '' };
+            }
+        }
+        catch {
+            // Ignore check failures; the user can still generate manually.
+        }
+    }
+}, { immediate: true });
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
 let __VLS_components;
 let __VLS_directives;
+// CSS variable injection 
+// CSS variable injection end 
 __VLS_asFunctionalElement(__VLS_intrinsicElements.section, __VLS_intrinsicElements.section)({
     ...{ class: "card detail-card" },
 });
@@ -262,6 +351,73 @@ if (__VLS_ctx.word) {
             });
             (meaning.exampleTranslation);
         }
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "example-image-row" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (...[$event]) => {
+                    if (!(__VLS_ctx.word))
+                        return;
+                    __VLS_ctx.handleExampleImage(meaning.example);
+                } },
+            ...{ class: "icon-button example-image-btn" },
+            type: "button",
+            disabled: (__VLS_ctx.isExampleImageLoading(meaning.example)),
+            title: (__VLS_ctx.exampleImageButtonTitle(meaning.example)),
+            'aria-label': (__VLS_ctx.exampleImageButtonTitle(meaning.example)),
+        });
+        if (!__VLS_ctx.exampleImageState(meaning.example)) {
+            const __VLS_12 = {}.Image;
+            /** @type {[typeof __VLS_components.Image, ]} */ ;
+            // @ts-ignore
+            const __VLS_13 = __VLS_asFunctionalComponent(__VLS_12, new __VLS_12({
+                size: (14),
+            }));
+            const __VLS_14 = __VLS_13({
+                size: (14),
+            }, ...__VLS_functionalComponentArgsRest(__VLS_13));
+        }
+        else if (!__VLS_ctx.isExampleImageLoading(meaning.example)) {
+            const __VLS_16 = {}.RefreshCw;
+            /** @type {[typeof __VLS_components.RefreshCw, ]} */ ;
+            // @ts-ignore
+            const __VLS_17 = __VLS_asFunctionalComponent(__VLS_16, new __VLS_16({
+                size: (14),
+            }));
+            const __VLS_18 = __VLS_17({
+                size: (14),
+            }, ...__VLS_functionalComponentArgsRest(__VLS_17));
+        }
+        else {
+            const __VLS_20 = {}.Loader2;
+            /** @type {[typeof __VLS_components.Loader2, ]} */ ;
+            // @ts-ignore
+            const __VLS_21 = __VLS_asFunctionalComponent(__VLS_20, new __VLS_20({
+                ...{ class: "example-image-spin" },
+                size: (14),
+            }));
+            const __VLS_22 = __VLS_21({
+                ...{ class: "example-image-spin" },
+                size: (14),
+            }, ...__VLS_functionalComponentArgsRest(__VLS_21));
+        }
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+            ...{ class: "muted-text example-image-label" },
+        });
+        (__VLS_ctx.exampleImageLabel(meaning.example));
+        if (__VLS_ctx.exampleImageError(meaning.example)) {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                ...{ class: "error-text example-image-error" },
+            });
+            (__VLS_ctx.exampleImageError(meaning.example));
+        }
+        if (__VLS_ctx.exampleImageUrl(meaning.example)) {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.img)({
+                src: (__VLS_ctx.exampleImageUrl(meaning.example)),
+                ...{ class: "example-image" },
+                alt: "Illustration for this example sentence",
+            });
+        }
     }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
         ...{ class: "token-row" },
@@ -373,6 +529,15 @@ else {
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['example-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['example-image-row']} */ ;
+/** @type {__VLS_StyleScopedClasses['icon-button']} */ ;
+/** @type {__VLS_StyleScopedClasses['example-image-btn']} */ ;
+/** @type {__VLS_StyleScopedClasses['example-image-spin']} */ ;
+/** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['example-image-label']} */ ;
+/** @type {__VLS_StyleScopedClasses['error-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['example-image-error']} */ ;
+/** @type {__VLS_StyleScopedClasses['example-image']} */ ;
 /** @type {__VLS_StyleScopedClasses['token-row']} */ ;
 /** @type {__VLS_StyleScopedClasses['field']} */ ;
 /** @type {__VLS_StyleScopedClasses['chat-shell']} */ ;
@@ -398,6 +563,8 @@ const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
             Check: Check,
+            Image: Image,
+            Loader2: Loader2,
             RefreshCw: RefreshCw,
             Volume2: Volume2,
             draft: draft,
@@ -409,6 +576,13 @@ const __VLS_self = (await import('vue')).defineComponent({
             handleDeleteClick: handleDeleteClick,
             handleRegenerateClick: handleRegenerateClick,
             renderMarkdown: renderMarkdown,
+            exampleImageState: exampleImageState,
+            exampleImageUrl: exampleImageUrl,
+            isExampleImageLoading: isExampleImageLoading,
+            exampleImageError: exampleImageError,
+            exampleImageLabel: exampleImageLabel,
+            exampleImageButtonTitle: exampleImageButtonTitle,
+            handleExampleImage: handleExampleImage,
         };
     },
     __typeEmits: {},

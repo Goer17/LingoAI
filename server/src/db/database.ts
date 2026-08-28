@@ -99,6 +99,18 @@ db.exec(`
     updated_at TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS sentence_images (
+    id TEXT PRIMARY KEY,
+    normalized_sentence TEXT NOT NULL UNIQUE,
+    sentence TEXT NOT NULL,
+    image_file TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_sentence_images_updated
+    ON sentence_images (updated_at DESC);
+
   CREATE INDEX IF NOT EXISTS idx_vocabulary_order
     ON vocabulary_entries (familiarity ASC, created_at DESC);
 

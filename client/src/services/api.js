@@ -192,6 +192,12 @@ export const api = {
     regenerateAudio(input) {
         return unwrap(http.post('/vocabulary/generate-audio', { input, force: true }));
     },
+    checkSentenceImage(sentence) {
+        return unwrap(http.post('/vocabulary/check-image', { sentence }));
+    },
+    generateSentenceImage(sentence, force = false) {
+        return unwrap(http.post('/vocabulary/generate-image', { sentence, force }));
+    },
     generateQuiz() {
         return unwrap(http.post('/vocabulary/generate-quiz'));
     },

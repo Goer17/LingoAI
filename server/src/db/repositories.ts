@@ -1,5 +1,5 @@
 import { db } from './database.js';
-import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, QuizSession, Settings, VocabularyEntry, WritingTopic } from '../types/models.js';
+import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, QuizSession, SentenceImage, Settings, VocabularyEntry, WritingTopic } from '../types/models.js';
 
 function parseJson<T>(value: string): T {
   return JSON.parse(value) as T;
@@ -396,6 +396,57 @@ export const listeningRepository = {
     db.prepare('DELETE FROM listening_entries WHERE id = ?').run(id);
   },
 };
+
+export const sentenceImageRepository = {
+  list(): SentenceImage[] {
+    const rows = db.prepare(`
+      SELECT id, normalized_sentence, sentence, image_file, created_at, updated_at
+      FROM sentence_images
+      ORDER BY updated_at DESC
+    `).all() as Array<{ id: string; normalized_sentence: string; sentence: string; image_file: string; created_at: string; updated_at: string }>;
+
+    return rows.map(toSentenceImage);
+  },
+
+  getByNormalizedSentence(normalizedSentence: string): SentenceImage | null {
+    const row = db.prepare(`
+      SELECT id, normalized_sentence, sentence, image_file, created_at, updated_at
+      FROM sentence_images
+      WHERE normalized_sentence = ?
+    `).get(normalizedSentence) as { id: string; normalized_sentence: string; sentence: string; image_file: string; created_at: string; updated_at: string } | undefined;
+
+    return row ? toSentenceImage(row) : null;
+  },
+
+  save(entry: SentenceImage) {
+    db.prepare(`
+      INSERT INTO sentence_images (id, normalized_sentence, sentence, image_file, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(normalized_sentence) DO UPDATE SET
+        sentence = excluded.sentence,
+        image_file = excluded.image_file,
+        updated_at = excluded.updated_at
+    `).run(
+      entry.id,
+      entry.normalizedSentence,
+      entry.sentence,
+      entry.imageFile,
+      entry.createdAt,
+      entry.updatedAt,
+    );
+  },
+};
+
+function toSentenceImage(row: { id: string; normalized_sentence: string; sentence: string; image_file: string; created_at: string; updated_at: string }): SentenceImage {
+  return {
+    id: row.id,
+    normalizedSentence: row.normalized_sentence,
+    sentence: row.sentence,
+    imageFile: row.image_file,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
 
 export const writingTopicRepository = {
   list(): WritingTopic[] {

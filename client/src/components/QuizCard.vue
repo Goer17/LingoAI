@@ -6,12 +6,23 @@
     </div>
     <p class="quiz-instruction">
       <template v-if="question.type === 'fill_blank'">
-        Complete the missing word. Keep the original spelling.
+        <template v-if="question.imageUrl">
+          Study the image and sentence, then complete the missing word. Keep the original spelling.
+        </template>
+        <template v-else>
+          Complete the missing word. Keep the original spelling.
+        </template>
       </template>
       <template v-else>
         Listen to the sentence and type the missing part.
       </template>
     </p>
+    <img
+      v-if="question.type === 'fill_blank' && question.imageUrl"
+      :src="question.imageUrl"
+      class="quiz-image"
+      alt="Hint image for this sentence"
+    />
     <div v-if="question.type === 'listening'" class="audio-box">
       <button class="icon-button" type="button" aria-label="Play audio" title="Play audio" @click="$emit('play-audio')">
         <Volume2 :size="18" />

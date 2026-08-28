@@ -68,6 +68,7 @@ export interface QuizQuestion {
   candidates?: string[];
   ttsText?: string;
   audioUrl?: string;
+  imageUrl?: string;
   mistakeId?: string;
   blanks?: QuizBlank[];
 }
@@ -87,6 +88,7 @@ export interface QuizDraftQuestion {
   answerVariants?: string[];
   candidates?: string[];
   ttsText?: string;
+  imageUrl?: string;
   blanks?: QuizBlank[];
 }
 
@@ -158,6 +160,15 @@ export interface ListeningEntry {
   note: string;
   chatHistory: ChatMessage[];
   groupId: string;
+}
+
+export interface SentenceImage {
+  id: string;
+  sentence: string;
+  normalizedSentence: string;
+  imageFile: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface WritingKnowledgePoint {

@@ -87,6 +87,10 @@ const polishResultsSchema = z.object({
   })).min(1),
 });
 
+const sentenceMatchSchema = z.object({
+  matchedIndices: z.array(z.number()),
+});
+
 interface LangClient {
   model: string;
   client: OpenAI;
@@ -173,6 +177,10 @@ export async function generateQuiz(prompt: string): Promise<{ questions: QuizDra
 
 export async function generateFillBlankRepair(prompt: string): Promise<{ maskedSentence: string; answer: string }> {
   return requestJson(prompt, fillBlankRepairSchema);
+}
+
+export async function matchSentenceCandidates(prompt: string): Promise<{ matchedIndices: number[] }> {
+  return requestJson(prompt, sentenceMatchSchema);
 }
 
 export async function generateScenario(prompt: string) {
@@ -379,4 +387,40 @@ function extractAudioUrl(json: Record<string, unknown>): string | null {
     return url;
   }
   return null;
+}
+
+export async function generateImageBase64(prompt: string): Promise<string> {
+  const entry = getActiveModelEntry('image');
+  if (!entry || !entry.baseUrl || !entry.apiKey || !entry.model) {
+    throw new Error('Image model is not configured. Please pick one in Settings.');
+  }
+
+  const client = new OpenAI({
+    baseURL: entry.baseUrl,
+    apiKey: entry.apiKey,
+  });
+  const extraBody = parseExtraBody(entry.extraBody);
+
+  const response = await client.images.generate({
+    model: entry.model,
+    prompt,
+    n: 1,
+    size: '1024x1024',
+    ...extraBody,
+  });
+
+  const first = response.data?.[0];
+  if (first?.b64_json) {
+    return first.b64_json;
+  }
+
+  if (first?.url) {
+    const imageResponse = await fetch(first.url);
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to download generated image (HTTP ${imageResponse.status})`);
+    }
+    return Buffer.from(await imageResponse.arrayBuffer()).toString('base64');
+  }
+
+  throw new Error('Image model returned an empty payload.');
 }

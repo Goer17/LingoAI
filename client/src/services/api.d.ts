@@ -81,6 +81,15 @@ export declare const api: {
     regenerateAudio(input: string): Promise<{
         audioUrl: string;
     }>;
+    checkSentenceImage(sentence: string): Promise<{
+        imageUrl: string | null;
+    }>;
+    generateSentenceImage(sentence: string, force?: boolean): Promise<{
+        imageUrl: string;
+        cached: boolean;
+        source: "exact" | "fuzzy" | "generated";
+        matchedSentence?: string;
+    }>;
     generateQuiz(): Promise<QuizSession>;
     createVocabularyTask(): Promise<LearningTask>;
     createListeningTask(): Promise<LearningTask>;

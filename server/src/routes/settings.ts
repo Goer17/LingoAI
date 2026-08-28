@@ -151,11 +151,17 @@ settingsRouter.post('/test', async (req, res) => {
       return ok(res, { ok: true, latencyMs: Date.now() - startedAt, sample: `${buffer.length} bytes` });
     }
 
+    const extraBody = (() => {
+      const raw = entry.extraBody?.trim();
+      if (!raw) return {};
+      try { return JSON.parse(raw); } catch { return {}; }
+    })();
     const response = await client.images.generate({
       model: entry.model,
       prompt: 'a small grey square on a white background',
       n: 1,
-      size: '256x256',
+      size: '1024x1024',
+      ...extraBody,
     });
     const first = response.data?.[0];
     if (!first?.url && !first?.b64_json) {

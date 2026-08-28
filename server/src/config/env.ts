@@ -11,6 +11,7 @@ export const env = {
   clientDistPath: process.env.CLIENT_DIST_PATH ?? path.join(root, 'client/dist'),
   databasePath: process.env.DATABASE_PATH ?? path.join(root, 'server/data/lingoai.sqlite'),
   audioDirectory: process.env.AUDIO_DIRECTORY ?? path.join(root, 'server/data/audio'),
+  imageDirectory: process.env.IMAGE_DIRECTORY ?? path.join(root, 'server/data/images'),
   tokenPath: path.join(root, '.token'),
   legacySettingsPath: path.join(root, 'server/data/settings.json'),
   legacyVocabularyPath: path.join(root, 'server/data/vocabulary.json'),

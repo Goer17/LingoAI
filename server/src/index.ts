@@ -20,6 +20,7 @@ const hasClientDist = fs.existsSync(clientIndexPath);
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(express.json({ limit: '4mb' }));
 app.use('/api/media', express.static(env.audioDirectory));
+app.use('/api/media', express.static(env.imageDirectory));
 app.use('/api', (req, res, next) => {
   if (req.path === '/auth/login' || req.path === '/health' || req.path.startsWith('/media/')) {
     return next();

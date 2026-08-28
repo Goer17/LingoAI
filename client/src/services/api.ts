@@ -246,6 +246,14 @@ export const api = {
   regenerateAudio(input: string) {
     return unwrap<{ audioUrl: string }>(http.post('/vocabulary/generate-audio', { input, force: true }));
   },
+  checkSentenceImage(sentence: string) {
+    return unwrap<{ imageUrl: string | null }>(http.post('/vocabulary/check-image', { sentence }));
+  },
+  generateSentenceImage(sentence: string, force = false) {
+    return unwrap<{ imageUrl: string; cached: boolean; source: 'exact' | 'fuzzy' | 'generated'; matchedSentence?: string }>(
+      http.post('/vocabulary/generate-image', { sentence, force }),
+    );
+  },
   generateQuiz() {
     return unwrap<QuizSession>(http.post('/vocabulary/generate-quiz'));
   },

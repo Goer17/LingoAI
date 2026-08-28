@@ -226,8 +226,19 @@ if (__VLS_ctx.question) {
         ...{ class: "quiz-instruction" },
     });
     if (__VLS_ctx.question.type === 'fill_blank') {
+        if (__VLS_ctx.question.imageUrl) {
+        }
+        else {
+        }
     }
     else {
+    }
+    if (__VLS_ctx.question.type === 'fill_blank' && __VLS_ctx.question.imageUrl) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.img)({
+            src: (__VLS_ctx.question.imageUrl),
+            ...{ class: "quiz-image" },
+            alt: "Hint image for this sentence",
+        });
     }
     if (__VLS_ctx.question.type === 'listening') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -422,6 +433,7 @@ if (__VLS_ctx.question) {
 /** @type {__VLS_StyleScopedClasses['quiz-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-meta']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-instruction']} */ ;
+/** @type {__VLS_StyleScopedClasses['quiz-image']} */ ;
 /** @type {__VLS_StyleScopedClasses['audio-box']} */ ;
 /** @type {__VLS_StyleScopedClasses['icon-button']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-form']} */ ;

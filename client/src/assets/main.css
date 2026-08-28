@@ -1288,6 +1288,15 @@ select:focus {
   font-size: 1.05rem;
 }
 
+.quiz-image {
+  display: block;
+  max-width: 380px;
+  width: 100%;
+  margin: 1rem auto 0;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong, #e2e2e2);
+}
+
 .audio-box,
 .sentence-box {
   margin-top: 1rem;

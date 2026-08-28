@@ -50,6 +50,30 @@
           <p v-if="showChinese" class="muted-text">{{ meaning.chineseMeaning }}</p>
           <p class="example-text">{{ meaning.example }}</p>
           <p v-if="showChinese" class="muted-text">{{ meaning.exampleTranslation }}</p>
+          <div class="example-image-row">
+            <button
+              class="icon-button example-image-btn"
+              type="button"
+              :disabled="isExampleImageLoading(meaning.example)"
+              :title="exampleImageButtonTitle(meaning.example)"
+              :aria-label="exampleImageButtonTitle(meaning.example)"
+              @click="handleExampleImage(meaning.example)"
+            >
+              <Image v-if="!exampleImageState(meaning.example)" :size="14" />
+              <RefreshCw v-else-if="!isExampleImageLoading(meaning.example)" :size="14" />
+              <Loader2 v-else class="example-image-spin" :size="14" />
+            </button>
+            <span class="muted-text example-image-label">{{ exampleImageLabel(meaning.example) }}</span>
+            <span v-if="exampleImageError(meaning.example)" class="error-text example-image-error">
+              {{ exampleImageError(meaning.example) }}
+            </span>
+          </div>
+          <img
+            v-if="exampleImageUrl(meaning.example)"
+            :src="exampleImageUrl(meaning.example)"
+            class="example-image"
+            alt="Illustration for this example sentence"
+          />
         </article>
       </div>
 
@@ -106,8 +130,9 @@
 
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue';
-import { Check, RefreshCw, Volume2 } from 'lucide-vue-next';
+import { Check, Image, Loader2, RefreshCw, Volume2 } from 'lucide-vue-next';
 import type { VocabularyEntry } from '@/types/models';
+import { api } from '@/services/api';
 
 const draft = ref('');
 const chatHistoryRef = ref<HTMLElement | null>(null);
@@ -291,4 +316,155 @@ function escapeHtml(value: string) {
     .replaceAll('"', '&quot;')
     .replaceAll('\'', '&#39;');
 }
+
+interface ExampleImageState {
+  url: string;
+  loading: boolean;
+  error: string;
+}
+
+const exampleImages = ref<Record<string, ExampleImageState>>({});
+const checkedWords = ref(new Set<string>());
+
+function exampleImageState(example: string) {
+  return exampleImages.value[example] ?? null;
+}
+
+function exampleImageUrl(example: string) {
+  return exampleImages.value[example]?.url ?? '';
+}
+
+function isExampleImageLoading(example: string) {
+  return Boolean(exampleImages.value[example]?.loading);
+}
+
+function exampleImageError(example: string) {
+  return exampleImages.value[example]?.error ?? '';
+}
+
+function exampleImageLabel(example: string) {
+  const state = exampleImages.value[example];
+  if (!state) {
+    return 'Generate image';
+  }
+  if (state.loading) {
+    return 'Generating...';
+  }
+  return state.url ? 'Image ready' : 'Generate image';
+}
+
+function exampleImageButtonTitle(example: string) {
+  const state = exampleImages.value[example];
+  if (!state || !state.url) {
+    return 'Generate an image for this sentence';
+  }
+  if (state.loading) {
+    return 'Generating...';
+  }
+  return 'Regenerate image';
+}
+
+async function handleExampleImage(example: string) {
+  const current = exampleImages.value[example];
+  if (current?.loading) {
+    return;
+  }
+
+  const force = Boolean(current?.url);
+  exampleImages.value[example] = {
+    url: current?.url ?? '',
+    loading: true,
+    error: '',
+  };
+
+  try {
+    const result = await api.generateSentenceImage(example, force);
+    exampleImages.value[example] = {
+      url: result.imageUrl,
+      loading: false,
+      error: '',
+    };
+  } catch (err) {
+    exampleImages.value[example] = {
+      url: current?.url ?? '',
+      loading: false,
+      error: err instanceof Error ? err.message : 'Image generation failed.',
+    };
+  }
+}
+
+watch(
+  () => props.word?.id,
+  async (id) => {
+    if (!id || checkedWords.value.has(id)) {
+      return;
+    }
+    checkedWords.value.add(id);
+
+    const word = props.word;
+    if (!word) {
+      return;
+    }
+
+    const examples = [...new Set(
+      word.meanings.map((meaning) => meaning.example.trim()).filter(Boolean),
+    )];
+    if (examples.length === 0) {
+      return;
+    }
+
+    for (const example of examples) {
+      try {
+        const { imageUrl } = await api.checkSentenceImage(example);
+        if (imageUrl) {
+          exampleImages.value[example] = { url: imageUrl, loading: false, error: '' };
+        }
+      } catch {
+        // Ignore check failures; the user can still generate manually.
+      }
+    }
+  },
+  { immediate: true },
+);
 </script>
+
+<style scoped>
+.example-image-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.example-image-btn {
+  width: 24px;
+  height: 24px;
+}
+
+.example-image-label {
+  font-size: 0.75rem;
+}
+
+.example-image-error {
+  font-size: 0.75rem;
+  flex: 1;
+}
+
+.example-image-spin {
+  animation: example-image-rotate 1s linear infinite;
+}
+
+.example-image {
+  display: block;
+  max-width: 100%;
+  margin-top: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e2e2);
+}
+
+@keyframes example-image-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

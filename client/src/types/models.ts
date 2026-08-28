@@ -81,6 +81,7 @@ export interface QuizQuestion {
   candidates?: string[];
   ttsText?: string;
   audioUrl?: string;
+  imageUrl?: string;
   blanks?: QuizBlank[];
 }
 

@@ -12,6 +12,7 @@ import { askWordChat, generateQuiz, searchWord, streamWordChat } from '../servic
 import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '../services/fillBlankService.js';
 import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningGroup, createListeningQuizDraft, deleteListeningGroup, getListeningEntryById, listListeningEntries, listListeningGroups, pickListeningEntries, pickListeningEntriesByGroup, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
 import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, removeWord, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
+import { checkSentenceImage, getOrCreateSentenceImage } from '../services/imageService.js';
 import { createQuizSession, getQuizSession, pickQuizEntries, submitQuizAnswer } from '../services/quizService.js';
 import {
   createLearningTask,
@@ -64,6 +65,11 @@ const audioSchema = z.object({
   input: z.string().min(1),
 });
 
+const sentenceImageSchema = z.object({
+  sentence: z.string().min(1),
+  force: z.boolean().optional(),
+});
+
 const answerSchema = z.object({
   questionId: z.string().min(1),
   response: z.string(),
@@ -104,10 +110,22 @@ async function generateVocabularyQuizSession() {
       ? await createAudioDataUrl(question.ttsText)
       : undefined;
 
+    let imageUrl: string | undefined;
+    if (question.type === 'fill_blank' && !audioUrl) {
+      try {
+        const image = await getOrCreateSentenceImage(question.sentence);
+        imageUrl = image.imageUrl;
+      } catch {
+        // Image generation is best-effort: the question stays usable without it.
+        imageUrl = undefined;
+      }
+    }
+
     return {
       ...question,
       id: createId('question'),
       audioUrl,
+      imageUrl,
     };
   }));
 
@@ -609,6 +627,30 @@ vocabularyRouter.post('/generate-audio', async (req, res) => {
     return ok(res, { audioUrl });
   } catch (error) {
     return fail(res, 500, error instanceof Error ? error.message : 'Audio generation failed.');
+  }
+});
+
+vocabularyRouter.post('/check-image', (req, res) => {
+  const parsed = sentenceImageSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return fail(res, 400, 'Sentence is required.');
+  }
+
+  const result = checkSentenceImage(parsed.data.sentence);
+  return ok(res, { imageUrl: result?.imageUrl ?? null });
+});
+
+vocabularyRouter.post('/generate-image', async (req, res) => {
+  const parsed = sentenceImageSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return fail(res, 400, 'Sentence is required.');
+  }
+
+  try {
+    const result = await getOrCreateSentenceImage(parsed.data.sentence, parsed.data.force);
+    return ok(res, result);
+  } catch (error) {
+    return fail(res, 500, error instanceof Error ? error.message : 'Image generation failed.');
   }
 });
 

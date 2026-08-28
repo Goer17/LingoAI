@@ -30,7 +30,7 @@ const categoryGroups = [
         key: 'image',
         title: 'Image Generation Model',
         shortLabel: 'image',
-        description: 'Reserved for upcoming image-generation features. Configure now to keep settings ready.',
+        description: 'Generates illustrations for vocabulary example sentences and quiz hint images (1024×1024, realistic style).',
         modelPlaceholder: 'e.g. dall-e-3',
         icon: IMAGE_ICON,
     },
