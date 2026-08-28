@@ -4,7 +4,7 @@
       <div class="section-heading">
         <p class="eyebrow">Listening</p>
         <h2>Add Practice Sentences</h2>
-        <p class="subtle-copy">Each sentence starts at familiarity 0 and grows to 20.</p>
+        <p class="subtle-copy">Each sentence starts at familiarity 0 and grows to 10.</p>
       </div>
 
       <div class="group-bar">
@@ -103,7 +103,7 @@
       <div>
         <p class="eyebrow">Practice</p>
         <h2>Generate a Listening Session</h2>
-        <p class="subtle-copy">Blank ratio increases with familiarity. At 20, you fill the whole sentence.</p>
+        <p class="subtle-copy">Blank ratio increases with familiarity. At 10, you fill the whole sentence.</p>
       </div>
       <div class="learning-bar-actions">
         <button

@@ -111,7 +111,7 @@ export function applyQuizResults(results: Array<{ word: string; isCorrect: boole
       ? item.familiarity + 1
       : Math.max(0, item.familiarity - 1);
 
-    if (familiarity > 20) {
+    if (familiarity > 10) {
       removeWord(item.id);
       continue;
     }
@@ -164,7 +164,7 @@ export function rewardVocabularyFamiliarity(words: string[]) {
     }
 
     const familiarity = item.familiarity + 1;
-    if (familiarity > 20) {
+    if (familiarity > 10) {
       removeWord(item.id);
       continue;
     }

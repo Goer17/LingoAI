@@ -190,7 +190,7 @@ export function applyListeningQuizResults(results: Array<{ sentence: string; isC
       ? item.familiarity + 1
       : Math.max(0, item.familiarity - 1);
 
-    if (familiarity > 20) {
+    if (familiarity > 10) {
       deleteAudioFile(item.audioFile);
       listeningRepository.remove(item.id);
       continue;
@@ -289,7 +289,7 @@ export function rewardListeningFamiliarity(sentences: string[]) {
     }
 
     const familiarity = item.familiarity + 1;
-    if (familiarity > 20) {
+    if (familiarity > 10) {
       deleteAudioFile(item.audioFile);
       listeningRepository.remove(item.id);
       continue;
@@ -328,17 +328,17 @@ function collectWords(sentence: string) {
 }
 
 function pickBlankRatio(familiarity: number) {
-  if (familiarity >= 20) {
+  if (familiarity >= 10) {
     return 1;
   }
 
-  return 0.15 + (familiarity / 20) * 0.75;
+  return familiarity / 10;
 }
 
 export function createListeningQuizDraft(entry: ListeningEntry): QuizDraftQuestion {
   const sentence = entry.sentence;
   const words = collectWords(sentence);
-  if (words.length === 0 || entry.familiarity >= 20) {
+  if (words.length === 0 || entry.familiarity >= 10) {
     return {
       type: 'listening',
       word: sentence,
