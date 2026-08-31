@@ -23,18 +23,6 @@
         @submit="submit"
         @play-audio="playAudio"
       />
-      <SearchResultCard
-        v-if="answerWordResult && !awaitingNext"
-        class="quiz-answer-card"
-        :result="answerWordResult"
-        :show-chinese="showChinese"
-        :saving="false"
-        :allow-save="false"
-        :show-header-label="false"
-        :has-common-audio="!!answerCommonUrl"
-        @toggle-translation="showChinese = !showChinese"
-        @play-audio="playAnswerWordAudio"
-      />
       <div v-if="awaitingNext && displayQuestion" class="quiz-connected-stack">
         <SearchResultCard
           v-if="answerWordResult"
@@ -46,6 +34,7 @@
           :has-common-audio="!!answerCommonUrl"
           @toggle-translation="showChinese = !showChinese"
           @play-audio="playAnswerWordAudio"
+          @regenerate-audio="regenerateAnswerWordAudio"
         />
         <QuizChatBox
           :word="displayQuestion.word"
@@ -72,7 +61,7 @@ import QuizChatBox from '@/components/QuizChatBox.vue';
 import SearchResultCard from '@/components/SearchResultCard.vue';
 import { api } from '@/services/api';
 import { useVocabularyStore } from '@/stores/vocabulary';
-import { getAudioUrl } from '@/utils/audioCache';
+import { clearCachedAudioUrl, getAudioUrl } from '@/utils/audioCache';
 
 const route = useRoute();
 const store = useVocabularyStore();
@@ -231,6 +220,18 @@ async function playAnswerWordAudio(input: string) {
     await audio.play();
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Audio playback failed.';
+  }
+}
+
+async function regenerateAnswerWordAudio(input: string) {
+  error.value = '';
+  try {
+    clearCachedAudioUrl(input);
+    const { audioUrl } = await api.regenerateAudio(input);
+    const audio = new Audio(audioUrl);
+    await audio.play();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Audio regeneration failed.';
   }
 }
 

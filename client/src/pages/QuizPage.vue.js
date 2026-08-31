@@ -5,7 +5,7 @@ import QuizChatBox from '@/components/QuizChatBox.vue';
 import SearchResultCard from '@/components/SearchResultCard.vue';
 import { api } from '@/services/api';
 import { useVocabularyStore } from '@/stores/vocabulary';
-import { getAudioUrl } from '@/utils/audioCache';
+import { clearCachedAudioUrl, getAudioUrl } from '@/utils/audioCache';
 const route = useRoute();
 const store = useVocabularyStore();
 const answer = ref('');
@@ -156,6 +156,18 @@ async function playAnswerWordAudio(input) {
         error.value = err instanceof Error ? err.message : 'Audio playback failed.';
     }
 }
+async function regenerateAnswerWordAudio(input) {
+    error.value = '';
+    try {
+        clearCachedAudioUrl(input);
+        const { audioUrl } = await api.regenerateAudio(input);
+        const audio = new Audio(audioUrl);
+        await audio.play();
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Audio regeneration failed.';
+    }
+}
 watch(() => answerWordResult.value?.text ?? '', async (text) => {
     if (!text) {
         answerCommonUrl.value = null;
@@ -264,48 +276,6 @@ else {
         onPlayAudio: (__VLS_ctx.playAudio)
     };
     var __VLS_6;
-    if (__VLS_ctx.answerWordResult && !__VLS_ctx.awaitingNext) {
-        /** @type {[typeof SearchResultCard, ]} */ ;
-        // @ts-ignore
-        const __VLS_12 = __VLS_asFunctionalComponent(SearchResultCard, new SearchResultCard({
-            ...{ 'onToggleTranslation': {} },
-            ...{ 'onPlayAudio': {} },
-            ...{ class: "quiz-answer-card" },
-            result: (__VLS_ctx.answerWordResult),
-            showChinese: (__VLS_ctx.showChinese),
-            saving: (false),
-            allowSave: (false),
-            showHeaderLabel: (false),
-            hasCommonAudio: (!!__VLS_ctx.answerCommonUrl),
-        }));
-        const __VLS_13 = __VLS_12({
-            ...{ 'onToggleTranslation': {} },
-            ...{ 'onPlayAudio': {} },
-            ...{ class: "quiz-answer-card" },
-            result: (__VLS_ctx.answerWordResult),
-            showChinese: (__VLS_ctx.showChinese),
-            saving: (false),
-            allowSave: (false),
-            showHeaderLabel: (false),
-            hasCommonAudio: (!!__VLS_ctx.answerCommonUrl),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_12));
-        let __VLS_15;
-        let __VLS_16;
-        let __VLS_17;
-        const __VLS_18 = {
-            onToggleTranslation: (...[$event]) => {
-                if (!!(__VLS_ctx.showSummary))
-                    return;
-                if (!(__VLS_ctx.answerWordResult && !__VLS_ctx.awaitingNext))
-                    return;
-                __VLS_ctx.showChinese = !__VLS_ctx.showChinese;
-            }
-        };
-        const __VLS_19 = {
-            onPlayAudio: (__VLS_ctx.playAnswerWordAudio)
-        };
-        var __VLS_14;
-    }
     if (__VLS_ctx.awaitingNext && __VLS_ctx.displayQuestion) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "quiz-connected-stack" },
@@ -313,9 +283,10 @@ else {
         if (__VLS_ctx.answerWordResult) {
             /** @type {[typeof SearchResultCard, ]} */ ;
             // @ts-ignore
-            const __VLS_20 = __VLS_asFunctionalComponent(SearchResultCard, new SearchResultCard({
+            const __VLS_12 = __VLS_asFunctionalComponent(SearchResultCard, new SearchResultCard({
                 ...{ 'onToggleTranslation': {} },
                 ...{ 'onPlayAudio': {} },
+                ...{ 'onRegenerateAudio': {} },
                 result: (__VLS_ctx.answerWordResult),
                 showChinese: (__VLS_ctx.showChinese),
                 saving: (false),
@@ -323,20 +294,21 @@ else {
                 showHeaderLabel: (false),
                 hasCommonAudio: (!!__VLS_ctx.answerCommonUrl),
             }));
-            const __VLS_21 = __VLS_20({
+            const __VLS_13 = __VLS_12({
                 ...{ 'onToggleTranslation': {} },
                 ...{ 'onPlayAudio': {} },
+                ...{ 'onRegenerateAudio': {} },
                 result: (__VLS_ctx.answerWordResult),
                 showChinese: (__VLS_ctx.showChinese),
                 saving: (false),
                 allowSave: (false),
                 showHeaderLabel: (false),
                 hasCommonAudio: (!!__VLS_ctx.answerCommonUrl),
-            }, ...__VLS_functionalComponentArgsRest(__VLS_20));
-            let __VLS_23;
-            let __VLS_24;
-            let __VLS_25;
-            const __VLS_26 = {
+            }, ...__VLS_functionalComponentArgsRest(__VLS_12));
+            let __VLS_15;
+            let __VLS_16;
+            let __VLS_17;
+            const __VLS_18 = {
                 onToggleTranslation: (...[$event]) => {
                     if (!!(__VLS_ctx.showSummary))
                         return;
@@ -347,14 +319,17 @@ else {
                     __VLS_ctx.showChinese = !__VLS_ctx.showChinese;
                 }
             };
-            const __VLS_27 = {
+            const __VLS_19 = {
                 onPlayAudio: (__VLS_ctx.playAnswerWordAudio)
             };
-            var __VLS_22;
+            const __VLS_20 = {
+                onRegenerateAudio: (__VLS_ctx.regenerateAnswerWordAudio)
+            };
+            var __VLS_14;
         }
         /** @type {[typeof QuizChatBox, ]} */ ;
         // @ts-ignore
-        const __VLS_28 = __VLS_asFunctionalComponent(QuizChatBox, new QuizChatBox({
+        const __VLS_21 = __VLS_asFunctionalComponent(QuizChatBox, new QuizChatBox({
             word: (__VLS_ctx.displayQuestion.word),
             sentence: (__VLS_ctx.displayQuestion.sentence),
             type: (__VLS_ctx.displayQuestion.type),
@@ -364,7 +339,7 @@ else {
             questionIndex: (__VLS_ctx.displayIndex),
             questionTotal: (__VLS_ctx.total),
         }));
-        const __VLS_29 = __VLS_28({
+        const __VLS_22 = __VLS_21({
             word: (__VLS_ctx.displayQuestion.word),
             sentence: (__VLS_ctx.displayQuestion.sentence),
             type: (__VLS_ctx.displayQuestion.type),
@@ -373,7 +348,7 @@ else {
             isCorrect: (__VLS_ctx.feedbackIsCorrect),
             questionIndex: (__VLS_ctx.displayIndex),
             questionTotal: (__VLS_ctx.total),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_28));
+        }, ...__VLS_functionalComponentArgsRest(__VLS_21));
     }
     if (__VLS_ctx.error) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
@@ -389,7 +364,6 @@ else {
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
-/** @type {__VLS_StyleScopedClasses['quiz-answer-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-connected-stack']} */ ;
 /** @type {__VLS_StyleScopedClasses['error-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-error']} */ ;
@@ -423,6 +397,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             submit: submit,
             playAudio: playAudio,
             playAnswerWordAudio: playAnswerWordAudio,
+            regenerateAnswerWordAudio: regenerateAnswerWordAudio,
         };
     },
 });
