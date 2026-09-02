@@ -5,11 +5,20 @@ import { REALISTIC_IMAGE_STYLE, createSentenceImagePolishPrompt, createSentenceI
 import { createMatchSentencePrompt } from '../prompts/matchSentencePrompt.js';
 import { askWordChat, generateImageBase64, matchSentenceCandidates } from './openaiService.js';
 import { getMediaUrl } from './audioService.js';
+import { findWordByText } from './vocabularyService.js';
 import { createId } from '../utils/id.js';
 import { env } from '../config/env.js';
 import type { SentenceImage } from '../types/models.js';
 
 const FUZZY_MATCH_CANDIDATE_LIMIT = 24;
+
+export interface SentenceImageOptions {
+  word?: string;
+  /** Explicitly provided word gloss (part of speech + English/Chinese meaning).
+   *  When absent, it is looked up from the vocabulary entry for `word`. */
+  meaning?: string;
+  force?: boolean;
+}
 
 export interface SentenceImageOptions {
   word?: string;
@@ -41,7 +50,7 @@ export function checkSentenceImage(sentence: string): SentenceImageResult | null
 }
 
 export async function getOrCreateSentenceImage(sentence: string, options: SentenceImageOptions = {}): Promise<SentenceImageResult> {
-  const { word, force } = options;
+  const { word, meaning, force } = options;
   const normalized = normalizeSentence(sentence);
   if (!normalized) {
     throw new Error('Sentence is required.');
@@ -70,7 +79,7 @@ export async function getOrCreateSentenceImage(sentence: string, options: Senten
     }
   }
 
-  const base64 = await generateImageBase64(await buildImagePrompt(sentence, word));
+  const base64 = await generateImageBase64(await buildImagePrompt(sentence, word, meaning));
   const imageFile = writeImageFile(base64);
   const now = new Date().toISOString();
   const entry: SentenceImage = {
@@ -137,9 +146,37 @@ function saveAlias(normalizedSentence: string, sentence: string, imageFile: stri
   });
 }
 
-async function buildImagePrompt(sentence: string, word?: string): Promise<string> {
+/**
+ * Pull the word's gloss (part of speech + English/Chinese meaning) from the
+ * vocabulary entry, formatted so the LLM can pin the exact sense of the word.
+ */
+function resolveMeaningText(word: string, explicitMeaning?: string): string | undefined {
+  if (explicitMeaning?.trim()) {
+    return explicitMeaning.trim();
+  }
+  if (!word?.trim()) {
+    return undefined;
+  }
+
   try {
-    const description = (await askWordChat(createSentenceImagePolishPrompt(sentence, word))).trim();
+    const entry = findWordByText(word);
+    if (!entry?.meanings?.length) {
+      return undefined;
+    }
+    return entry.meanings.slice(0, 2).map((m) => {
+      const pos = m.partOfSpeech ? `${m.partOfSpeech}: ` : '';
+      const zh = m.chineseMeaning ? ` (${m.chineseMeaning})` : '';
+      return `- ${pos}${m.englishMeaning ?? ''}${zh}`;
+    }).join('\n');
+  } catch {
+    return undefined;
+  }
+}
+
+async function buildImagePrompt(sentence: string, word?: string, explicitMeaning?: string): Promise<string> {
+  try {
+    const meaningText = resolveMeaningText(word ?? '', explicitMeaning);
+    const description = (await askWordChat(createSentenceImagePolishPrompt(sentence, word, meaningText))).trim();
     if (description) {
       return `${REALISTIC_IMAGE_STYLE}\nScene: ${description}`;
     }
