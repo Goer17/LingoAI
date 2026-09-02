@@ -50,35 +50,36 @@ function hasValidFile(word) {
   }
 }
 
-// Global rate limiter: space out requests so we don't trip Youdao's throttle.
-const MIN_REQUEST_INTERVAL = 90; // ms → max ~11 req/s
-let lastRequestAt = 0;
-let rateQueue = Promise.resolve();
+// Global rate limiter: a min-interval gate so we don't trip Youdao's throttle.
+// Unlike a promise-chain queue, this keeps true concurrency (workers race,
+// each gates its own request) instead of serializing every request.
+const MIN_REQUEST_INTERVAL = 80; // ms → max ~12.5 req/s
+let nextAllowedAt = 0;
 
-function rateLimited(fn) {
-  const run = rateQueue.then(async () => {
-    const wait = Math.max(0, lastRequestAt + MIN_REQUEST_INTERVAL - Date.now());
-    if (wait > 0) {
-      await new Promise((r) => setTimeout(r, wait));
-    }
-    lastRequestAt = Date.now();
-    return fn();
-  });
-  rateQueue = run.catch(() => {});
-  return run;
+async function rateLimit() {
+  const now = Date.now();
+  const wait = Math.max(0, nextAllowedAt - now);
+  if (wait > 0) {
+    await new Promise((r) => setTimeout(r, wait));
+  }
+  nextAllowedAt = Math.max(now, nextAllowedAt) + MIN_REQUEST_INTERVAL;
 }
 
 async function pause(ms) {
   await new Promise((r) => setTimeout(r, ms));
 }
 
-async function downloadOne(word) {
+async function downloadOne(word, { quick = false } = {}) {
   const file = path.join(outDir, `${word}.mp3`);
   let lastErr;
   let attempt = 0;
-  while (attempt <= retries) {
+  // For words known to 500 from previous runs (names/typos/gibberish), try
+  // once with no backoff — re-trying them is just wasted clock time.
+  const attempts = quick ? 1 : retries + 1;
+  while (attempt < attempts) {
     try {
-      const res = await rateLimited(() => fetch(BASE + encodeURIComponent(word)));
+      await rateLimit();
+      const res = await fetch(BASE + encodeURIComponent(word));
       if (res.status === 429 || res.status === 500 || res.status === 503) {
         // Rate-limited / transient server error: exponential backoff (+ Retry-After).
         const retryAfter = Number(res.headers.get('retry-after'));
@@ -115,6 +116,28 @@ async function run() {
   let index = 0;
   const total = slice.length;
   const started = Date.now();
+  let lastLogAt = 0;
+
+  // Words that failed in earlier builds (any missing file within the original
+  // list prefix) are almost certainly permanent Youdao 500s — do not hammer them.
+  const OLD_LIST_COUNT = 46717;
+  const knownBad = new Set();
+  for (let i = 0; i < Math.min(OLD_LIST_COUNT, words.length); i++) {
+    if (!hasValidFile(words[i])) {
+      knownBad.add(words[i]);
+    }
+  }
+  if (knownBad.size > 0 && verbose) {
+    console.log(`known-bad words (single-attempt): ${knownBad.size}`);
+  }
+
+  function logProgress() {
+    const elapsed = ((Date.now() - started) / 1000).toFixed(0);
+    const rate = (index / Math.max(1, elapsed)).toFixed(1);
+    console.log(
+      `[${elapsed}s] ${downloaded} downloaded, ${skipped} skipped, ${failed} failed, ${index}/${total} (~${rate} words/s)`,
+    );
+  }
 
   async function worker() {
     while (index < total) {
@@ -123,13 +146,12 @@ async function run() {
         skipped++;
         continue;
       }
-      await downloadOne(word);
-      if (downloaded % 200 === 0) {
-        const elapsed = ((Date.now() - started) / 1000).toFixed(0);
-        const rate = (index / Math.max(1, elapsed)).toFixed(1);
-        console.log(
-          `[${elapsed}s] ${downloaded} downloaded, ${skipped} skipped, ${failed} failed, ${index}/${total} (~${rate} words/s)`,
-        );
+      await downloadOne(word, { quick: knownBad.has(word) });
+      const now = Date.now();
+      // Heartbeat once a minute so progress is visible even with no new downloads.
+      if (now - lastLogAt > 60000 || (downloaded > 0 && downloaded % 200 === 0)) {
+        lastLogAt = now;
+        logProgress();
       }
     }
   }
