@@ -395,6 +395,14 @@ export async function generateImageBase64(prompt: string): Promise<string> {
     throw new Error('Image model is not configured. Please pick one in Settings.');
   }
 
+  // Aliyun Model Studio (DashScope / *maas.aliyuncs.com): image models like
+  // wan2.7-image do NOT expose an OpenAI-compatible /images/generations route;
+  // they use the native synchronous `multimodal-generation` endpoint and
+  // require `width*height` (asterisk) sizes instead of `WxH`.
+  if (isDashScopeBaseUrl(entry.baseUrl)) {
+    return generateImageViaDashScope(entry, prompt);
+  }
+
   const client = new OpenAI({
     baseURL: entry.baseUrl,
     apiKey: entry.apiKey,
@@ -423,4 +431,86 @@ export async function generateImageBase64(prompt: string): Promise<string> {
   }
 
   throw new Error('Image model returned an empty payload.');
+}
+
+function isDashScopeBaseUrl(baseUrl: string): boolean {
+  // Aliyun Model Studio gateways: dedicated MaaS endpoints (token-plan.*) and
+  // the standard dashscope.aliyuncs.com host both expose the native
+  // multimodal-generation image API rather than OpenAI /images/generations.
+  return /(?:maas|dashscope)\.aliyuncs\.com/i.test(baseUrl);
+}
+
+interface ModelEntryLike {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  extraBody?: string;
+}
+
+type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
+
+/**
+ * DashScope native synchronous image generation:
+ * POST {origin}/api/v1/services/aigc/multimodal-generation/generation
+ * Body: {"model", "input": {"messages": [{role:'user', content:[{text}]}]},
+ *        "parameters": {n, size: "1024*1024"}}
+ * Response image comes back as an OSS URL inside output.choices[0].message.content.
+ */
+export async function generateImageViaDashScope(
+  entry: ModelEntryLike,
+  prompt: string,
+  fetchImpl: FetchLike = fetch,
+): Promise<string> {
+  const origin = new URL(entry.baseUrl).origin;
+  const endpoint = `${origin}/api/v1/services/aigc/multimodal-generation/generation`;
+  const extra = parseExtraBody(entry.extraBody);
+  const size = normalizeDashScopeSize(String(extra.size ?? '1024x1024'));
+
+  const response = await fetchImpl(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${entry.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: entry.model,
+      input: {
+        messages: [
+          {
+            role: 'user',
+            content: [{ text: prompt }],
+          },
+        ],
+      },
+      parameters: {
+        ...extra,
+        n: 1,
+        size,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`DashScope image generation failed (HTTP ${response.status}). ${detail.slice(0, 300)}`);
+  }
+
+  const data = await response.json();
+  const imageUrl = (data?.output?.choices?.[0]?.message?.content as Array<{ type?: string; image?: string }> | undefined)
+    ?.find((item) => item?.type === 'image')?.image;
+  if (!imageUrl) {
+    const raw = JSON.stringify(data).slice(0, 400);
+    throw new Error(`DashScope image generation returned no image. ${raw}`);
+  }
+
+  const imageResponse = await fetchImpl(imageUrl);
+  if (!imageResponse.ok) {
+    throw new Error(`Failed to download generated image (HTTP ${imageResponse.status}).`);
+  }
+  return Buffer.from(await imageResponse.arrayBuffer()).toString('base64');
+}
+
+/** DashScope wants "1024*1024"; tolerate OpenAI-style "1024x1024" from configs. */
+function normalizeDashScopeSize(size: string): string {
+  return size.trim().replace(/(\d+)x(\d+)/i, '$1*$2');
 }

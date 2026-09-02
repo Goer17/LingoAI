@@ -189,8 +189,14 @@ async function buildImagePrompt(sentence: string, word?: string, explicitMeaning
 
 function writeImageFile(base64: string): string {
   fs.mkdirSync(env.imageDirectory, { recursive: true });
-  const fileName = `sentence-image-${createId('img')}.jpg`;
+  const buf = Buffer.from(base64, 'base64');
+  // DashScope's wan* models return PNG, OpenAI-compatible providers return
+  // JPEG — pick the extension from the actual magic bytes so the served
+  // Content-Type matches the content.
+  const isJpeg = buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
+  const ext = isJpeg ? 'jpg' : 'png';
+  const fileName = `sentence-image-${createId('img')}.${ext}`;
   const absolutePath = path.join(env.imageDirectory, fileName);
-  fs.writeFileSync(absolutePath, Buffer.from(base64, 'base64'));
+  fs.writeFileSync(absolutePath, buf);
   return fileName;
 }
