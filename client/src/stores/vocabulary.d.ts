@@ -469,6 +469,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     clearListeningChatHistory: () => Promise<ListeningEntry>;
     startTask: (taskId: string) => Promise<string>;
     clearTask: (taskId: string) => Promise<void>;
+    retryTask: (taskId: string) => Promise<LearningTask>;
     startMistakeReview: () => Promise<string>;
     fetchListening: () => Promise<void>;
     addListeningSentence: (sentence: string) => Promise<{
@@ -482,7 +483,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
-}, "loading" | "items" | "selectedId" | "searchResult" | "searching" | "savingWord" | "quizSession" | "tasks" | "mistakes" | "tasksLoading" | "listeningItems" | "listeningLoading" | "selectedListeningId" | "listeningGroups" | "selectedListeningGroupId" | "writingTopics" | "selectedWritingTopicId" | "selectedWritingPointId" | "writingLoading">, Pick<{
+}, "items" | "selectedId" | "searchResult" | "loading" | "searching" | "savingWord" | "quizSession" | "tasks" | "mistakes" | "tasksLoading" | "listeningItems" | "listeningLoading" | "selectedListeningId" | "listeningGroups" | "selectedListeningGroupId" | "writingTopics" | "selectedWritingTopicId" | "selectedWritingPointId" | "writingLoading">, Pick<{
     items: import("vue").Ref<{
         id: string;
         text: string;
@@ -952,6 +953,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     clearListeningChatHistory: () => Promise<ListeningEntry>;
     startTask: (taskId: string) => Promise<string>;
     clearTask: (taskId: string) => Promise<void>;
+    retryTask: (taskId: string) => Promise<LearningTask>;
     startMistakeReview: () => Promise<string>;
     fetchListening: () => Promise<void>;
     addListeningSentence: (sentence: string) => Promise<{
@@ -1435,6 +1437,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     clearListeningChatHistory: () => Promise<ListeningEntry>;
     startTask: (taskId: string) => Promise<string>;
     clearTask: (taskId: string) => Promise<void>;
+    retryTask: (taskId: string) => Promise<LearningTask>;
     startMistakeReview: () => Promise<string>;
     fetchListening: () => Promise<void>;
     addListeningSentence: (sentence: string) => Promise<{
@@ -1448,4 +1451,4 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
-}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "deleteWord" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "createListeningTaskForGroup" | "fetchListeningGroups" | "createListeningGroup" | "deleteListeningGroup" | "selectListeningGroup" | "fetchWritingTopics" | "addWritingTopic" | "updateWritingTopicTitle" | "deleteWritingTopic" | "selectWritingTopic" | "selectWritingPoint" | "addWritingKnowledgePoint" | "updateWritingKnowledgePoint" | "deleteWritingKnowledgePoint" | "sendWritingKnowledgePointChatMessage" | "clearWritingKnowledgePointChat" | "createExpressionTask" | "ensureWordAudio" | "ensureListeningAudio" | "selectListening" | "updateListeningNote" | "sendListeningChatMessage" | "clearListeningChatHistory" | "startTask" | "clearTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "submitQuizAnswer">>;
+}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "deleteWord" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "createListeningTaskForGroup" | "fetchListeningGroups" | "createListeningGroup" | "deleteListeningGroup" | "selectListeningGroup" | "fetchWritingTopics" | "addWritingTopic" | "updateWritingTopicTitle" | "deleteWritingTopic" | "selectWritingTopic" | "selectWritingPoint" | "addWritingKnowledgePoint" | "updateWritingKnowledgePoint" | "deleteWritingKnowledgePoint" | "sendWritingKnowledgePointChatMessage" | "clearWritingKnowledgePointChat" | "createExpressionTask" | "ensureWordAudio" | "ensureListeningAudio" | "selectListening" | "updateListeningNote" | "sendListeningChatMessage" | "clearListeningChatHistory" | "startTask" | "clearTask" | "retryTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "submitQuizAnswer">>;

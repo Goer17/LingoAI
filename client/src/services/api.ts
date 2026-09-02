@@ -275,6 +275,9 @@ export const api = {
   clearTask(taskId: string) {
     return unwrap<{ removed: boolean }>(http.post(`/vocabulary/tasks/${taskId}/clear`));
   },
+  retryTask(taskId: string) {
+    return unwrap<LearningTask>(http.post(`/vocabulary/tasks/${taskId}/retry`));
+  },
   startMistakeReview() {
     return unwrap<{ sessionId: string }>(http.post('/vocabulary/tasks/mistakes/start'));
   },

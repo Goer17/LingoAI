@@ -6,6 +6,7 @@ const router = useRouter();
 const error = ref('');
 const message = ref('');
 const startingTaskId = ref('');
+const retryingTaskId = ref('');
 const deletingTaskId = ref('');
 const deleteMode = ref(false);
 const startingMistakeReview = ref(false);
@@ -72,6 +73,21 @@ async function startTask(taskId) {
     }
     finally {
         startingTaskId.value = '';
+    }
+}
+async function retryTask(taskId) {
+    error.value = '';
+    message.value = '';
+    retryingTaskId.value = taskId;
+    try {
+        await store.retryTask(taskId);
+        message.value = 'Regenerating the failed questions — already generated ones are kept. This page updates automatically.';
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Failed to retry task.';
+    }
+    finally {
+        retryingTaskId.value = '';
     }
 }
 function pendingProgressPercent(taskId) {
@@ -265,19 +281,40 @@ else {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
                 ...{ class: "task-actions" },
             });
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
-                ...{ onClick: (...[$event]) => {
-                        if (!!(__VLS_ctx.store.tasks.length === 0))
-                            return;
-                        if (!(!__VLS_ctx.deleteMode))
-                            return;
-                        __VLS_ctx.startTask(task.id);
-                    } },
-                ...{ class: "button button-primary" },
-                type: "button",
-                disabled: (task.status !== 'ready' || __VLS_ctx.startingTaskId === task.id),
-            });
-            (__VLS_ctx.startingTaskId === task.id ? 'Opening...' : 'Start');
+            if (task.status === 'failed' && task.quizSessionId) {
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+                    ...{ onClick: (...[$event]) => {
+                            if (!!(__VLS_ctx.store.tasks.length === 0))
+                                return;
+                            if (!(!__VLS_ctx.deleteMode))
+                                return;
+                            if (!(task.status === 'failed' && task.quizSessionId))
+                                return;
+                            __VLS_ctx.retryTask(task.id);
+                        } },
+                    ...{ class: "button button-secondary" },
+                    type: "button",
+                    disabled: (__VLS_ctx.retryingTaskId === task.id),
+                });
+                (__VLS_ctx.retryingTaskId === task.id ? 'Retrying...' : 'Retry');
+            }
+            else {
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+                    ...{ onClick: (...[$event]) => {
+                            if (!!(__VLS_ctx.store.tasks.length === 0))
+                                return;
+                            if (!(!__VLS_ctx.deleteMode))
+                                return;
+                            if (!!(task.status === 'failed' && task.quizSessionId))
+                                return;
+                            __VLS_ctx.startTask(task.id);
+                        } },
+                    ...{ class: "button button-primary" },
+                    type: "button",
+                    disabled: (task.status !== 'ready' || __VLS_ctx.startingTaskId === task.id),
+                });
+                (__VLS_ctx.startingTaskId === task.id ? 'Opening...' : 'Start');
+            }
         }
     }
 }
@@ -377,6 +414,8 @@ else {
 /** @type {__VLS_StyleScopedClasses['error-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['task-actions']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
 /** @type {__VLS_StyleScopedClasses['card']} */ ;
 /** @type {__VLS_StyleScopedClasses['tasks-card']} */ ;
@@ -404,6 +443,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             error: error,
             message: message,
             startingTaskId: startingTaskId,
+            retryingTaskId: retryingTaskId,
             deletingTaskId: deletingTaskId,
             deleteMode: deleteMode,
             startingMistakeReview: startingMistakeReview,
@@ -413,6 +453,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             truncateText: truncateText,
             refresh: refresh,
             startTask: startTask,
+            retryTask: retryTask,
             pendingProgressPercent: pendingProgressPercent,
             pendingStageText: pendingStageText,
             toggleDeleteMode: toggleDeleteMode,

@@ -43,6 +43,12 @@ export function getQuizSession(id: string) {
   };
 }
 
+/** Persist an updated session (used when Retry back-fills question assets). */
+export function updateQuizSession(session: QuizSession) {
+  quizRepository.save(session);
+  return session;
+}
+
 export function submitQuizAnswer(
   id: string,
   payload: { questionId: string; response: string },

@@ -61,6 +61,16 @@
             </div>
             <div v-if="!deleteMode" class="task-actions">
               <button
+                v-if="task.status === 'failed' && task.quizSessionId"
+                class="button button-secondary"
+                type="button"
+                :disabled="retryingTaskId === task.id"
+                @click="retryTask(task.id)"
+              >
+                {{ retryingTaskId === task.id ? 'Retrying...' : 'Retry' }}
+              </button>
+              <button
+                v-else
                 class="button button-primary"
                 type="button"
                 :disabled="task.status !== 'ready' || startingTaskId === task.id"
@@ -120,6 +130,7 @@ const router = useRouter();
 const error = ref('');
 const message = ref('');
 const startingTaskId = ref('');
+const retryingTaskId = ref('');
 const deletingTaskId = ref('');
 const deleteMode = ref(false);
 const startingMistakeReview = ref(false);
@@ -194,6 +205,20 @@ async function startTask(taskId: string) {
     error.value = err instanceof Error ? err.message : 'Failed to start task.';
   } finally {
     startingTaskId.value = '';
+  }
+}
+
+async function retryTask(taskId: string) {
+  error.value = '';
+  message.value = '';
+  retryingTaskId.value = taskId;
+  try {
+    await store.retryTask(taskId);
+    message.value = 'Regenerating the failed questions — already generated ones are kept. This page updates automatically.';
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Failed to retry task.';
+  } finally {
+    retryingTaskId.value = '';
   }
 }
 

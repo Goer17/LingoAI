@@ -104,6 +104,7 @@ export declare const api: {
     clearTask(taskId: string): Promise<{
         removed: boolean;
     }>;
+    retryTask(taskId: string): Promise<LearningTask>;
     startMistakeReview(): Promise<{
         sessionId: string;
     }>;

@@ -57,7 +57,12 @@ export function markLearningTaskReady(id: string, payload: { quizSessionId?: str
   return updated;
 }
 
-export function markLearningTaskFailed(id: string, error: string) {
+/**
+ * Mark a task failed. When `quizSessionId` is provided, the partially
+ * generated session is preserved so a later Retry can reuse the questions
+ * that already have their audio/images ready.
+ */
+export function markLearningTaskFailed(id: string, error: string, payload?: { quizSessionId?: string | null }) {
   const current = getLearningTask(id);
   if (!current) {
     return null;
@@ -68,6 +73,27 @@ export function markLearningTaskFailed(id: string, error: string) {
     status: 'failed',
     updatedAt: new Date().toISOString(),
     error,
+    quizSessionId: payload && payload.quizSessionId !== undefined
+      ? payload.quizSessionId
+      : current.quizSessionId,
+  };
+
+  taskRepository.save(updated);
+  return updated;
+}
+
+/** Put a failed task back into the pending queue (used by Retry). */
+export function markLearningTaskPending(id: string) {
+  const current = getLearningTask(id);
+  if (!current) {
+    return null;
+  }
+
+  const updated: LearningTask = {
+    ...current,
+    status: 'pending',
+    updatedAt: new Date().toISOString(),
+    error: null,
   };
 
   taskRepository.save(updated);

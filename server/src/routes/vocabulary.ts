@@ -14,7 +14,7 @@ import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '..
 import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningGroup, createListeningQuizDraft, deleteListeningGroup, getListeningEntryById, listListeningEntries, listListeningGroups, pickListeningEntries, pickListeningEntriesByGroup, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
 import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, removeWord, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
 import { checkSentenceImage, getOrCreateSentenceImage } from '../services/imageService.js';
-import { createQuizSession, getQuizSession, pickQuizEntries, submitQuizAnswer } from '../services/quizService.js';
+import { createQuizSession, getQuizSession, pickQuizEntries, submitQuizAnswer, updateQuizSession } from '../services/quizService.js';
 import {
   createLearningTask,
   createMistakeReviewSession,
@@ -23,6 +23,7 @@ import {
   listLearningTasks,
   listMistakeEntries,
   markLearningTaskFailed,
+  markLearningTaskPending,
   markLearningTaskReady,
   removeLearningTaskByQuizSessionId,
   reconcileMistakesForCompletedSession,
@@ -30,6 +31,7 @@ import {
 } from '../services/taskService.js';
 import { createId } from '../utils/id.js';
 import { fail, ok } from '../utils/http.js';
+import type { QuizBlank, QuizQuestion } from '../types/models.js';
 
 const searchSchema = z.object({
   query: z.string().min(1),
@@ -88,6 +90,61 @@ const listeningGroupSchema = z.object({
 
 export const vocabularyRouter = Router();
 
+type QuestionLike = {
+  id?: string;
+  type: 'fill_blank' | 'listening';
+  word: string;
+  sentence: string;
+  maskedSentence?: string;
+  answer: string;
+  answerVariants?: string[];
+  candidates?: string[];
+  ttsText?: string;
+  audioUrl?: string;
+  imageUrl?: string;
+  blanks?: QuizBlank[];
+};
+
+/**
+ * Generate the per-question assets (listening TTS audio / fill-blank image)
+ * without letting one failing question sink the whole task. Returns the
+ * enriched question plus a success flag; failures keep the question's data
+ * (word/sentence/answer) so Retry can back-fill just the missing asset.
+ */
+async function enrichQuestion(question: QuestionLike): Promise<{ question: QuestionLike; ok: boolean; error?: string }> {
+  try {
+    if (question.type === 'listening') {
+      const normalized = await ensureListeningMaskedSentence(question);
+      const audioUrl = normalized.ttsText
+        ? await createAudioDataUrl(normalized.ttsText)
+        : undefined;
+      if (!audioUrl) {
+        return { question, ok: false };
+      }
+      return { question: { ...normalized, audioUrl }, ok: true };
+    }
+
+    const normalized = await ensureFillBlankMaskedSentence(question);
+    let imageUrl: string | undefined = question.imageUrl;
+    if (!imageUrl) {
+      try {
+        const image = await getOrCreateSentenceImage(normalized.sentence, { word: normalized.word });
+        imageUrl = image.imageUrl;
+      } catch {
+        // Image generation is best-effort; the question stays usable without it.
+        imageUrl = undefined;
+      }
+    }
+    return { question: { ...normalized, imageUrl }, ok: true };
+  } catch (error) {
+    return {
+      question,
+      ok: false,
+      error: error instanceof Error ? error.message : 'Generation failed.',
+    };
+  }
+}
+
 async function generateVocabularyQuizSession() {
   const entries = pickQuizEntries(listVocabulary());
   if (entries.length === 0) {
@@ -96,47 +153,33 @@ async function generateVocabularyQuizSession() {
 
   const prompt = createGenerateQuizPrompt(entries);
   const result = await generateQuiz(prompt);
-  const normalizedQuestions = await Promise.all(result.questions.map(async (question) => {
-    if (question.type === 'fill_blank') {
-      return ensureFillBlankMaskedSentence(question);
+  let failedCount = 0;
+  const questions: QuizQuestion[] = [];
+  for (const draft of result.questions) {
+    const { question, ok } = await enrichQuestion(draft);
+    if (!ok) {
+      failedCount += 1;
     }
+    questions.push({ ...question, id: createId('question') });
+  }
 
-    if (question.type === 'listening') {
-      return ensureListeningMaskedSentence(question);
-    }
-
-    return question;
-  }));
-  const questions = await Promise.all(normalizedQuestions.map(async (question) => {
-    const audioUrl = question.type === 'listening' && question.ttsText
-      ? await createAudioDataUrl(question.ttsText)
-      : undefined;
-
-    let imageUrl: string | undefined;
-    if (question.type === 'fill_blank' && !audioUrl) {
-      try {
-        const image = await getOrCreateSentenceImage(question.sentence, { word: question.word });
-        imageUrl = image.imageUrl;
-      } catch {
-        // Image generation is best-effort: the question stays usable without it.
-        imageUrl = undefined;
-      }
-    }
-
-    return {
-      ...question,
-      id: createId('question'),
-      audioUrl,
-      imageUrl,
-    };
-  }));
-
-  return createQuizSession(questions, 'vocabulary_task');
+  return { session: createQuizSession(questions, 'vocabulary_task'), failedCount };
 }
 
 async function processVocabularyTask(taskId: string) {
   try {
-    const session = await generateVocabularyQuizSession();
+    const { session, failedCount } = await generateVocabularyQuizSession();
+    if (failedCount > 0) {
+      // Stash the partially generated session — successful questions are reused
+      // on Retry, which only back-fills the ones that are still missing audio.
+      markLearningTaskFailed(
+        taskId,
+        `${session.questions.length - failedCount}/${session.questions.length} questions ready — ${failedCount} still missing audio. Click Retry to finish them.`,
+        { quizSessionId: session.id },
+      );
+      return;
+    }
+
     markLearningTaskReady(taskId, {
       quizSessionId: session.id,
       questionCount: session.questions.length,
@@ -155,23 +198,38 @@ async function generateListeningQuizSession(groupId?: string) {
     throw new Error('No listening sentences available for learning.');
   }
 
-  const questions = await Promise.all(entries.map(async (entry) => {
-    const draft = createListeningQuizDraft(entry);
-    const audioUrl = await createAudioDataUrl(draft.ttsText ?? draft.sentence);
+  let failedCount = 0;
+  const questions: QuizQuestion[] = [];
+  for (const entry of entries) {
+    try {
+      const draft = createListeningQuizDraft(entry);
+      const audioUrl = draft.ttsText ? await createAudioDataUrl(draft.ttsText) : undefined;
+      if (!audioUrl) {
+        failedCount += 1;
+      }
+      questions.push({ ...draft, id: createId('question'), audioUrl });
+    } catch {
+      failedCount += 1;
+      const draft = createListeningQuizDraft(entry);
+      questions.push({ ...draft, id: createId('question') });
+    }
+  }
 
-    return {
-      ...draft,
-      id: createId('question'),
-      audioUrl,
-    };
-  }));
-
-  return createQuizSession(questions, 'listening_task');
+  return { session: createQuizSession(questions, 'listening_task'), failedCount };
 }
 
 async function processListeningTask(taskId: string, groupId?: string) {
   try {
-    const session = await generateListeningQuizSession(groupId);
+    const { session, failedCount } = await generateListeningQuizSession(groupId);
+    if (failedCount > 0) {
+      markLearningTaskFailed(
+        taskId,
+        `${session.questions.length - failedCount}/${session.questions.length} sentences ready — ${failedCount} still missing audio. Click Retry to finish them.`,
+        { quizSessionId: session.id },
+      );
+      return;
+    }
+
     markLearningTaskReady(taskId, {
       quizSessionId: session.id,
       questionCount: session.questions.length,
@@ -180,6 +238,56 @@ async function processListeningTask(taskId: string, groupId?: string) {
     const message = error instanceof Error ? error.message : 'Listening quiz generation failed.';
     markLearningTaskFailed(taskId, message);
   }
+}
+
+/**
+ * Back-fill the assets for questions that failed earlier, reusing the ones
+ * that are already ready. Runs in the background after the user clicks Retry.
+ */
+async function processTaskRetry(taskId: string) {
+  const task = getLearningTask(taskId);
+  if (!task?.quizSessionId) {
+    markLearningTaskFailed(taskId, 'No stashed session found. Delete this task and create a new one.');
+    return;
+  }
+
+  const session = getQuizSession(task.quizSessionId);
+  if (!session) {
+    markLearningTaskFailed(taskId, 'Stashed quiz session is gone. Delete this task and create a new one.');
+    return;
+  }
+
+  let failedCount = 0;
+  const questions: QuizQuestion[] = [];
+  for (const question of session.questions) {
+    const needsAudio = question.type === 'listening' && !question.audioUrl;
+    const needsImage = question.type === 'fill_blank' && !question.imageUrl;
+    if (!needsAudio && !needsImage) {
+      questions.push(question);
+      continue;
+    }
+
+    const { question: enriched, ok } = await enrichQuestion(question);
+    if (!ok && enriched.type === 'listening') {
+      failedCount += 1;
+    }
+    questions.push({ ...enriched, id: question.id });
+  }
+  updateQuizSession({ ...session, questions });
+
+  if (failedCount === 0) {
+    markLearningTaskReady(taskId, {
+      quizSessionId: session.id,
+      questionCount: questions.length,
+    });
+    return;
+  }
+
+  markLearningTaskFailed(
+    taskId,
+    `${questions.length - failedCount}/${questions.length} questions ready — ${failedCount} still missing audio. Click Retry to try again.`,
+    { quizSessionId: session.id },
+  );
 }
 
 vocabularyRouter.get('/', (_req, res) => ok(res, listVocabulary()));
@@ -435,6 +543,21 @@ vocabularyRouter.post('/tasks/:id/clear', (req, res) => {
   return ok(res, { removed: true });
 });
 
+vocabularyRouter.post('/tasks/:id/retry', (req, res) => {
+  const task = getLearningTask(req.params.id);
+  if (!task) {
+    return fail(res, 404, 'Task not found.');
+  }
+
+  if (task.status !== 'failed' || !task.quizSessionId) {
+    return fail(res, 400, 'Only failed tasks with retained questions can be retried.');
+  }
+
+  markLearningTaskPending(task.id);
+  void processTaskRetry(task.id);
+  return ok(res, getLearningTask(task.id));
+});
+
 vocabularyRouter.get('/common-audio', async (req, res) => {
   const word = typeof req.query.word === 'string' ? req.query.word : '';
   if (!word.trim()) {
@@ -687,7 +810,11 @@ vocabularyRouter.post('/generate-image', async (req, res) => {
 
 vocabularyRouter.post('/generate-quiz', async (_req, res) => {
   try {
-    const session = await generateVocabularyQuizSession();
+    const { session, failedCount } = await generateVocabularyQuizSession();
+    if (failedCount > 0) {
+      return fail(res, 500, `${failedCount} question(s) failed to generate audio.`);
+    }
+
     return ok(res, session);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Quiz generation failed.';

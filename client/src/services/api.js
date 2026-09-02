@@ -219,6 +219,9 @@ export const api = {
     clearTask(taskId) {
         return unwrap(http.post(`/vocabulary/tasks/${taskId}/clear`));
     },
+    retryTask(taskId) {
+        return unwrap(http.post(`/vocabulary/tasks/${taskId}/retry`));
+    },
     startMistakeReview() {
         return unwrap(http.post('/vocabulary/tasks/mistakes/start'));
     },

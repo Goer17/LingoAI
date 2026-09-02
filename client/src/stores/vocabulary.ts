@@ -221,6 +221,12 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     tasks.value = tasks.value.filter((item) => item.id !== taskId);
   }
 
+  async function retryTask(taskId: string) {
+    const task = await api.retryTask(taskId);
+    tasks.value = tasks.value.map((item) => (item.id === task.id ? task : item));
+    return task;
+  }
+
   async function startMistakeReview() {
     const data = await api.startMistakeReview();
     return data.sessionId;
@@ -664,6 +670,7 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     clearListeningChatHistory,
     startTask,
     clearTask,
+    retryTask,
     startMistakeReview,
     fetchListening,
     addListeningSentence,
