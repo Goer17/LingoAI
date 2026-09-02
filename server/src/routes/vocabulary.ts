@@ -8,6 +8,7 @@ import { createSearchWordPrompt } from '../prompts/searchWordPrompt.js';
 import { suggestWords } from '../services/suggestionService.js';
 import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, deleteAudioFile, getMediaUrl } from '../services/audioService.js';
 import { getCommonAudioUrl, hasCommonAudio } from '../services/commonAudioService.js';
+import { buildCompoundAudio } from '../services/compoundAudioService.js';
 import { askWordChat, generateQuiz, searchWord, streamWordChat } from '../services/openaiService.js';
 import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '../services/fillBlankService.js';
 import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningGroup, createListeningQuizDraft, deleteListeningGroup, getListeningEntryById, listListeningEntries, listListeningGroups, pickListeningEntries, pickListeningEntriesByGroup, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
@@ -434,13 +435,27 @@ vocabularyRouter.post('/tasks/:id/clear', (req, res) => {
   return ok(res, { removed: true });
 });
 
-vocabularyRouter.get('/common-audio', (req, res) => {
+vocabularyRouter.get('/common-audio', async (req, res) => {
   const word = typeof req.query.word === 'string' ? req.query.word : '';
-  const hasCommon = hasCommonAudio(word);
-  return ok(res, {
-    hasCommon,
-    audioUrl: hasCommon ? getCommonAudioUrl(word) : null,
-  });
+  if (!word.trim()) {
+    return ok(res, { hasCommon: false, audioUrl: null });
+  }
+
+  // 1) exact common clip, 2) spliced compound audio, 3) nothing → TTS at play time.
+  if (hasCommonAudio(word)) {
+    return ok(res, { hasCommon: true, audioUrl: getCommonAudioUrl(word) });
+  }
+
+  try {
+    const compoundUrl = await buildCompoundAudio(word);
+    if (compoundUrl) {
+      return ok(res, { hasCommon: false, audioUrl: compoundUrl });
+    }
+  } catch {
+    // Splicing failed; fall through to TTS.
+  }
+
+  return ok(res, { hasCommon: false, audioUrl: null });
 });
 
 vocabularyRouter.get('/suggest', (req, res) => {
@@ -516,14 +531,26 @@ vocabularyRouter.post('/:id/audio', async (req, res) => {
   const force = req.body?.force === true;
   const fileName = entry.audioFile ?? `word-${entry.id}.mp3`;
   try {
-    if (force || !entry.audioFile || !audioFileExists(entry.audioFile)) {
-      if (force && entry.audioFile && audioFileExists(entry.audioFile)) {
-        deleteAudioFile(entry.audioFile);
-      }
-      await createOrUpdateAudioFile(fileName, entry.ttsText);
-      setWordAudioFile(entry.id, fileName);
+    if (force && entry.audioFile && audioFileExists(entry.audioFile)) {
+      deleteAudioFile(entry.audioFile);
     }
 
+    if (!force && entry.audioFile && audioFileExists(entry.audioFile)) {
+      return ok(res, { audioUrl: getMediaUrl(fileName), audioFile: fileName });
+    }
+
+    // Prefer offline audio: exact common clip, then spliced compound audio.
+    // TTS is the last resort (per the common → compound → tts chain).
+    if (hasCommonAudio(entry.ttsText)) {
+      return ok(res, { audioUrl: getCommonAudioUrl(entry.ttsText), audioFile: null });
+    }
+    const compoundUrl = await buildCompoundAudio(entry.ttsText);
+    if (compoundUrl) {
+      return ok(res, { audioUrl: compoundUrl, audioFile: null });
+    }
+
+    await createOrUpdateAudioFile(fileName, entry.ttsText);
+    setWordAudioFile(entry.id, fileName);
     return ok(res, { audioUrl: getMediaUrl(fileName), audioFile: fileName });
   } catch (error) {
     return fail(res, 500, error instanceof Error ? error.message : 'Audio generation failed.');

@@ -43,6 +43,16 @@ Request flow: **route → service → repository → SQLite** (via `node:sqlite`
 
 LLM integration: app uses OpenAI-compatible API. Model settings (base URL, API key, language model, audio model) are stored in SQLite and configured via the Setting page, not env vars.
 
+### Audio Resolution Chain (common → compound → tts)
+
+Word/phrase pronunciation audio is resolved in this order, never TTS-first:
+
+1. **Common clip** — exact match in `server/data/audio/common/{word}.mp3` (large Youdao-corpus: ~126k-word frequency list in `server/src/data/common-words.json`, downloaded by `server/scripts/download-common-audio.mjs`).
+2. **Compound splice** — multi-word phrases (e.g. `turn over`, `see-through`, `i've had`) have no dedicated clip; `compoundAudioService.buildCompoundAudio()` stitches the individual word clips: decode (mpg123-decoder WASM) → resample to 48kHz → trim silence → 90ms gap → peak-normalize → WAV → cache at `server/data/audio/compounds/{tokens}.wav` (served by `/api/media`). Max 6 tokens; contractions (`don't`) need their own `common/*.mp3` to work as tokens.
+3. **TTS** — last resort via the configured audio model (sentences/listening stay TTS).
+
+Both `POST /api/vocabulary/:id/audio` and `GET /api/vocabulary/common-audio` follow this chain. Pre-generate spliced audio for all multi-word rows in the DB: `node server/scripts/build-compound-audio.mjs` (after `npm run build`).
+
 ### Frontend (client/src/)
 
 - `pages/` — Route-level screens (`*Page.vue`). Keep them thin.
