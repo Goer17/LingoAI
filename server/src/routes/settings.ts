@@ -2,6 +2,7 @@ import { Router } from 'express';
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { getRedactedSettings, getSettings, saveSettings } from '../services/settingsService.js';
+import { generateImageViaDashScope, isDashScopeBaseUrl } from '../services/openaiService.js';
 import { fail, ok } from '../utils/http.js';
 
 const modelEntrySchema = z.object({
@@ -156,6 +157,14 @@ settingsRouter.post('/test', async (req, res) => {
       if (!raw) return {};
       try { return JSON.parse(raw); } catch { return {}; }
     })();
+
+    // DashScope / MaaS gateways (wan2.7-image etc.) expose no OpenAI-style
+    // /images/generations route — use the native multimodal-generation API.
+    if (isDashScopeBaseUrl(entry.baseUrl)) {
+      const base64 = await generateImageViaDashScope(entry, 'a small grey square on a white background');
+      return ok(res, { ok: true, latencyMs: Date.now() - startedAt, sample: `${Math.round((base64.length * 3) / 4 / 1024)} KB` });
+    }
+
     const response = await client.images.generate({
       model: entry.model,
       prompt: 'a small grey square on a white background',

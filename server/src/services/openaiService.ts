@@ -440,6 +440,8 @@ function isDashScopeBaseUrl(baseUrl: string): boolean {
   return /(?:maas|dashscope)\.aliyuncs\.com/i.test(baseUrl);
 }
 
+export { isDashScopeBaseUrl };
+
 interface ModelEntryLike {
   baseUrl: string;
   apiKey: string;
