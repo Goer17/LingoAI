@@ -10,6 +10,7 @@ export function getSettings(): Settings {
       audio: { entries: [], activeId: null },
       image: { entries: [], activeId: null },
     },
+    autoImageGeneration: false,
     updatedAt: null,
   };
 }
@@ -69,6 +70,7 @@ export function saveSettings(incoming: Settings) {
       audio: mergeCategoryWithStored(incoming.models.audio, current.models.audio),
       image: mergeCategoryWithStored(incoming.models.image, current.models.image),
     },
+    autoImageGeneration: incoming.autoImageGeneration ?? current.autoImageGeneration ?? false,
     updatedAt: new Date().toISOString(),
   };
 

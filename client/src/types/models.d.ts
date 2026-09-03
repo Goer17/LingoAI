@@ -59,6 +59,7 @@ export interface SettingsForm {
         audio: SettingsModelCategory;
         image: SettingsModelCategory;
     };
+    autoImageGeneration?: boolean;
     updatedAt: string | null;
 }
 export interface QuizQuestion {

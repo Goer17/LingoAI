@@ -14,6 +14,7 @@ import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '..
 import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningGroup, createListeningQuizDraft, deleteListeningGroup, getListeningEntryById, listListeningEntries, listListeningGroups, pickListeningEntries, pickListeningEntriesByGroup, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
 import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, removeWord, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
 import { checkSentenceImage, getOrCreateSentenceImage } from '../services/imageService.js';
+import { enqueueAutoImageGeneration } from '../services/autoImageService.js';
 import { createQuizSession, getQuizSession, pickQuizEntries, submitQuizAnswer, updateQuizSession } from '../services/quizService.js';
 import {
   createLearningTask,
@@ -610,6 +611,10 @@ vocabularyRouter.post('/', (req, res) => {
   }
 
   const response = addWord(parsed.data.result);
+  if (response.created) {
+    // Auto Generation setting: queue example-sentence images in background.
+    void enqueueAutoImageGeneration(response.entry);
+  }
   return ok(res, response);
 });
 

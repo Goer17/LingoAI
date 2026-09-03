@@ -8,6 +8,7 @@ function emptyForm() {
             audio: { entries: [], activeId: null },
             image: { entries: [], activeId: null },
         },
+        autoImageGeneration: false,
         updatedAt: null,
     };
 }
@@ -17,6 +18,7 @@ export const useSettingsStore = defineStore('settings', () => {
     const saving = ref(false);
     function applyData(data) {
         form.models = data.models;
+        form.autoImageGeneration = data.autoImageGeneration ?? false;
         form.updatedAt = data.updatedAt;
     }
     async function fetchSettings() {
@@ -32,7 +34,7 @@ export const useSettingsStore = defineStore('settings', () => {
     async function saveSettings() {
         saving.value = true;
         try {
-            const data = await api.saveSettings({ models: form.models });
+            const data = await api.saveSettings({ models: form.models, autoImageGeneration: form.autoImageGeneration });
             applyData(data);
         }
         finally {

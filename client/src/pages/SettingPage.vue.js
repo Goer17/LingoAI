@@ -408,6 +408,35 @@ for (const [group] of __VLS_getVForSourceType((__VLS_ctx.categoryGroups))) {
         }
     }
 }
+__VLS_asFunctionalElement(__VLS_intrinsicElements.article, __VLS_intrinsicElements.article)({
+    ...{ class: "card auto-generation-card" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+    ...{ class: "model-category-icon" },
+});
+__VLS_asFunctionalDirective(__VLS_directives.vHtml)(null, { ...__VLS_directiveBindingRestFields, value: (__VLS_ctx.IMAGE_ICON) }, null, null);
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "auto-generation-main" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.h2, __VLS_intrinsicElements.h2)({});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+    ...{ class: "subtle-copy" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
+    ...{ class: "toggle" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.input)({
+    type: "checkbox",
+});
+(__VLS_ctx.settings.form.autoImageGeneration);
+__VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+    ...{ class: "toggle-track" },
+    'aria-hidden': "true",
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+    ...{ class: "toggle-label" },
+});
+(__VLS_ctx.settings.form.autoImageGeneration ? 'On' : 'Off');
 __VLS_asFunctionalElement(__VLS_intrinsicElements.footer, __VLS_intrinsicElements.footer)({
     ...{ class: "settings-actions" },
 });
@@ -554,6 +583,14 @@ if (__VLS_ctx.editing && __VLS_ctx.editingDraft) {
 /** @type {__VLS_StyleScopedClasses['button-tight']} */ ;
 /** @type {__VLS_StyleScopedClasses['icon-button']} */ ;
 /** @type {__VLS_StyleScopedClasses['danger']} */ ;
+/** @type {__VLS_StyleScopedClasses['card']} */ ;
+/** @type {__VLS_StyleScopedClasses['auto-generation-card']} */ ;
+/** @type {__VLS_StyleScopedClasses['model-category-icon']} */ ;
+/** @type {__VLS_StyleScopedClasses['auto-generation-main']} */ ;
+/** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
+/** @type {__VLS_StyleScopedClasses['toggle']} */ ;
+/** @type {__VLS_StyleScopedClasses['toggle-track']} */ ;
+/** @type {__VLS_StyleScopedClasses['toggle-label']} */ ;
 /** @type {__VLS_StyleScopedClasses['settings-actions']} */ ;
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
@@ -586,6 +623,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             error: error,
             testingId: testingId,
             testResults: testResults,
+            IMAGE_ICON: IMAGE_ICON,
             categoryGroups: categoryGroups,
             expanded: expanded,
             editing: editing,

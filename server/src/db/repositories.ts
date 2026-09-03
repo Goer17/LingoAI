@@ -28,6 +28,7 @@ export const settingsRepository = {
     }
 
     return {
+      ...parsed,
       models: {
         language: parsed.models?.language ?? { entries: [], activeId: null },
         audio: parsed.models?.audio ?? { entries: [], activeId: null },
@@ -45,7 +46,7 @@ export const settingsRepository = {
         payload_json = excluded.payload_json,
         updated_at = excluded.updated_at
     `).run(
-      JSON.stringify({ models: settings.models }),
+      JSON.stringify(settings),
       settings.updatedAt,
     );
   },

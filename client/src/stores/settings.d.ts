@@ -32,13 +32,14 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                 activeId: string | null;
             };
         };
+        autoImageGeneration?: boolean | undefined;
         updatedAt: string | null;
     };
     loading: import("vue").Ref<boolean, boolean>;
     saving: import("vue").Ref<boolean, boolean>;
     fetchSettings: () => Promise<void>;
     saveSettings: () => Promise<void>;
-}, "loading" | "form" | "saving">, Pick<{
+}, "loading" | "saving" | "form">, Pick<{
     form: {
         models: {
             language: {
@@ -72,6 +73,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                 activeId: string | null;
             };
         };
+        autoImageGeneration?: boolean | undefined;
         updatedAt: string | null;
     };
     loading: import("vue").Ref<boolean, boolean>;
@@ -112,6 +114,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                 activeId: string | null;
             };
         };
+        autoImageGeneration?: boolean | undefined;
         updatedAt: string | null;
     };
     loading: import("vue").Ref<boolean, boolean>;

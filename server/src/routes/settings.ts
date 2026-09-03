@@ -42,6 +42,7 @@ const schema = z.object({
     audio: modelCategorySchema,
     image: modelCategorySchema,
   }),
+  autoImageGeneration: z.boolean().optional(),
 });
 
 const testSchema = z.object({
@@ -63,6 +64,7 @@ settingsRouter.post('/', (req, res) => {
 
   const saved = saveSettings({
     models: parsed.data.models,
+    autoImageGeneration: parsed.data.autoImageGeneration,
     updatedAt: null,
   });
 

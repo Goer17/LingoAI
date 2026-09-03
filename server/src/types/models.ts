@@ -54,6 +54,9 @@ export interface Settings {
     audio: SettingsModelCategory;
     image: SettingsModelCategory;
   };
+  /** When enabled, newly added vocabulary words are queued to generate
+   *  images for their example sentences automatically. */
+  autoImageGeneration?: boolean;
   updatedAt: string | null;
 }
 

@@ -1136,6 +1136,87 @@ select:focus {
   background: rgba(139, 45, 45, 0.12);
 }
 
+.auto-generation-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem 1.5rem;
+}
+
+.auto-generation-card .model-category-icon {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.auto-generation-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.auto-generation-main h2 {
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.auto-generation-main .subtle-copy {
+  margin: 0.3rem 0 0;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-track {
+  position: relative;
+  width: 3rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-strong);
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.toggle-track::after {
+  content: '';
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: var(--muted);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.toggle input:checked + .toggle-track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.toggle input:checked + .toggle-track::after {
+  transform: translateX(1.3rem);
+  background: #fff;
+}
+
+.toggle-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  min-width: 2.2rem;
+}
+
 .settings-actions {
   display: flex;
   justify-content: space-between;

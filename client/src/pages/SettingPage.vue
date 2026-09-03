@@ -125,6 +125,24 @@
       </div>
     </article>
 
+    <article class="card auto-generation-card">
+      <span class="model-category-icon" v-html="IMAGE_ICON"></span>
+      <div class="auto-generation-main">
+        <h2>Auto Generation</h2>
+        <p class="subtle-copy">
+          When enabled, each new vocabulary word you add is queued to automatically generate an image for its example sentences (uses the active image model).
+        </p>
+      </div>
+      <label class="toggle">
+        <input
+          type="checkbox"
+          v-model="settings.form.autoImageGeneration"
+        />
+        <span class="toggle-track" aria-hidden="true"></span>
+        <span class="toggle-label">{{ settings.form.autoImageGeneration ? 'On' : 'Off' }}</span>
+      </label>
+    </article>
+
     <footer class="settings-actions">
       <p class="subtle-copy">
         Active models are written to the server when you save.
