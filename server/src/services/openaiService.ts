@@ -124,22 +124,6 @@ function getLanguageClient(): LangClient {
   };
 }
 
-function getAudioClient() {
-  const entry = getActiveModelEntry('audio');
-  if (!entry || !entry.baseUrl || !entry.apiKey || !entry.model) {
-    throw new Error('Audio model is not configured. Please pick one in Settings.');
-  }
-
-  return {
-    model: entry.model,
-    client: new OpenAI({
-      baseURL: entry.baseUrl,
-      apiKey: entry.apiKey,
-    }),
-    extraBody: parseExtraBody(entry.extraBody),
-  };
-}
-
 async function requestJson<T>(prompt: string, parser: z.ZodSchema<T>): Promise<T> {
   const { client, model, extraBody } = getLanguageClient();
   const response = await client.chat.completions.create({
