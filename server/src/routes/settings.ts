@@ -2,7 +2,7 @@ import { Router } from 'express';
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { getRedactedSettings, getSettings, saveSettings } from '../services/settingsService.js';
-import { generateImageViaDashScope, isDashScopeBaseUrl } from '../services/openaiService.js';
+import { generateAudioViaDashScope, generateImageViaDashScope, isDashScopeBaseUrl } from '../services/openaiService.js';
 import { fail, ok } from '../utils/http.js';
 
 const modelEntrySchema = z.object({
@@ -109,6 +109,13 @@ settingsRouter.post('/test', async (req, res) => {
     }
 
     if (parsed.data.category === 'audio') {
+      // DashScope / MaaS gateways (qwen-audio-* TTS) expose no OpenAI-style
+      // /audio/speech route — use the native SpeechSynthesizer endpoint.
+      if (isDashScopeBaseUrl(entry.baseUrl)) {
+        const base64 = await generateAudioViaDashScope(entry, 'ok');
+        return ok(res, { ok: true, latencyMs: Date.now() - startedAt, sample: `${Math.round((base64.length * 3) / 4 / 1024)} KB` });
+      }
+
       const extraBody = (() => {
         const raw = entry.extraBody?.trim();
         if (!raw) return {};
