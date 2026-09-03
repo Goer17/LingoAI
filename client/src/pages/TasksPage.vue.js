@@ -281,14 +281,14 @@ else {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
                 ...{ class: "task-actions" },
             });
-            if (task.status === 'failed' && task.quizSessionId) {
+            if (task.status === 'failed') {
                 __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
                     ...{ onClick: (...[$event]) => {
                             if (!!(__VLS_ctx.store.tasks.length === 0))
                                 return;
                             if (!(!__VLS_ctx.deleteMode))
                                 return;
-                            if (!(task.status === 'failed' && task.quizSessionId))
+                            if (!(task.status === 'failed'))
                                 return;
                             __VLS_ctx.retryTask(task.id);
                         } },
@@ -305,7 +305,7 @@ else {
                                 return;
                             if (!(!__VLS_ctx.deleteMode))
                                 return;
-                            if (!!(task.status === 'failed' && task.quizSessionId))
+                            if (!!(task.status === 'failed'))
                                 return;
                             __VLS_ctx.startTask(task.id);
                         } },

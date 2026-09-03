@@ -550,13 +550,33 @@ vocabularyRouter.post('/tasks/:id/retry', (req, res) => {
     return fail(res, 404, 'Task not found.');
   }
 
-  if (task.status !== 'failed' || !task.quizSessionId) {
-    return fail(res, 400, 'Only failed tasks with retained questions can be retried.');
+  if (task.status !== 'failed') {
+    return fail(res, 400, 'Only failed tasks can be retried.');
   }
 
   markLearningTaskPending(task.id);
-  void processTaskRetry(task.id);
-  return ok(res, getLearningTask(task.id));
+
+  if (task.quizSessionId) {
+    // Earlier failure happened while generating per-question assets: the
+    // questions that succeeded are kept, only the missing ones are back-filled.
+    void processTaskRetry(task.id);
+    return ok(res, getLearningTask(task.id));
+  }
+
+  // Generation failed before any question was produced (e.g. the LLM step) —
+  // regenerate the whole task from scratch.
+  if (task.type === 'vocabulary') {
+    void processVocabularyTask(task.id);
+    return ok(res, getLearningTask(task.id));
+  }
+
+  if (task.type === 'listening') {
+    void processListeningTask(task.id);
+    return ok(res, getLearningTask(task.id));
+  }
+
+  markLearningTaskFailed(task.id, 'This task type cannot be retried.');
+  return fail(res, 400, 'This task type cannot be retried.');
 });
 
 vocabularyRouter.get('/common-audio', async (req, res) => {

@@ -61,7 +61,7 @@
             </div>
             <div v-if="!deleteMode" class="task-actions">
               <button
-                v-if="task.status === 'failed' && task.quizSessionId"
+                v-if="task.status === 'failed'"
                 class="button button-secondary"
                 type="button"
                 :disabled="retryingTaskId === task.id"
