@@ -8,6 +8,7 @@ import { authRouter } from './routes/auth.js';
 import { settingsRouter } from './routes/settings.js';
 import { vocabularyRouter } from './routes/vocabulary.js';
 import { writingRouter } from './routes/writing.js';
+import { scanAndEnqueueMissing } from './services/autoImageService.js';
 import { validateAccessToken } from './services/tokenService.js';
 import { fail, ok } from './utils/http.js';
 
@@ -52,4 +53,16 @@ if (hasClientDist) {
 
 app.listen(env.port, env.host, () => {
   console.log(`LingoAI server listening on http://${env.host}:${env.port}`);
+  // Recover example images missed by an earlier run (server restart drops the
+  // in-memory auto-generation queue; this healing pass re-queues the gaps).
+  setTimeout(() => {
+    try {
+      const enqueued = scanAndEnqueueMissing(50);
+      if (enqueued > 0) {
+        console.log(`[auto-image] healing pass re-queued ${enqueued} example image(s)`);
+      }
+    } catch (error) {
+      console.error('[auto-image] healing pass failed:', error instanceof Error ? error.message : error);
+    }
+  }, 2000);
 });

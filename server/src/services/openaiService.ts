@@ -343,17 +343,33 @@ function pickRequestHeaders(model: string): Record<string, Record<string, string
 }
 
 export async function generateAudioBase64(input: string): Promise<string> {
-  const { client, model, extraBody } = getAudioClient();
-  const voice = pickVoiceForModel(model);
+  const entry = getActiveModelEntry('audio');
+  if (!entry || !entry.baseUrl || !entry.apiKey || !entry.model) {
+    throw new Error('Audio model is not configured. Please pick one in Settings.');
+  }
+
+  // Aliyun Model Studio (DashScope / *maas.aliyuncs.com): TTS models like
+  // qwen-audio-* do NOT expose the OpenAI-compatible /audio/speech route;
+  // they use the native synchronous `SpeechSynthesizer` endpoint instead.
+  if (isDashScopeBaseUrl(entry.baseUrl)) {
+    return generateAudioViaDashScope(entry, input);
+  }
+
+  const client = new OpenAI({
+    baseURL: entry.baseUrl,
+    apiKey: entry.apiKey,
+  });
+  const extraBody = parseExtraBody(entry.extraBody);
+  const voice = pickVoiceForModel(entry.model);
   const response = await client.audio.speech.create(
     {
-      model,
+      model: entry.model,
       voice,
       input,
       response_format: 'mp3',
       ...extraBody,
     },
-    pickRequestHeaders(model),
+    pickRequestHeaders(entry.model),
   );
 
   const buffer = await fetchAudioBytes(response);
@@ -515,4 +531,65 @@ export async function generateImageViaDashScope(
 /** DashScope wants "1024*1024"; tolerate OpenAI-style "1024x1024" from configs. */
 function normalizeDashScopeSize(size: string): string {
   return size.trim().replace(/(\d+)x(\d+)/i, '$1*$2');
+}
+
+/**
+ * Voice used when the audio model entry does not pin one via extraBody.voice.
+ * `longanhuan_v3.6` is the only voice the token-plan MaaS gateway serves
+ * for qwen-audio-3.0-tts-plus.
+ */
+export const DASHSCOPE_TTS_DEFAULT_VOICE = 'longanhuan_v3.6';
+
+/**
+ * DashScope native TTS:
+ * POST {origin}/api/v1/services/audio/tts/SpeechSynthesizer
+ * Body: {"model", "input": {"text", "voice", "format", "sample_rate"}}
+ * Response: {"output": {"audio": {"url": <signed OSS download url>}}}
+ * extraBody.voice / extraBody.format / extraBody.sampleRate can override defaults.
+ */
+export async function generateAudioViaDashScope(
+  entry: ModelEntryLike,
+  text: string,
+  fetchImpl: FetchLike = fetch,
+): Promise<string> {
+  const origin = new URL(entry.baseUrl).origin;
+  const endpoint = `${origin}/api/v1/services/audio/tts/SpeechSynthesizer`;
+  const extra = parseExtraBody(entry.extraBody);
+  const format = String(extra.format ?? 'wav');
+  const sampleRate = Number(extra.sampleRate ?? 24000);
+
+  const response = await fetchImpl(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${entry.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: entry.model,
+      input: {
+        text,
+        voice: String(extra.voice ?? DASHSCOPE_TTS_DEFAULT_VOICE),
+        format,
+        sample_rate: sampleRate,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`DashScope TTS failed (HTTP ${response.status}). ${detail.slice(0, 300)}`);
+  }
+
+  const data = (await response.json()) as Record<string, unknown>;
+  const audioUrl = extractAudioUrl(data);
+  if (!audioUrl) {
+    const raw = JSON.stringify(data).slice(0, 400);
+    throw new Error(`DashScope TTS returned no audio URL. ${raw}`);
+  }
+
+  const audioResponse = await fetchImpl(audioUrl);
+  if (!audioResponse.ok) {
+    throw new Error(`Failed to download TTS audio (HTTP ${audioResponse.status}).`);
+  }
+  return Buffer.from(await audioResponse.arrayBuffer()).toString('base64');
 }

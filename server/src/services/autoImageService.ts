@@ -1,5 +1,6 @@
 import { getSettings } from './settingsService.js';
 import { getOrCreateSentenceImage } from './imageService.js';
+import { sentenceImageRepository, vocabularyRepository } from '../db/repositories.js';
 import type { VocabularyEntry } from '../types/models.js';
 
 /**
@@ -89,4 +90,55 @@ async function drainQueue(): Promise<void> {
 /** Number of sentences still waiting to be generated (for observability). */
 export function getAutoImageQueueLength(): number {
   return queue.length;
+}
+
+function normalizeSentence(sentence: string) {
+  return sentence.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function hasCachedImage(sentence: string): boolean {
+  try {
+    return Boolean(sentenceImageRepository.getByNormalizedSentence(normalizeSentence(sentence)));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Recover missed example images: scan recent vocabulary entries (from newest
+ * backwards up to `limit`) and re-queue any example sentence that still has no
+ * cached image. This heals gaps left by a server restart (the in-memory queue
+ * is lost) or by a failed generation. Honours the Auto Generation setting.
+ */
+export function scanAndEnqueueMissing(limit = 50): number {
+  if (!isAutoImageGenerationEnabled()) {
+    return 0;
+  }
+
+  let enqueued = 0;
+  const entries = vocabularyRepository
+    .list()
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, limit);
+
+  for (const entry of entries) {
+    for (const meaning of entry.meanings ?? []) {
+      const sentence = meaning.example?.trim();
+      if (!sentence) {
+        continue;
+      }
+      const key = sentence.toLowerCase();
+      if (pendingKeys.has(key) || queue.length >= MAX_QUEUE_SIZE || hasCachedImage(sentence)) {
+        continue;
+      }
+      pendingKeys.add(key);
+      queue.push({ sentence, word: entry.text });
+      enqueued += 1;
+    }
+  }
+
+  if (enqueued > 0) {
+    void drainQueue();
+  }
+  return enqueued;
 }

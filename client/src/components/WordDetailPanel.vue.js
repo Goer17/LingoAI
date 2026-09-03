@@ -138,7 +138,6 @@ function escapeHtml(value) {
         .replaceAll('\'', '&#39;');
 }
 const exampleImages = ref({});
-const checkedWords = ref(new Set());
 function exampleImageState(example) {
     return exampleImages.value[example] ?? null;
 }
@@ -199,10 +198,9 @@ async function handleExampleImage(example) {
     }
 }
 watch(() => props.word?.id, async (id) => {
-    if (!id || checkedWords.value.has(id)) {
+    if (!id) {
         return;
     }
-    checkedWords.value.add(id);
     const word = props.word;
     if (!word) {
         return;
@@ -211,6 +209,8 @@ watch(() => props.word?.id, async (id) => {
     if (examples.length === 0) {
         return;
     }
+    // Re-check every time this card is opened: cached example images may have
+    // been generated in the background (Auto Generation) after a previous visit.
     for (const example of examples) {
         try {
             const { imageUrl } = await api.checkSentenceImage(example);
