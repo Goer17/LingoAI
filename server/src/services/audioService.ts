@@ -60,10 +60,24 @@ export async function createAudioDataUrl(input: string, force = false) {
   }
 
   const base64 = await generateAudioBase64(input);
-  const audioUrl = `data:audio/mp3;base64,${base64}`;
+  const audioUrl = `data:${detectAudioMime(base64)};base64,${base64}`;
   const key = getCacheKey(input);
   audioDataUrlCache.set(key, audioUrl);
   return audioUrl;
+}
+
+/**
+ * TTS providers return either MP3 (OpenAI-compatible /audio/speech) or WAV
+ * (DashScope native SpeechSynthesizer). Tag the data URL with the real
+ * format so browsers decode it correctly instead of assuming MP3.
+ */
+function detectAudioMime(base64: string): string {
+  // Decode enough base64 to cover the 12-byte RIFF header.
+  const head = Buffer.from(base64.slice(0, 16), 'base64');
+  if (head.length >= 12 && head.subarray(0, 4).toString('ascii') === 'RIFF' && head.subarray(8, 12).toString('ascii') === 'WAVE') {
+    return 'audio/wav';
+  }
+  return 'audio/mpeg';
 }
 
 function ensureAudioDirectory() {
