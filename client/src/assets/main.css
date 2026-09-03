@@ -1136,31 +1136,77 @@ select:focus {
   background: rgba(139, 45, 45, 0.12);
 }
 
-.auto-generation-card {
+.more-card {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.more-card-head {
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 1.2rem 1.5rem;
 }
 
-.auto-generation-card .model-category-icon {
+.more-card-head .model-category-icon {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
 }
 
-.auto-generation-main {
-  flex: 1 1 auto;
+.more-card-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
-.auto-generation-main h2 {
+.more-card-title h2 {
   margin: 0;
   letter-spacing: -0.01em;
 }
 
-.auto-generation-main .subtle-copy {
-  margin: 0.3rem 0 0;
+.more-card-title .subtle-copy {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.more-settings {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+}
+
+.more-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+}
+
+.more-setting-row + .more-setting-row {
+  border-top: 1px solid var(--line);
+}
+
+.more-setting-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.more-setting-text strong {
+  letter-spacing: -0.01em;
+}
+
+.more-setting-text .subtle-copy {
+  margin: 0;
+  font-size: 0.85rem;
 }
 
 .toggle {

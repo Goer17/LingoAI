@@ -125,22 +125,32 @@
       </div>
     </article>
 
-    <article class="card auto-generation-card">
-      <span class="model-category-icon" v-html="IMAGE_ICON"></span>
-      <div class="auto-generation-main">
-        <h2>Auto Generation</h2>
-        <p class="subtle-copy">
-          When enabled, each new vocabulary word you add is queued to automatically generate an image for its example sentences (uses the active image model).
-        </p>
+    <article class="card more-card">
+      <header class="more-card-head">
+        <span class="model-category-icon" v-html="MORE_ICON"></span>
+        <div class="more-card-title">
+          <h2>More</h2>
+          <p class="subtle-copy">Additional app settings.</p>
+        </div>
+      </header>
+      <div class="more-settings">
+        <div class="more-setting-row">
+          <div class="more-setting-text">
+            <strong>Image Auto Generation</strong>
+            <p class="subtle-copy">
+              When enabled, each new vocabulary word you add is queued to automatically generate an image for its example sentences (uses the active image model).
+            </p>
+          </div>
+          <label class="toggle">
+            <input
+              type="checkbox"
+              v-model="settings.form.autoImageGeneration"
+            />
+            <span class="toggle-track" aria-hidden="true"></span>
+            <span class="toggle-label">{{ settings.form.autoImageGeneration ? 'On' : 'Off' }}</span>
+          </label>
+        </div>
       </div>
-      <label class="toggle">
-        <input
-          type="checkbox"
-          v-model="settings.form.autoImageGeneration"
-        />
-        <span class="toggle-track" aria-hidden="true"></span>
-        <span class="toggle-label">{{ settings.form.autoImageGeneration ? 'On' : 'Off' }}</span>
-      </label>
     </article>
 
     <footer class="settings-actions">
@@ -261,6 +271,8 @@ const LANGUAGE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 const AUDIO_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/><path d="M9 21h6"/></svg>`;
 
 const IMAGE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-8 9"/></svg>`;
+
+const MORE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg>`;
 
 const categoryGroups: CategoryGroup[] = [
   {
