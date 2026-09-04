@@ -1209,6 +1209,15 @@ select:focus {
   font-size: 0.85rem;
 }
 
+.more-setting-input {
+  width: 5.5rem;
+  flex-shrink: 0;
+  text-align: center;
+  font-family: var(--font-mono, 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace);
+  font-size: 0.9rem;
+  padding: 0.45rem 0.5rem;
+}
+
 .toggle {
   display: inline-flex;
   align-items: center;

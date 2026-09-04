@@ -454,6 +454,65 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.
     ...{ class: "toggle-label" },
 });
 (__VLS_ctx.settings.form.autoImageGeneration ? 'On' : 'Off');
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "more-setting-row" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "more-setting-text" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+    ...{ class: "subtle-copy" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.input)({
+    ...{ class: "more-setting-input" },
+    type: "number",
+    min: "1",
+    max: "50",
+});
+(__VLS_ctx.settings.form.quizMaxQuestions.vocabulary);
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "more-setting-row" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "more-setting-text" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+    ...{ class: "subtle-copy" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.input)({
+    ...{ class: "more-setting-input" },
+    type: "number",
+    min: "1",
+    max: "50",
+});
+(__VLS_ctx.settings.form.quizMaxQuestions.listening);
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "more-setting-row" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "more-setting-text" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+    ...{ class: "subtle-copy" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
+    ...{ class: "toggle" },
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.input)({
+    type: "checkbox",
+});
+(__VLS_ctx.settings.form.autoDailyQuiz);
+__VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+    ...{ class: "toggle-track" },
+    'aria-hidden': "true",
+});
+__VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+    ...{ class: "toggle-label" },
+});
+(__VLS_ctx.settings.form.autoDailyQuiz ? 'On' : 'Off');
 __VLS_asFunctionalElement(__VLS_intrinsicElements.footer, __VLS_intrinsicElements.footer)({
     ...{ class: "settings-actions" },
 });
@@ -607,6 +666,20 @@ if (__VLS_ctx.editing && __VLS_ctx.editingDraft) {
 /** @type {__VLS_StyleScopedClasses['more-card-title']} */ ;
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['more-settings']} */ ;
+/** @type {__VLS_StyleScopedClasses['more-setting-row']} */ ;
+/** @type {__VLS_StyleScopedClasses['more-setting-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
+/** @type {__VLS_StyleScopedClasses['toggle']} */ ;
+/** @type {__VLS_StyleScopedClasses['toggle-track']} */ ;
+/** @type {__VLS_StyleScopedClasses['toggle-label']} */ ;
+/** @type {__VLS_StyleScopedClasses['more-setting-row']} */ ;
+/** @type {__VLS_StyleScopedClasses['more-setting-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
+/** @type {__VLS_StyleScopedClasses['more-setting-input']} */ ;
+/** @type {__VLS_StyleScopedClasses['more-setting-row']} */ ;
+/** @type {__VLS_StyleScopedClasses['more-setting-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
+/** @type {__VLS_StyleScopedClasses['more-setting-input']} */ ;
 /** @type {__VLS_StyleScopedClasses['more-setting-row']} */ ;
 /** @type {__VLS_StyleScopedClasses['more-setting-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;

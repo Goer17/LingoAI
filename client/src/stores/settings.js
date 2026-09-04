@@ -9,6 +9,8 @@ function emptyForm() {
             image: { entries: [], activeId: null },
         },
         autoImageGeneration: false,
+        quizMaxQuestions: { vocabulary: 10, listening: 10 },
+        autoDailyQuiz: false,
         updatedAt: null,
     };
 }
@@ -19,6 +21,8 @@ export const useSettingsStore = defineStore('settings', () => {
     function applyData(data) {
         form.models = data.models;
         form.autoImageGeneration = data.autoImageGeneration ?? false;
+        form.quizMaxQuestions = data.quizMaxQuestions ?? { vocabulary: 10, listening: 10 };
+        form.autoDailyQuiz = data.autoDailyQuiz ?? false;
         form.updatedAt = data.updatedAt;
     }
     async function fetchSettings() {
@@ -34,7 +38,12 @@ export const useSettingsStore = defineStore('settings', () => {
     async function saveSettings() {
         saving.value = true;
         try {
-            const data = await api.saveSettings({ models: form.models, autoImageGeneration: form.autoImageGeneration });
+            const data = await api.saveSettings({
+                models: form.models,
+                autoImageGeneration: form.autoImageGeneration,
+                quizMaxQuestions: form.quizMaxQuestions,
+                autoDailyQuiz: form.autoDailyQuiz,
+            });
             applyData(data);
         }
         finally {

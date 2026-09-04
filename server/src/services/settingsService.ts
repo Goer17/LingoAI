@@ -4,15 +4,29 @@ import type { Settings, SettingsModelCategory, SettingsModelEntry } from '../typ
 const REDACTED_API_KEY = '********';
 
 export function getSettings(): Settings {
-  return settingsRepository.get() ?? {
-    models: {
+  const stored = settingsRepository.get();
+  return {
+    models: stored?.models ?? {
       language: { entries: [], activeId: null },
       audio: { entries: [], activeId: null },
       image: { entries: [], activeId: null },
     },
-    autoImageGeneration: false,
-    updatedAt: null,
+    autoImageGeneration: stored?.autoImageGeneration ?? false,
+    quizMaxQuestions: {
+      vocabulary: normalizeQuestionLimit(stored?.quizMaxQuestions?.vocabulary),
+      listening: normalizeQuestionLimit(stored?.quizMaxQuestions?.listening),
+    },
+    autoDailyQuiz: stored?.autoDailyQuiz ?? false,
+    updatedAt: stored?.updatedAt ?? null,
   };
+}
+
+/** Clamp a quiz question limit to a sane range (1-50). */
+function normalizeQuestionLimit(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return 10;
+  }
+  return Math.min(50, Math.max(1, Math.round(value)));
 }
 
 export function getRedactedSettings(): Settings {
@@ -71,6 +85,11 @@ export function saveSettings(incoming: Settings) {
       image: mergeCategoryWithStored(incoming.models.image, current.models.image),
     },
     autoImageGeneration: incoming.autoImageGeneration ?? current.autoImageGeneration ?? false,
+    quizMaxQuestions: {
+      vocabulary: normalizeQuestionLimit(incoming.quizMaxQuestions?.vocabulary),
+      listening: normalizeQuestionLimit(incoming.quizMaxQuestions?.listening),
+    },
+    autoDailyQuiz: incoming.autoDailyQuiz ?? current.autoDailyQuiz ?? false,
     updatedAt: new Date().toISOString(),
   };
 

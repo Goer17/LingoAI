@@ -15,6 +15,7 @@ import { addListeningSentence, appendListeningChatHistory, applyListeningQuizRes
 import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, removeWord, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
 import { checkSentenceImage, getOrCreateSentenceImage } from '../services/imageService.js';
 import { enqueueAutoImageGeneration } from '../services/autoImageService.js';
+import { getSettings } from '../services/settingsService.js';
 import { createQuizSession, getQuizSession, pickQuizEntries, submitQuizAnswer, updateQuizSession } from '../services/quizService.js';
 import {
   createLearningTask,
@@ -146,8 +147,8 @@ async function enrichQuestion(question: QuestionLike): Promise<{ question: Quest
   }
 }
 
-async function generateVocabularyQuizSession() {
-  const entries = pickQuizEntries(listVocabulary());
+async function generateVocabularyQuizSession(limit = 10) {
+  const entries = pickQuizEntries(listVocabulary(), limit);
   if (entries.length === 0) {
     throw new Error('No vocabulary available for learning.');
   }
@@ -156,7 +157,7 @@ async function generateVocabularyQuizSession() {
   const result = await generateQuiz(prompt);
   let failedCount = 0;
   const questions: QuizQuestion[] = [];
-  for (const draft of result.questions) {
+  for (const draft of result.questions.slice(0, limit)) {
     const { question, ok } = await enrichQuestion(draft);
     if (!ok) {
       failedCount += 1;
@@ -167,9 +168,9 @@ async function generateVocabularyQuizSession() {
   return { session: createQuizSession(questions, 'vocabulary_task'), failedCount };
 }
 
-async function processVocabularyTask(taskId: string) {
+export async function processVocabularyTask(taskId: string, limit = 10) {
   try {
-    const { session, failedCount } = await generateVocabularyQuizSession();
+    const { session, failedCount } = await generateVocabularyQuizSession(limit);
     if (failedCount > 0) {
       // Stash the partially generated session — successful questions are reused
       // on Retry, which only back-fills the ones that are still missing audio.
@@ -191,10 +192,10 @@ async function processVocabularyTask(taskId: string) {
   }
 }
 
-async function generateListeningQuizSession(groupId?: string) {
+async function generateListeningQuizSession(groupId?: string, limit = 10) {
   const entries = groupId
-    ? pickListeningEntriesByGroup(groupId)
-    : pickListeningEntries(listListeningEntries());
+    ? pickListeningEntriesByGroup(groupId, limit)
+    : pickListeningEntries(listListeningEntries(), limit);
   if (entries.length === 0) {
     throw new Error('No listening sentences available for learning.');
   }
@@ -219,9 +220,9 @@ async function generateListeningQuizSession(groupId?: string) {
   return { session: createQuizSession(questions, 'listening_task'), failedCount };
 }
 
-async function processListeningTask(taskId: string, groupId?: string) {
+export async function processListeningTask(taskId: string, groupId?: string, limit = 10) {
   try {
-    const { session, failedCount } = await generateListeningQuizSession(groupId);
+    const { session, failedCount } = await generateListeningQuizSession(groupId, limit);
     if (failedCount > 0) {
       markLearningTaskFailed(
         taskId,
@@ -486,7 +487,7 @@ vocabularyRouter.post('/tasks/vocabulary', (_req, res) => {
   }
 
   const task = createLearningTask('vocabulary');
-  void processVocabularyTask(task.id);
+  void processVocabularyTask(task.id, getSettings().quizMaxQuestions?.vocabulary ?? 10);
   return ok(res, task);
 });
 
@@ -497,7 +498,7 @@ vocabularyRouter.post('/tasks/listening', (_req, res) => {
   }
 
   const task = createLearningTask('listening');
-  void processListeningTask(task.id);
+  void processListeningTask(task.id, undefined, getSettings().quizMaxQuestions?.listening ?? 10);
   return ok(res, task);
 });
 
@@ -509,7 +510,7 @@ vocabularyRouter.post('/tasks/listening/:groupId', (req, res) => {
   }
 
   const task = createLearningTask('listening');
-  void processListeningTask(task.id, groupId);
+  void processListeningTask(task.id, groupId, getSettings().quizMaxQuestions?.listening ?? 10);
   return ok(res, task);
 });
 

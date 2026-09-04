@@ -2,11 +2,11 @@ import { quizRepository } from '../db/repositories.js';
 import { createId } from '../utils/id.js';
 import type { QuizQuestion, QuizSession, QuizSourceType, VocabularyEntry } from '../types/models.js';
 
-export function pickQuizEntries(entries: VocabularyEntry[]) {
+export function pickQuizEntries(entries: VocabularyEntry[], limit = 10) {
   return entries
     .slice()
     .sort((a, b) => a.familiarity - b.familiarity || b.createdAt.localeCompare(a.createdAt))
-    .slice(0, 10);
+    .slice(0, limit);
 }
 
 export function createQuizSession(questions: QuizQuestion[], sourceType: QuizSourceType = 'vocabulary_task') {

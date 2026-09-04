@@ -9,6 +9,7 @@ import { settingsRouter } from './routes/settings.js';
 import { vocabularyRouter } from './routes/vocabulary.js';
 import { writingRouter } from './routes/writing.js';
 import { scanAndEnqueueMissing } from './services/autoImageService.js';
+import { startDailyQuizScheduler } from './services/dailyQuizService.js';
 import { validateAccessToken } from './services/tokenService.js';
 import { fail, ok } from './utils/http.js';
 
@@ -65,4 +66,7 @@ app.listen(env.port, env.host, () => {
       console.error('[auto-image] healing pass failed:', error instanceof Error ? error.message : error);
     }
   }, 2000);
+
+  // Daily auto-quiz at 06:00 local time (no-op unless the setting is enabled).
+  startDailyQuizScheduler();
 });

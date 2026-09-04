@@ -33,6 +33,11 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
             };
         };
         autoImageGeneration?: boolean | undefined;
+        quizMaxQuestions?: {
+            vocabulary: number;
+            listening: number;
+        } | undefined;
+        autoDailyQuiz?: boolean | undefined;
         updatedAt: string | null;
     };
     loading: import("vue").Ref<boolean, boolean>;
@@ -74,6 +79,11 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
             };
         };
         autoImageGeneration?: boolean | undefined;
+        quizMaxQuestions?: {
+            vocabulary: number;
+            listening: number;
+        } | undefined;
+        autoDailyQuiz?: boolean | undefined;
         updatedAt: string | null;
     };
     loading: import("vue").Ref<boolean, boolean>;
@@ -115,6 +125,11 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
             };
         };
         autoImageGeneration?: boolean | undefined;
+        quizMaxQuestions?: {
+            vocabulary: number;
+            listening: number;
+        } | undefined;
+        autoDailyQuiz?: boolean | undefined;
         updatedAt: string | null;
     };
     loading: import("vue").Ref<boolean, boolean>;

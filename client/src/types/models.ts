@@ -68,6 +68,11 @@ export interface SettingsForm {
     image: SettingsModelCategory;
   };
   autoImageGeneration?: boolean;
+  quizMaxQuestions?: {
+    vocabulary: number;
+    listening: number;
+  };
+  autoDailyQuiz?: boolean;
   updatedAt: string | null;
 }
 

@@ -165,16 +165,16 @@ export function removeListeningSentence(id: string) {
   return true;
 }
 
-export function pickListeningEntries(entries: ListeningEntry[]) {
+export function pickListeningEntries(entries: ListeningEntry[], limit = 10) {
   return entries
     .slice()
     .sort((a, b) => a.familiarity - b.familiarity || b.createdAt.localeCompare(a.createdAt))
-    .slice(0, 10);
+    .slice(0, limit);
 }
 
-export function pickListeningEntriesByGroup(groupId: string) {
+export function pickListeningEntriesByGroup(groupId: string, limit = 10) {
   const entries = listListeningEntries(groupId);
-  return pickListeningEntries(entries);
+  return pickListeningEntries(entries, limit);
 }
 
 export function applyListeningQuizResults(results: Array<{ sentence: string; isCorrect: boolean }>) {

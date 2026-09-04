@@ -43,6 +43,13 @@ const schema = z.object({
     image: modelCategorySchema,
   }),
   autoImageGeneration: z.boolean().optional(),
+  quizMaxQuestions: z
+    .object({
+      vocabulary: z.number().int().min(1).max(50),
+      listening: z.number().int().min(1).max(50),
+    })
+    .optional(),
+  autoDailyQuiz: z.boolean().optional(),
 });
 
 const testSchema = z.object({
@@ -65,6 +72,8 @@ settingsRouter.post('/', (req, res) => {
   const saved = saveSettings({
     models: parsed.data.models,
     autoImageGeneration: parsed.data.autoImageGeneration,
+    quizMaxQuestions: parsed.data.quizMaxQuestions,
+    autoDailyQuiz: parsed.data.autoDailyQuiz,
     updatedAt: null,
   });
 

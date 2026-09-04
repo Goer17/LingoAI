@@ -57,6 +57,14 @@ export interface Settings {
   /** When enabled, newly added vocabulary words are queued to generate
    *  images for their example sentences automatically. */
   autoImageGeneration?: boolean;
+  /** Max question count per generated quiz, by category. Defaults to 10. */
+  quizMaxQuestions?: {
+    vocabulary: number;
+    listening: number;
+  };
+  /** When enabled, a vocabulary quiz + a listening quiz (random topic) are
+   *  auto-created every day at 06:00 local time. Expression is not covered yet. */
+  autoDailyQuiz?: boolean;
   updatedAt: string | null;
 }
 

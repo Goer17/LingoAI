@@ -150,6 +150,56 @@
             <span class="toggle-label">{{ settings.form.autoImageGeneration ? 'On' : 'Off' }}</span>
           </label>
         </div>
+
+        <div class="more-setting-row">
+          <div class="more-setting-text">
+            <strong>Vocabulary Quiz Max Questions</strong>
+            <p class="subtle-copy">
+              Maximum number of questions in each generated vocabulary quiz (1-50).
+            </p>
+          </div>
+          <input
+            class="more-setting-input"
+            type="number"
+            min="1"
+            max="50"
+            v-model.number="settings.form.quizMaxQuestions!.vocabulary"
+          />
+        </div>
+
+        <div class="more-setting-row">
+          <div class="more-setting-text">
+            <strong>Listening Quiz Max Questions</strong>
+            <p class="subtle-copy">
+              Maximum number of questions in each generated listening quiz (1-50).
+            </p>
+          </div>
+          <input
+            class="more-setting-input"
+            type="number"
+            min="1"
+            max="50"
+            v-model.number="settings.form.quizMaxQuestions!.listening"
+          />
+        </div>
+
+        <div class="more-setting-row">
+          <div class="more-setting-text">
+            <strong>Daily Auto Quiz</strong>
+            <p class="subtle-copy">
+              When enabled, a vocabulary quiz and a listening quiz (from a random topic with more than one sentence) are generated automatically every day at 06:00.
+              Expression practice auto-generation is not included yet.
+            </p>
+          </div>
+          <label class="toggle">
+            <input
+              type="checkbox"
+              v-model="settings.form.autoDailyQuiz"
+            />
+            <span class="toggle-track" aria-hidden="true"></span>
+            <span class="toggle-label">{{ settings.form.autoDailyQuiz ? 'On' : 'Off' }}</span>
+          </label>
+        </div>
       </div>
     </article>
 
