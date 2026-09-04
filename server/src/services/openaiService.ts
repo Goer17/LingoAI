@@ -498,8 +498,21 @@ export async function generateImageViaDashScope(
   }
 
   const data = await response.json();
-  const imageUrl = (data?.output?.choices?.[0]?.message?.content as Array<{ type?: string; image?: string }> | undefined)
-    ?.find((item) => item?.type === 'image')?.image;
+  // DashScope gateways vary in how they wrap the generated image URL: some
+  // return objects like { type: 'image', image: 'https://...' }, while the
+  // token-plan MaaS gateway (qwen-image-3.0-pro, wan2.7-image) returns
+  // { image: 'https://...', role: 'assistant' } with no `type` field at all.
+  // Match on the presence of a usable `image` string rather than a strict
+  // `type === 'image'` check so both shapes work.
+  const content = (data as { output?: { choices?: Array<{ message?: { content?: unknown } }> } } | undefined)
+    ?.output?.choices?.[0]?.message?.content;
+  const contentItems = Array.isArray(content) ? content : [];
+  const imageItem = contentItems.find((item: unknown): boolean => {
+    if (typeof item !== 'object' || item === null) return false;
+    const image = (item as { image?: unknown }).image;
+    return typeof image === 'string' && image.length > 0;
+  });
+  const imageUrl = (imageItem as { image?: string } | undefined)?.image;
   if (!imageUrl) {
     const raw = JSON.stringify(data).slice(0, 400);
     throw new Error(`DashScope image generation returned no image. ${raw}`);
