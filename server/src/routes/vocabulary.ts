@@ -6,7 +6,7 @@ import { createGenerateQuizPrompt } from '../prompts/generateQuizPrompt.js';
 import { createQuizQuestionChatPrompt } from '../prompts/quizQuestionChatPrompt.js';
 import { createSearchWordPrompt } from '../prompts/searchWordPrompt.js';
 import { suggestWords } from '../services/suggestionService.js';
-import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, deleteAudioFile, getMediaUrl } from '../services/audioService.js';
+import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, createQuizAudioUrl, deleteAudioFile, getMediaUrl } from '../services/audioService.js';
 import { getCommonAudioUrl, hasCommonAudio } from '../services/commonAudioService.js';
 import { buildCompoundAudio } from '../services/compoundAudioService.js';
 import { askWordChat, generateQuiz, searchWord, streamWordChat } from '../services/openaiService.js';
@@ -118,7 +118,7 @@ async function enrichQuestion(question: QuestionLike): Promise<{ question: Quest
     if (question.type === 'listening') {
       const normalized = await ensureListeningMaskedSentence(question);
       const audioUrl = normalized.ttsText
-        ? await createAudioDataUrl(normalized.ttsText)
+        ? await createQuizAudioUrl(normalized.ttsText)
         : undefined;
       if (!audioUrl) {
         return { question, ok: false };
@@ -205,7 +205,7 @@ async function generateListeningQuizSession(groupId?: string, limit = 10) {
   for (const entry of entries) {
     try {
       const draft = createListeningQuizDraft(entry);
-      const audioUrl = draft.ttsText ? await createAudioDataUrl(draft.ttsText) : undefined;
+      const audioUrl = draft.ttsText ? await createQuizAudioUrl(draft.ttsText) : undefined;
       if (!audioUrl) {
         failedCount += 1;
       }

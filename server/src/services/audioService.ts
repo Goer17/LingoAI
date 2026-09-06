@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getActiveModelEntry } from './settingsService.js';
@@ -35,6 +36,10 @@ class LruAudioCache {
     if (oldestKey) {
       this.store.delete(oldestKey);
     }
+  }
+
+  delete(key: string) {
+    this.store.delete(key);
   }
 }
 
@@ -106,6 +111,35 @@ export async function createOrUpdateAudioFile(fileName: string, input: string) {
   const base64 = await generateAudioBase64(input);
   fs.writeFileSync(absolutePath, Buffer.from(base64, 'base64'));
   return absolutePath;
+}
+
+/**
+ * Stable file name for a generated clip so the same text is only ever
+ * synthesized once (even across quizzes) and served from disk instead of
+ * embedding megabytes of base64 audio in the quiz session payload.
+ */
+function quizAudioFileName(input: string): string {
+  const hash = createHash('sha1').update(input.trim()).digest('hex').slice(0, 16);
+  return `quiz-${hash}.mp3`;
+}
+
+/**
+ * Generate (or reuse) TTS audio for a quiz question and return a media URL
+ * (`/api/media/quiz-*.mp3`) rather than a base64 data URL. This keeps
+ * quiz session payloads small and lets express.static serve the clip.
+ */
+export async function createQuizAudioUrl(input: string, force = false): Promise<string> {
+  const fileName = quizAudioFileName(input);
+  if (force) {
+    const absolutePath = getAudioFilePath(fileName);
+    if (fs.existsSync(absolutePath)) {
+      fs.unlinkSync(absolutePath);
+    }
+    audioDataUrlCache.delete(getCacheKey(input));
+  }
+
+  await createOrUpdateAudioFile(fileName, input);
+  return getMediaUrl(fileName);
 }
 
 export function deleteAudioFile(fileName?: string) {
