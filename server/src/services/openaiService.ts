@@ -97,6 +97,13 @@ interface LangClient {
   extraBody: Record<string, unknown>;
 }
 
+/**
+ * Per-request ceiling for LLM / TTS / image calls. A hung upstream should
+ * fail the request (and thus the learning task) so the user can Retry the
+ * failed questions instead of waiting forever on a pending task.
+ */
+const REQUEST_TIMEOUT_MS = 5 * 60 * 1000;
+
 function parseExtraBody(json: string | undefined): Record<string, unknown> {
   if (!json) {
     return {};
@@ -119,6 +126,7 @@ function getLanguageClient(): LangClient {
     client: new OpenAI({
       baseURL: entry.baseUrl,
       apiKey: entry.apiKey,
+      timeout: REQUEST_TIMEOUT_MS,
     }),
     extraBody: parseExtraBody(entry.extraBody),
   };
@@ -342,6 +350,7 @@ export async function generateAudioBase64(input: string): Promise<string> {
   const client = new OpenAI({
     baseURL: entry.baseUrl,
     apiKey: entry.apiKey,
+    timeout: REQUEST_TIMEOUT_MS,
   });
   const extraBody = parseExtraBody(entry.extraBody);
   const voice = pickVoiceForModel(entry.model);
@@ -360,14 +369,14 @@ export async function generateAudioBase64(input: string): Promise<string> {
   return buffer.toString('base64');
 }
 
-async function fetchAudioBytes(response: { headers: { get(name: string): string | null }; arrayBuffer(): Promise<ArrayBuffer>; json(): Promise<unknown> }): Promise<Buffer> {
+async function fetchAudioBytes(response: { headers: { get(name: string): string | null }; arrayBuffer(): Promise<ArrayBuffer>; json(): Promise<unknown> }, signal?: AbortSignal): Promise<Buffer> {
   const contentType = response.headers.get('content-type') ?? '';
 
   if (contentType.includes('application/json')) {
     const json = (await response.json()) as Record<string, unknown>;
     const audioUrl = extractAudioUrl(json);
     if (audioUrl) {
-      const audioResponse = await fetch(audioUrl);
+      const audioResponse = await fetch(audioUrl, { signal });
       if (!audioResponse.ok) {
         throw new Error(`Failed to download TTS audio from URL (HTTP ${audioResponse.status})`);
       }
@@ -406,6 +415,7 @@ export async function generateImageBase64(prompt: string): Promise<string> {
   const client = new OpenAI({
     baseURL: entry.baseUrl,
     apiKey: entry.apiKey,
+    timeout: REQUEST_TIMEOUT_MS,
   });
   const extraBody = parseExtraBody(entry.extraBody);
 
@@ -474,6 +484,7 @@ export async function generateImageViaDashScope(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${entry.apiKey}`,
     },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     body: JSON.stringify({
       model: entry.model,
       input: {
@@ -518,7 +529,7 @@ export async function generateImageViaDashScope(
     throw new Error(`DashScope image generation returned no image. ${raw}`);
   }
 
-  const imageResponse = await fetchImpl(imageUrl);
+  const imageResponse = await fetchImpl(imageUrl, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
   if (!imageResponse.ok) {
     throw new Error(`Failed to download generated image (HTTP ${imageResponse.status}).`);
   }
@@ -561,6 +572,7 @@ export async function generateAudioViaDashScope(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${entry.apiKey}`,
     },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     body: JSON.stringify({
       model: entry.model,
       input: {
@@ -584,7 +596,7 @@ export async function generateAudioViaDashScope(
     throw new Error(`DashScope TTS returned no audio URL. ${raw}`);
   }
 
-  const audioResponse = await fetchImpl(audioUrl);
+  const audioResponse = await fetchImpl(audioUrl, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
   if (!audioResponse.ok) {
     throw new Error(`Failed to download TTS audio (HTTP ${audioResponse.status}).`);
   }

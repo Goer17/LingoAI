@@ -21,7 +21,10 @@ export function getLearningTask(id: string) {
   return taskRepository.getById(id) ?? null;
 }
 
-export function createLearningTask(type: LearningTask['type']) {
+export function createLearningTask(
+  type: LearningTask['type'],
+  meta?: { groupId?: string; groupName?: string },
+) {
   const now = new Date().toISOString();
   const task: LearningTask = {
     id: createId('task'),
@@ -32,6 +35,8 @@ export function createLearningTask(type: LearningTask['type']) {
     quizSessionId: null,
     questionCount: 0,
     error: null,
+    ...(meta?.groupId ? { groupId: meta.groupId } : {}),
+    ...(meta?.groupName ? { groupName: meta.groupName } : {}),
   };
 
   taskRepository.save(task);

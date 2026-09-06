@@ -182,6 +182,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
+        groupId?: string | undefined;
+        groupName?: string | undefined;
         scenario?: {
             topicId: string;
             topicTitle: string;
@@ -202,6 +204,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
+        groupId?: string | undefined;
+        groupName?: string | undefined;
         scenario?: {
             topicId: string;
             topicTitle: string;
@@ -666,6 +670,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
+        groupId?: string | undefined;
+        groupName?: string | undefined;
         scenario?: {
             topicId: string;
             topicTitle: string;
@@ -686,6 +692,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
+        groupId?: string | undefined;
+        groupName?: string | undefined;
         scenario?: {
             topicId: string;
             topicTitle: string;
@@ -1150,6 +1158,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
+        groupId?: string | undefined;
+        groupName?: string | undefined;
         scenario?: {
             topicId: string;
             topicTitle: string;
@@ -1170,6 +1180,8 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
+        groupId?: string | undefined;
+        groupName?: string | undefined;
         scenario?: {
             topicId: string;
             topicTitle: string;

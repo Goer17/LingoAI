@@ -75,6 +75,10 @@ export function listListeningGroups() {
   return listeningGroupRepository.list();
 }
 
+export function getListeningGroupById(id: string) {
+  return listeningGroupRepository.getById(id) ?? null;
+}
+
 export function getListeningEntryById(id: string) {
   const entry = listeningRepository.getById(id);
   if (!entry) {

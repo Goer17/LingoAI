@@ -79,13 +79,14 @@ function runDailyQuizzes(): void {
   try {
     // Listening: a random topic with more than one sentence, else the whole pool.
     const eligibleGroups = listListeningGroups().filter((group) => listListeningEntries(group.id).length > 1);
-    const task = createLearningTask('listening');
     if (eligibleGroups.length > 0) {
       const group = eligibleGroups[Math.floor(Math.random() * eligibleGroups.length)];
       console.log(`[daily-quiz] listening quiz -> topic "${group.name}" (${group.id})`);
+      const task = createLearningTask('listening', { groupId: group.id, groupName: group.name });
       void processListeningTask(task.id, group.id, limits.listening);
     } else {
       console.log('[daily-quiz] no listening topic with >1 sentence, using whole pool');
+      const task = createLearningTask('listening');
       void processListeningTask(task.id, undefined, limits.listening);
     }
   } catch (error) {

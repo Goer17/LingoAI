@@ -11,7 +11,7 @@ import { getCommonAudioUrl, hasCommonAudio } from '../services/commonAudioServic
 import { buildCompoundAudio } from '../services/compoundAudioService.js';
 import { askWordChat, generateQuiz, searchWord, streamWordChat } from '../services/openaiService.js';
 import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '../services/fillBlankService.js';
-import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningGroup, createListeningQuizDraft, deleteListeningGroup, getListeningEntryById, listListeningEntries, listListeningGroups, pickListeningEntries, pickListeningEntriesByGroup, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
+import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningGroup, createListeningQuizDraft, deleteListeningGroup, getListeningEntryById, getListeningGroupById, listListeningEntries, listListeningGroups, pickListeningEntries, pickListeningEntriesByGroup, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
 import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, removeWord, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
 import { checkSentenceImage, getOrCreateSentenceImage } from '../services/imageService.js';
 import { enqueueAutoImageGeneration } from '../services/autoImageService.js';
@@ -503,14 +503,18 @@ vocabularyRouter.post('/tasks/listening', (_req, res) => {
 });
 
 vocabularyRouter.post('/tasks/listening/:groupId', (req, res) => {
-  const groupId = req.params.groupId;
-  const entries = pickListeningEntriesByGroup(groupId);
-  if (entries.length === 0) {
-    return fail(res, 400, 'No listening sentences available in this group for learning.');
+  const group = getListeningGroupById(req.params.groupId);
+  if (!group) {
+    return fail(res, 404, 'Listening topic not found.');
   }
 
-  const task = createLearningTask('listening');
-  void processListeningTask(task.id, groupId, getSettings().quizMaxQuestions?.listening ?? 10);
+  const entries = pickListeningEntriesByGroup(group.id);
+  if (entries.length === 0) {
+    return fail(res, 400, 'No listening sentences available in this topic for learning.');
+  }
+
+  const task = createLearningTask('listening', { groupId: group.id, groupName: group.name });
+  void processListeningTask(task.id, group.id, getSettings().quizMaxQuestions?.listening ?? 10);
   return ok(res, task);
 });
 

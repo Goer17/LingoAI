@@ -127,6 +127,9 @@ export interface LearningTask {
   quizSessionId: string | null;
   questionCount: number;
   error: string | null;
+  /** When a listening task was generated from a specific group/topic. */
+  groupId?: string;
+  groupName?: string;
   scenario?: ScenarioData | null;
 }
 

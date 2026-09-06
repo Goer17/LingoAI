@@ -46,6 +46,7 @@
               </div>
               <p class="muted-text">Generated: {{ formatDate(task.createdAt) }}</p>
               <p class="muted-text">{{ task.type === 'expression' ? `Objectives: ${task.questionCount || '-'}` : `Questions: ${task.questionCount || '-'}` }}</p>
+              <p v-if="task.groupName" class="muted-text">Topic: {{ task.groupName }}</p>
               <p v-if="task.type === 'expression' && task.scenario" class="muted-text">
                 Topic: {{ task.scenario.topicTitle }}
               </p>

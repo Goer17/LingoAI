@@ -248,6 +248,12 @@ else {
             ...{ class: "muted-text" },
         });
         (task.type === 'expression' ? `Objectives: ${task.questionCount || '-'}` : `Questions: ${task.questionCount || '-'}`);
+        if (task.groupName) {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+                ...{ class: "muted-text" },
+            });
+            (task.groupName);
+        }
         if (task.type === 'expression' && task.scenario) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
                 ...{ class: "muted-text" },
@@ -403,6 +409,7 @@ else {
 /** @type {__VLS_StyleScopedClasses['task-main']} */ ;
 /** @type {__VLS_StyleScopedClasses['inline-heading']} */ ;
 /** @type {__VLS_StyleScopedClasses['task-status']} */ ;
+/** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
