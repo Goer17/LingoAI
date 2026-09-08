@@ -13,6 +13,10 @@ export function createGenerateQuizPrompt(entries: VocabularyEntry[]) {
     '4) answerVariants must be acceptable forms of the SAME target word/phrase only (e.g., tense/number), including answer itself.',
     '5) candidates must be 4-8 options, and every option must still be a form of the SAME target word/phrase only.',
     'For listening: sentence must naturally use the target word in a common way. answer must be the exact target word. ttsText should match the sentence.',
+    'maskedSentence is for fill_blank questions ONLY — listening questions must omit it entirely (never send an empty string).',
+    'candidates and answerVariants are for fill_blank ONLY — omit them for listening questions.',
+    'Never output a field with an empty string or an empty array. If a field does not apply to a question, omit it.',
+    'Output exactly one question per vocabulary item, in the same order as provided.',
     'JSON schema:',
     '{"questions":[{"type":"fill_blank|listening","word":"...","sentence":"...","maskedSentence":"... [BLANK] ...","answer":"...","answerVariants":["..."],"candidates":["..."],"ttsText":"optional"}]}',
     `Vocabulary items: ${JSON.stringify(entries.map((entry) => ({

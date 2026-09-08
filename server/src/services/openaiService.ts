@@ -11,6 +11,23 @@ const meaningSchema = z.object({
   exampleTranslation: z.string().min(1),
 });
 
+/**
+ * Optional string that tolerates `""`. Models frequently emit empty strings
+ * for fields the prompt says they *may* omit, and zod's `.optional()` only
+ * accepts a missing key — not `""`. Accept empty strings and normalize them
+ * to undefined so validation does not reject the whole payload and the value
+ * stays falsy for every downstream truthiness check.
+ *
+ * Uses union + transform (not preprocess) so the schema keeps typed input/output
+ * and remains assignable to `requestJson`'s `z.ZodSchema<T>` parameter.
+ */
+const optionalString = z
+  .string()
+  .min(1)
+  .or(z.literal(''))
+  .transform((value) => (value === '' ? undefined : value))
+  .optional();
+
 const foundSearchResultSchema = z.object({
   text: z.string().min(1),
   type: z.enum(['word', 'phrase']),
@@ -19,7 +36,7 @@ const foundSearchResultSchema = z.object({
   meanings: z.array(meaningSchema).min(1),
   derivatives: z.array(z.string()),
   ttsText: z.string().min(1),
-  notFoundMessage: z.string().optional(),
+  notFoundMessage: optionalString,
 });
 
 const notFoundSearchResultSchema = z.object({
@@ -40,11 +57,11 @@ const quizSchema = z.object({
     type: z.enum(['fill_blank', 'listening']),
     word: z.string().min(1),
     sentence: z.string().min(1),
-    maskedSentence: z.string().min(1).optional(),
+    maskedSentence: optionalString,
     answer: z.string().min(1),
     answerVariants: z.array(z.string().min(1)).optional(),
     candidates: z.array(z.string().min(1)).optional(),
-    ttsText: z.string().optional(),
+    ttsText: optionalString,
   })).min(1),
 });
 
@@ -151,12 +168,34 @@ async function requestJson<T>(prompt: string, parser: z.ZodSchema<T>): Promise<T
     ...extraBody,
   });
 
-  const content = response.choices[0]?.message?.content;
+  const content = response.choices[0]?.message?.content?.trim();
   if (!content) {
     throw new Error('The language model returned an empty response.');
   }
 
-  return parser.parse(JSON.parse(content));
+  let payload: unknown;
+  try {
+    payload = JSON.parse(content);
+  } catch {
+    throw new Error('The language model returned invalid JSON (expected a JSON object).');
+  }
+
+  try {
+    return parser.parse(payload);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      // Surface a readable summary instead of the raw issues JSON blob.
+      const details = error.issues
+        .slice(0, 3)
+        .map((issue) => {
+          const path = issue.path.length > 0 ? issue.path.join('.') : '(root)';
+          return `${path}: ${issue.message}`;
+        })
+        .join('; ');
+      throw new Error(`The language model returned a malformed response (${details}).`);
+    }
+    throw error;
+  }
 }
 
 export async function searchWord(prompt: string): Promise<SearchResult> {
