@@ -9,7 +9,7 @@ import { suggestWords } from '../services/suggestionService.js';
 import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, createQuizAudioUrl, deleteAudioFile, getMediaUrl } from '../services/audioService.js';
 import { getCommonAudioUrl, hasCommonAudio } from '../services/commonAudioService.js';
 import { buildCompoundAudio } from '../services/compoundAudioService.js';
-import { askWordChat, generateQuiz, searchWord, streamWordChat } from '../services/openaiService.js';
+import { askWordChat, generateQuiz, generateQuizStreamed, searchWord, streamWordChat } from '../services/openaiService.js';
 import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '../services/fillBlankService.js';
 import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningGroup, createListeningQuizDraft, deleteListeningGroup, getListeningEntryById, getListeningGroupById, listListeningEntries, listListeningGroups, pickListeningEntries, pickListeningEntriesByGroup, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
 import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, removeWord, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
@@ -35,7 +35,7 @@ import {
 } from '../services/taskService.js';
 import { createId } from '../utils/id.js';
 import { fail, ok } from '../utils/http.js';
-import type { QuizBlank, QuizQuestion } from '../types/models.js';
+import type { QuizBlank, QuizDraftQuestion, QuizQuestion } from '../types/models.js';
 
 const searchSchema = z.object({
   query: z.string().min(1),
@@ -149,44 +149,97 @@ async function enrichQuestion(question: QuestionLike): Promise<{ question: Quest
   }
 }
 
+// Questions are drafted by the AI in small chunks instead of one giant call:
+// a 40-question batch can sit silent for a minute while the model "thinks",
+// which made the progress bar look stuck. Chunked + streamed generation keeps
+// per-question progress and copy flowing from the start.
+const AUTHORING_CHUNK = 5;
+
 async function generateVocabularyQuizSession(limit = 10, onProgress?: (progress: TaskProgress) => void) {
   const entries = pickQuizEntries(listVocabulary(), limit);
   if (entries.length === 0) {
     throw new Error('No vocabulary available for learning.');
   }
 
-  // The AI drafts the whole question set in one structured call, so the final
-  // question count is not known yet: report the drafting phase without a
-  // denominator and let the client show an indeterminate bar.
-  onProgress?.({ total: 0, done: 0, label: 'Writing quiz questions with AI' });
+  const planned = entries.length;
+  // Each question earns one full progress point: 0.5 when the AI has written
+  // it (granted as its object starts streaming back) and 0.5 once its
+  // audio/image asset is ready. Half-point steps keep the bar monotonic even
+  // though a chunk's questions stream back before their assets are prepared.
+  const total = planned;
+  let credits = 0;
+  const report = (label: string, detail?: string) => {
+    onProgress?.({ total, done: Math.min(total, credits), label, detail });
+  };
 
-  const prompt = createGenerateQuizPrompt(entries);
-  const result = await generateQuiz(prompt);
-  const drafts = result.questions.slice(0, limit);
+  report('Writing quiz questions with AI');
+
   let failedCount = 0;
   const questions: QuizQuestion[] = [];
-  for (let index = 0; index < drafts.length; index += 1) {
-    const draft = drafts[index];
-    const kind = draft.type === 'listening' ? 'audio' : 'image';
-    onProgress?.({
-      total: drafts.length,
-      done: index,
-      label: `Adding ${kind} for question ${index + 1} of ${drafts.length}`,
-      detail: draft.sentence || draft.word,
-    });
-    const { question, ok } = await enrichQuestion(draft);
-    if (!ok) {
-      failedCount += 1;
+  for (let base = 0; base < planned; base += AUTHORING_CHUNK) {
+    const chunk = entries.slice(base, base + AUTHORING_CHUNK);
+    const end = Math.min(planned, base + chunk.length);
+    const range = `${base + 1}–${end} of ${planned}`;
+
+    report(`Drafting questions ${range} with AI`);
+    const prompt = createGenerateQuizPrompt(chunk);
+
+    let drafts: QuizDraftQuestion[];
+    let streamedCount = 0;
+    try {
+      drafts = (await generateQuizStreamed(prompt, (index) => {
+        const questionNumber = base + index + 1;
+        streamedCount += 1;
+        credits += 0.5;
+        report(
+          `Writing question ${questionNumber} of ${planned} with AI`,
+          chunk[index]?.text ?? '',
+        );
+      })).questions;
+    } catch {
+      // Some providers reject streaming JSON — fall back to the one-shot call
+      // for this chunk and grant its write points afterwards.
+      drafts = (await generateQuiz(prompt)).questions;
+      credits += drafts.length * 0.5;
     }
-    questions.push({ ...question, id: createId('question') });
+    // Rarely the start-pattern misses an object; keep credits in sync so the
+    // bar always lands exactly on the number of questions actually written.
+    if (streamedCount < drafts.length) {
+      credits += (drafts.length - streamedCount) * 0.5;
+    }
+
+    for (let index = 0; index < drafts.length; index += 1) {
+      const draft = drafts[index];
+      const kind = draft.type === 'listening' ? 'audio' : 'image';
+      const questionNumber = base + index + 1;
+      report(
+        `Adding ${kind} for question ${questionNumber} of ${planned}`,
+        draft.sentence || draft.word,
+      );
+      const { question, ok } = await enrichQuestion(draft);
+      credits += 0.5;
+      report(
+        `Adding ${kind} for question ${questionNumber} of ${planned}`,
+        draft.sentence || draft.word,
+      );
+      if (!ok) {
+        failedCount += 1;
+      }
+      questions.push({ ...question, id: createId('question') });
+    }
   }
-  onProgress?.({ total: drafts.length, done: drafts.length, label: 'Finalizing quiz' });
+  report('Finalizing quiz');
 
   return { session: createQuizSession(questions, 'vocabulary_task'), failedCount };
 }
 
 export async function processVocabularyTask(taskId: string, limit = 10) {
-  const report = (progress: TaskProgress) => setTaskProgress(taskId, progress);
+  const report = (progress: TaskProgress) => {
+    if (process.env.DEBUG_TASK_PROGRESS) {
+      console.log(`[task-progress ${taskId}] ${progress.done}/${progress.total} ${progress.label}${progress.detail ? ` :: ${progress.detail}` : ''}`);
+    }
+    setTaskProgress(taskId, progress);
+  };
   try {
     const { session, failedCount } = await generateVocabularyQuizSession(limit, report);
     if (failedCount > 0) {

@@ -144,7 +144,7 @@ onMounted(async () => {
     if (store.tasks.some((item) => item.status === 'pending')) {
       void refresh();
     }
-  }, 3000);
+  }, 2000);
 });
 
 onUnmounted(() => {

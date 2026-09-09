@@ -168,8 +168,17 @@ async function requestJson<T>(prompt: string, parser: z.ZodSchema<T>): Promise<T
     ...extraBody,
   });
 
-  const content = response.choices[0]?.message?.content?.trim();
-  if (!content) {
+  const content = response.choices[0]?.message?.content ?? '';
+  return parseJsonContent(content, parser);
+}
+
+/**
+ * Shared JSON parsing + zod validation with readable error messages.
+ * Used by both the non-streaming `requestJson` and the streaming quiz
+ * generator below.
+ */
+function parseJsonContent<T>(content: string, parser: z.ZodSchema<T>): T {
+  if (!content.trim()) {
     throw new Error('The language model returned an empty response.');
   }
 
@@ -204,6 +213,65 @@ export async function searchWord(prompt: string): Promise<SearchResult> {
 
 export async function generateQuiz(prompt: string): Promise<{ questions: QuizDraftQuestion[] }> {
   return requestJson(prompt, quizSchema);
+}
+
+/**
+ * Streamed quiz generation. Quiz questions used to be produced by one
+ * non-streaming call, which made the AI-writing phase a black box: the
+ * progress bar could not tell *which* question was being written. Streaming
+ * lets the caller count each question object as it arrives
+ * (`onQuestionStart(index)` fires for the 0-based question index as soon as
+ * the model starts emitting it), so the UI can report a real percentage and
+ * live "writing question k …" copy while the set is being drafted.
+ *
+ * Providers that reject `stream: true` together with `response_format` throw
+ * here — callers should fall back to the non-streaming `generateQuiz()`.
+ */
+export async function generateQuizStreamed(
+  prompt: string,
+  onQuestionStart?: (index: number) => void,
+): Promise<{ questions: QuizDraftQuestion[] }> {
+  const { client, model, extraBody } = getLanguageClient();
+  const stream = await client.chat.completions.create({
+    model,
+    temperature: 0.3,
+    response_format: { type: 'json_object' },
+    stream: true,
+    messages: [
+      {
+        role: 'system',
+        content: 'Return valid JSON only.',
+      },
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+    ...extraBody,
+  });
+
+  // Every question object in the streamed array starts with {"type": "…"}.
+  // Counting occurrences so far tells us, incrementally, how many questions
+  // the model has begun emitting. Optional whitespace is tolerated.
+  const questionStart = /\{\s*"type"\s*:\s*"(?:fill_blank|listening)"/g;
+  let content = '';
+  let seen = 0;
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content ?? '';
+    if (!delta) {
+      continue;
+    }
+    content += delta;
+    questionStart.lastIndex = 0;
+    const matches = content.match(questionStart);
+    const count = matches ? matches.length : 0;
+    while (seen < count) {
+      onQuestionStart?.(seen);
+      seen += 1;
+    }
+  }
+
+  return parseJsonContent(content, quizSchema);
 }
 
 export async function generateFillBlankRepair(prompt: string): Promise<{ maskedSentence: string; answer: string }> {
