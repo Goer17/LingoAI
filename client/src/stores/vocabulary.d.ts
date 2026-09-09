@@ -182,6 +182,12 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
+        progress?: {
+            total: number;
+            done: number;
+            label: string;
+            detail?: string | undefined;
+        } | null | undefined;
         groupId?: string | undefined;
         groupName?: string | undefined;
         scenario?: {
@@ -204,6 +210,12 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
+        progress?: {
+            total: number;
+            done: number;
+            label: string;
+            detail?: string | undefined;
+        } | null | undefined;
         groupId?: string | undefined;
         groupName?: string | undefined;
         scenario?: {
@@ -670,6 +682,12 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
+        progress?: {
+            total: number;
+            done: number;
+            label: string;
+            detail?: string | undefined;
+        } | null | undefined;
         groupId?: string | undefined;
         groupName?: string | undefined;
         scenario?: {
@@ -692,6 +710,12 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
+        progress?: {
+            total: number;
+            done: number;
+            label: string;
+            detail?: string | undefined;
+        } | null | undefined;
         groupId?: string | undefined;
         groupName?: string | undefined;
         scenario?: {
@@ -1158,6 +1182,12 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
+        progress?: {
+            total: number;
+            done: number;
+            label: string;
+            detail?: string | undefined;
+        } | null | undefined;
         groupId?: string | undefined;
         groupName?: string | undefined;
         scenario?: {
@@ -1180,6 +1210,12 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         quizSessionId: string | null;
         questionCount: number;
         error: string | null;
+        progress?: {
+            total: number;
+            done: number;
+            label: string;
+            detail?: string | undefined;
+        } | null | undefined;
         groupId?: string | undefined;
         groupName?: string | undefined;
         scenario?: {

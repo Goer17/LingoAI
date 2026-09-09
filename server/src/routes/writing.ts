@@ -8,6 +8,7 @@ import { createScenarioChatMessages } from '../prompts/scenarioChatPrompt.js';
 import { createSummarizeScenarioPrompt } from '../prompts/summarizeScenarioPrompt.js';
 import { askWordChat, checkObjectives, generateScenario, polishUserMessages, streamScenarioChat, streamWordChat, summarizeScenario } from '../services/openaiService.js';
 import { attachScenarioToTask, createLearningTask, markLearningTaskFailed, markLearningTaskReady } from '../services/taskService.js';
+import { setTaskProgress } from '../services/taskProgressService.js';
 import {
   addKnowledgePoint,
   addWritingTopic,
@@ -389,6 +390,7 @@ async function processExpressionTask(taskId: string, topicId: string) {
     }
 
     const prompt = createGenerateScenarioPrompt(topic);
+    setTaskProgress(taskId, { total: 0, done: 0, label: 'Designing your scenario practice' });
     const generated = await generateScenario(prompt);
     const scenarioData = {
       topicId: topic.id,

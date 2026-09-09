@@ -1,4 +1,5 @@
 import { mistakeRepository, taskRepository } from '../db/repositories.js';
+import { clearTaskProgress } from './taskProgressService.js';
 import type { LearningTask, MistakeEntry, QuizSession, ScenarioData } from '../types/models.js';
 import { createId } from '../utils/id.js';
 import { createQuizSession } from './quizService.js';
@@ -59,6 +60,7 @@ export function markLearningTaskReady(id: string, payload: { quizSessionId?: str
   };
 
   taskRepository.save(updated);
+  clearTaskProgress(id);
   return updated;
 }
 
@@ -84,6 +86,7 @@ export function markLearningTaskFailed(id: string, error: string, payload?: { qu
   };
 
   taskRepository.save(updated);
+  clearTaskProgress(id);
   return updated;
 }
 
@@ -111,6 +114,7 @@ export function removeLearningTaskByQuizSessionId(quizSessionId: string) {
 
 export function removeLearningTask(id: string) {
   taskRepository.remove(id);
+  clearTaskProgress(id);
 }
 
 export function attachScenarioToTask(id: string, scenario: ScenarioData) {
@@ -136,6 +140,7 @@ export function clearFailedLearningTask(id: string) {
   }
 
   taskRepository.remove(id);
+  clearTaskProgress(id);
   return { ok: true as const };
 }
 

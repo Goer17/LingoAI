@@ -51,11 +51,11 @@
                 Topic: {{ task.scenario.topicTitle }}
               </p>
               <div v-if="task.status === 'pending'" class="task-progress">
-                <div class="task-progress-track">
-                  <span class="task-progress-fill" :style="{ width: `${pendingProgressPercent(task.id)}%` }"></span>
+                <div class="task-progress-track" :class="{ 'is-indeterminate': progressPercent(task) === null }">
+                  <span class="task-progress-fill" :style="progressWidthStyle(task)"></span>
                 </div>
                 <p class="muted-text task-progress-copy">
-                  {{ pendingProgressPercent(task.id) }}% · {{ pendingStageText(task.id) }}
+                  {{ progressCopy(task) }}
                 </p>
               </div>
               <p v-if="task.error" class="error-text">{{ task.error }}</p>
@@ -125,6 +125,7 @@
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useVocabularyStore } from '@/stores/vocabulary';
+import type { LearningTask } from '@/types/models';
 
 const store = useVocabularyStore();
 const router = useRouter();
@@ -136,12 +137,10 @@ const deletingTaskId = ref('');
 const deleteMode = ref(false);
 const startingMistakeReview = ref(false);
 let pollTimer: number | null = null;
-const pendingProgressTick = ref(Date.now());
 
 onMounted(async () => {
   await refresh();
   pollTimer = window.setInterval(() => {
-    pendingProgressTick.value = Date.now();
     if (store.tasks.some((item) => item.status === 'pending')) {
       void refresh();
     }
@@ -223,26 +222,27 @@ async function retryTask(taskId: string) {
   }
 }
 
-function pendingProgressPercent(taskId: string) {
-  const task = store.tasks.find((item) => item.id === taskId);
-  if (!task || task.status !== 'pending') {
-    return 0;
+function progressPercent(task: LearningTask) {
+  const progress = task.progress;
+  if (!progress || progress.total <= 0) {
+    return null;
   }
-  const elapsedMs = Math.max(0, pendingProgressTick.value - new Date(task.createdAt).getTime());
-  const maxMs = 12000;
-  const ratio = Math.min(0.95, elapsedMs / maxMs);
-  return Math.max(5, Math.round(ratio * 100));
+  return Math.min(100, Math.round((progress.done / progress.total) * 100));
 }
 
-function pendingStageText(taskId: string) {
-  const progress = pendingProgressPercent(taskId);
-  if (progress < 35) {
-    return 'Collecting learning items';
+function progressWidthStyle(task: LearningTask) {
+  const percent = progressPercent(task);
+  return percent === null ? {} : { width: `${percent}%` };
+}
+
+function progressCopy(task: LearningTask) {
+  const progress = task.progress ?? null;
+  const percent = progressPercent(task);
+  let text = progress?.label ?? 'Preparing quiz';
+  if (progress?.detail) {
+    text = `${text} — "${truncateText(progress.detail, 46)}"`;
   }
-  if (progress < 70) {
-    return 'Generating quiz questions';
-  }
-  return 'Finalizing task';
+  return percent === null ? text : `${percent}% · ${text}`;
 }
 
 function toggleDeleteMode() {

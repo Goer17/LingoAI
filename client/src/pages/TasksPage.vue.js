@@ -11,11 +11,9 @@ const deletingTaskId = ref('');
 const deleteMode = ref(false);
 const startingMistakeReview = ref(false);
 let pollTimer = null;
-const pendingProgressTick = ref(Date.now());
 onMounted(async () => {
     await refresh();
     pollTimer = window.setInterval(() => {
-        pendingProgressTick.value = Date.now();
         if (store.tasks.some((item) => item.status === 'pending')) {
             void refresh();
         }
@@ -90,25 +88,25 @@ async function retryTask(taskId) {
         retryingTaskId.value = '';
     }
 }
-function pendingProgressPercent(taskId) {
-    const task = store.tasks.find((item) => item.id === taskId);
-    if (!task || task.status !== 'pending') {
-        return 0;
+function progressPercent(task) {
+    const progress = task.progress;
+    if (!progress || progress.total <= 0) {
+        return null;
     }
-    const elapsedMs = Math.max(0, pendingProgressTick.value - new Date(task.createdAt).getTime());
-    const maxMs = 12000;
-    const ratio = Math.min(0.95, elapsedMs / maxMs);
-    return Math.max(5, Math.round(ratio * 100));
+    return Math.min(100, Math.round((progress.done / progress.total) * 100));
 }
-function pendingStageText(taskId) {
-    const progress = pendingProgressPercent(taskId);
-    if (progress < 35) {
-        return 'Collecting learning items';
+function progressWidthStyle(task) {
+    const percent = progressPercent(task);
+    return percent === null ? {} : { width: `${percent}%` };
+}
+function progressCopy(task) {
+    const progress = task.progress ?? null;
+    const percent = progressPercent(task);
+    let text = progress?.label ?? 'Preparing quiz';
+    if (progress?.detail) {
+        text = `${text} — "${truncateText(progress.detail, 46)}"`;
     }
-    if (progress < 70) {
-        return 'Generating quiz questions';
-    }
-    return 'Finalizing task';
+    return percent === null ? text : `${percent}% · ${text}`;
 }
 function toggleDeleteMode() {
     deleteMode.value = !deleteMode.value;
@@ -266,16 +264,16 @@ else {
             });
             __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
                 ...{ class: "task-progress-track" },
+                ...{ class: ({ 'is-indeterminate': __VLS_ctx.progressPercent(task) === null }) },
             });
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "task-progress-fill" },
-                ...{ style: ({ width: `${__VLS_ctx.pendingProgressPercent(task.id)}%` }) },
+                ...{ style: (__VLS_ctx.progressWidthStyle(task)) },
             });
             __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
                 ...{ class: "muted-text task-progress-copy" },
             });
-            (__VLS_ctx.pendingProgressPercent(task.id));
-            (__VLS_ctx.pendingStageText(task.id));
+            (__VLS_ctx.progressCopy(task));
         }
         if (task.error) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
@@ -461,8 +459,9 @@ const __VLS_self = (await import('vue')).defineComponent({
             refresh: refresh,
             startTask: startTask,
             retryTask: retryTask,
-            pendingProgressPercent: pendingProgressPercent,
-            pendingStageText: pendingStageText,
+            progressPercent: progressPercent,
+            progressWidthStyle: progressWidthStyle,
+            progressCopy: progressCopy,
             toggleDeleteMode: toggleDeleteMode,
             deleteTask: deleteTask,
             startMistakeReview: startMistakeReview,

@@ -112,6 +112,17 @@ export interface QuizSession {
   completed: boolean;
 }
 
+export interface TaskProgress {
+  /** Number of questions in the current batch. 0 while still unknown (e.g. the AI is drafting the whole set). */
+  total: number;
+  /** Questions whose generation finished. */
+  done: number;
+  /** What the backend is doing right now, e.g. "Adding audio for question 3 of 10". */
+  label: string;
+  /** Content of the item being processed (word/sentence); may be truncated with "..." when long. */
+  detail?: string;
+}
+
 export interface LearningTask {
   id: string;
   type: LearningTaskType;
@@ -121,6 +132,8 @@ export interface LearningTask {
   quizSessionId: string | null;
   questionCount: number;
   error: string | null;
+  /** Live generation progress, present only while the task is pending. */
+  progress?: TaskProgress | null;
   /** When a listening task was generated from a specific group/topic. */
   groupId?: string;
   groupName?: string;

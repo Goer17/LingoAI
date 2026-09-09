@@ -16,6 +16,8 @@ import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWord
 import { checkSentenceImage, getOrCreateSentenceImage } from '../services/imageService.js';
 import { enqueueAutoImageGeneration } from '../services/autoImageService.js';
 import { getSettings } from '../services/settingsService.js';
+import { getTaskProgress, setTaskProgress } from '../services/taskProgressService.js';
+import type { TaskProgress } from '../services/taskProgressService.js';
 import { createQuizSession, getQuizSession, pickQuizEntries, submitQuizAnswer, updateQuizSession } from '../services/quizService.js';
 import {
   createLearningTask,
@@ -147,30 +149,46 @@ async function enrichQuestion(question: QuestionLike): Promise<{ question: Quest
   }
 }
 
-async function generateVocabularyQuizSession(limit = 10) {
+async function generateVocabularyQuizSession(limit = 10, onProgress?: (progress: TaskProgress) => void) {
   const entries = pickQuizEntries(listVocabulary(), limit);
   if (entries.length === 0) {
     throw new Error('No vocabulary available for learning.');
   }
 
+  // The AI drafts the whole question set in one structured call, so the final
+  // question count is not known yet: report the drafting phase without a
+  // denominator and let the client show an indeterminate bar.
+  onProgress?.({ total: 0, done: 0, label: 'Writing quiz questions with AI' });
+
   const prompt = createGenerateQuizPrompt(entries);
   const result = await generateQuiz(prompt);
+  const drafts = result.questions.slice(0, limit);
   let failedCount = 0;
   const questions: QuizQuestion[] = [];
-  for (const draft of result.questions.slice(0, limit)) {
+  for (let index = 0; index < drafts.length; index += 1) {
+    const draft = drafts[index];
+    const kind = draft.type === 'listening' ? 'audio' : 'image';
+    onProgress?.({
+      total: drafts.length,
+      done: index,
+      label: `Adding ${kind} for question ${index + 1} of ${drafts.length}`,
+      detail: draft.sentence || draft.word,
+    });
     const { question, ok } = await enrichQuestion(draft);
     if (!ok) {
       failedCount += 1;
     }
     questions.push({ ...question, id: createId('question') });
   }
+  onProgress?.({ total: drafts.length, done: drafts.length, label: 'Finalizing quiz' });
 
   return { session: createQuizSession(questions, 'vocabulary_task'), failedCount };
 }
 
 export async function processVocabularyTask(taskId: string, limit = 10) {
+  const report = (progress: TaskProgress) => setTaskProgress(taskId, progress);
   try {
-    const { session, failedCount } = await generateVocabularyQuizSession(limit);
+    const { session, failedCount } = await generateVocabularyQuizSession(limit, report);
     if (failedCount > 0) {
       // Stash the partially generated session — successful questions are reused
       // on Retry, which only back-fills the ones that are still missing audio.
@@ -192,7 +210,7 @@ export async function processVocabularyTask(taskId: string, limit = 10) {
   }
 }
 
-async function generateListeningQuizSession(groupId?: string, limit = 10) {
+async function generateListeningQuizSession(groupId?: string, limit = 10, onProgress?: (progress: TaskProgress) => void) {
   const entries = groupId
     ? pickListeningEntriesByGroup(groupId, limit)
     : pickListeningEntries(listListeningEntries(), limit);
@@ -202,7 +220,14 @@ async function generateListeningQuizSession(groupId?: string, limit = 10) {
 
   let failedCount = 0;
   const questions: QuizQuestion[] = [];
-  for (const entry of entries) {
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index];
+    onProgress?.({
+      total: entries.length,
+      done: index,
+      label: `Adding audio for question ${index + 1} of ${entries.length}`,
+      detail: entry.sentence,
+    });
     try {
       const draft = createListeningQuizDraft(entry);
       const audioUrl = draft.ttsText ? await createQuizAudioUrl(draft.ttsText) : undefined;
@@ -216,13 +241,15 @@ async function generateListeningQuizSession(groupId?: string, limit = 10) {
       questions.push({ ...draft, id: createId('question') });
     }
   }
+  onProgress?.({ total: entries.length, done: entries.length, label: 'Finalizing quiz' });
 
   return { session: createQuizSession(questions, 'listening_task'), failedCount };
 }
 
 export async function processListeningTask(taskId: string, groupId?: string, limit = 10) {
+  const report = (progress: TaskProgress) => setTaskProgress(taskId, progress);
   try {
-    const { session, failedCount } = await generateListeningQuizSession(groupId, limit);
+    const { session, failedCount } = await generateListeningQuizSession(groupId, limit, report);
     if (failedCount > 0) {
       markLearningTaskFailed(
         taskId,
@@ -259,21 +286,41 @@ async function processTaskRetry(taskId: string) {
     return;
   }
 
-  let failedCount = 0;
-  const questions: QuizQuestion[] = [];
-  for (const question of session.questions) {
+  // Only the questions that are still missing an asset need work; the rest is
+  // carried over untouched.
+  const regen: Array<{ index: number; question: QuizQuestion }> = [];
+  session.questions.forEach((question, index) => {
     const needsAudio = question.type === 'listening' && !question.audioUrl;
     const needsImage = question.type === 'fill_blank' && !question.imageUrl;
-    if (!needsAudio && !needsImage) {
-      questions.push(question);
-      continue;
+    if (needsAudio || needsImage) {
+      regen.push({ index, question });
     }
+  });
 
+  if (regen.length === 0) {
+    markLearningTaskReady(taskId, {
+      quizSessionId: session.id,
+      questionCount: session.questions.length,
+    });
+    return;
+  }
+
+  let failedCount = 0;
+  const questions = session.questions.slice();
+  for (let position = 0; position < regen.length; position += 1) {
+    const { index, question } = regen[position];
+    const kind = question.type === 'listening' ? 'audio' : 'image';
+    setTaskProgress(taskId, {
+      total: regen.length,
+      done: position,
+      label: `Adding ${kind} for question ${position + 1} of ${regen.length}`,
+      detail: question.sentence || question.word,
+    });
     const { question: enriched, ok } = await enrichQuestion(question);
     if (!ok && enriched.type === 'listening') {
       failedCount += 1;
     }
-    questions.push({ ...enriched, id: question.id });
+    questions[index] = { ...enriched, id: question.id };
   }
   updateQuizSession({ ...session, questions });
 
@@ -304,7 +351,11 @@ vocabularyRouter.get('/quiz/:id', (req, res) => {
 });
 
 vocabularyRouter.get('/tasks', (_req, res) => ok(res, {
-  tasks: listLearningTasks(),
+  tasks: listLearningTasks().map((task) => (
+    task.status === 'pending'
+      ? { ...task, progress: getTaskProgress(task.id) ?? null }
+      : task
+  )),
   mistakes: listMistakeEntries(),
 }));
 
