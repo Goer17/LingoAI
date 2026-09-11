@@ -24,6 +24,9 @@ export interface VocabularyEntry {
   text: string;
   type: WordType;
   familiarity: number;
+  /** Marked when familiarity exceeds the max: kept but never quizzed again,
+   *  sorted to the end of the list. */
+  known?: boolean;
   createdAt: string;
   updatedAt: string;
   note: string;
@@ -165,6 +168,9 @@ export interface ListeningEntry {
   id: string;
   sentence: string;
   familiarity: number;
+  /** Marked when familiarity exceeds the max: kept but never quizzed again,
+   *  sorted to the end of the list. */
+  known?: boolean;
   createdAt: string;
   updatedAt: string;
   audioFile?: string;

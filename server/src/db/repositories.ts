@@ -5,6 +5,14 @@ function parseJson<T>(value: string): T {
   return JSON.parse(value) as T;
 }
 
+/** Sort entries so known ones always sink to the end, then by familiarity
+ *  ascending and newest first (matches the SQL ORDER BY used before). */
+function compareFamiliarity<T extends { known?: boolean; familiarity: number; createdAt: string }>(a: T, b: T) {
+  return Number(Boolean(a.known)) - Number(Boolean(b.known))
+    || a.familiarity - b.familiarity
+    || b.createdAt.localeCompare(a.createdAt);
+}
+
 export const settingsRepository = {
   get(): Settings | null {
     const row = db.prepare(`
@@ -81,7 +89,9 @@ export const vocabularyRepository = {
       ORDER BY familiarity ASC, created_at DESC
     `).all() as Array<{ payload_json: string }>;
 
-    return rows.map((row) => parseJson<VocabularyEntry>(row.payload_json));
+    return rows
+      .map((row) => parseJson<VocabularyEntry>(row.payload_json))
+      .sort(compareFamiliarity);
   },
 
   getById(id: string): VocabularyEntry | null {
@@ -342,7 +352,9 @@ export const listeningRepository = {
       ORDER BY familiarity ASC, created_at DESC
     `).all() as Array<{ payload_json: string }>;
 
-    return rows.map((row) => parseJson<ListeningEntry>(row.payload_json));
+    return rows
+      .map((row) => parseJson<ListeningEntry>(row.payload_json))
+      .sort(compareFamiliarity);
   },
 
   listByGroup(groupId: string): ListeningEntry[] {

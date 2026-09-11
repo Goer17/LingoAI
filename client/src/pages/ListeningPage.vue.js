@@ -355,7 +355,7 @@ else {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
             ...{ class: "muted-text sentence-item-familiarity" },
         });
-        (item.familiarity);
+        (item.known ? 'Known' : `Familiarity: ${item.familiarity}`);
     }
 }
 /** @type {[typeof SentenceDetailPanel, ]} */ ;

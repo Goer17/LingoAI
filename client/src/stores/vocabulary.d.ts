@@ -5,6 +5,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         text: string;
         type: import("@/types/models").WordType;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         note: string;
@@ -30,6 +31,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         text: string;
         type: import("@/types/models").WordType;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         note: string;
@@ -57,6 +59,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         text: string;
         type: import("@/types/models").WordType;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         note: string;
@@ -268,6 +271,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         id: string;
         sentence: string;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;
@@ -283,6 +287,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         id: string;
         sentence: string;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;
@@ -301,6 +306,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         id: string;
         sentence: string;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;
@@ -505,6 +511,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         text: string;
         type: import("@/types/models").WordType;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         note: string;
@@ -530,6 +537,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         text: string;
         type: import("@/types/models").WordType;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         note: string;
@@ -557,6 +565,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         text: string;
         type: import("@/types/models").WordType;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         note: string;
@@ -768,6 +777,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         id: string;
         sentence: string;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;
@@ -783,6 +793,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         id: string;
         sentence: string;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;
@@ -801,6 +812,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         id: string;
         sentence: string;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;
@@ -1005,6 +1017,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         text: string;
         type: import("@/types/models").WordType;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         note: string;
@@ -1030,6 +1043,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         text: string;
         type: import("@/types/models").WordType;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         note: string;
@@ -1057,6 +1071,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         text: string;
         type: import("@/types/models").WordType;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         note: string;
@@ -1268,6 +1283,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         id: string;
         sentence: string;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;
@@ -1283,6 +1299,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         id: string;
         sentence: string;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;
@@ -1301,6 +1318,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         id: string;
         sentence: string;
         familiarity: number;
+        known?: boolean | undefined;
         createdAt: string;
         updatedAt: string;
         audioFile?: string | undefined;

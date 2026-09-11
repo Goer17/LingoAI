@@ -162,6 +162,7 @@ if (__VLS_ctx.sentence) {
         ...{ class: "subtle-copy" },
     });
     (__VLS_ctx.sentence.familiarity);
+    (__VLS_ctx.sentence.known ? ' · known' : '');
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "result-actions" },
     });

@@ -37,7 +37,7 @@
       <div>
         <p class="eyebrow">Practice</p>
         <h2>Generate a Learning Session</h2>
-        <p class="subtle-copy">The quiz will pick up to 10 words with the lowest familiarity first.</p>
+        <p class="subtle-copy">The quiz picks up to 10 unfamiliar words with the lowest familiarity first. Words grow to 16, then are marked known and skipped.</p>
       </div>
       <button class="button button-primary" type="button" :disabled="quizLoading" @click="startLearning">
         {{ quizLoading ? 'Preparing...' : 'Learning' }}

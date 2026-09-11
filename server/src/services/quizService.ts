@@ -4,6 +4,7 @@ import type { QuizQuestion, QuizSession, QuizSourceType, VocabularyEntry } from 
 
 export function pickQuizEntries(entries: VocabularyEntry[], limit = 10) {
   return entries
+    .filter((entry) => !entry.known)
     .slice()
     .sort((a, b) => a.familiarity - b.familiarity || b.createdAt.localeCompare(a.createdAt))
     .slice(0, limit);

@@ -78,7 +78,9 @@ function runDailyQuizzes(): void {
 
   try {
     // Listening: a random topic with more than one sentence, else the whole pool.
-    const eligibleGroups = listListeningGroups().filter((group) => listListeningEntries(group.id).length > 1);
+    const eligibleGroups = listListeningGroups().filter((group) => (
+      listListeningEntries(group.id).filter((entry) => !entry.known).length > 1
+    ));
     if (eligibleGroups.length > 0) {
       const group = eligibleGroups[Math.floor(Math.random() * eligibleGroups.length)];
       console.log(`[daily-quiz] listening quiz -> topic "${group.name}" (${group.id})`);

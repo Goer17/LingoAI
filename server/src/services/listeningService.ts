@@ -1,4 +1,5 @@
 import { listeningRepository, listeningGroupRepository } from '../db/repositories.js';
+import { LISTENING_FULL_BLANK_FAMILIARITY, LISTENING_MAX_FAMILIARITY } from '../config/familiarity.js';
 import type { ChatMessage, ListeningEntry, ListeningGroup, QuizDraftQuestion } from '../types/models.js';
 import { createId } from '../utils/id.js';
 import { deleteAudioFile } from './audioService.js';
@@ -171,6 +172,7 @@ export function removeListeningSentence(id: string) {
 
 export function pickListeningEntries(entries: ListeningEntry[], limit = 10) {
   return entries
+    .filter((entry) => !entry.known)
     .slice()
     .sort((a, b) => a.familiarity - b.familiarity || b.createdAt.localeCompare(a.createdAt))
     .slice(0, limit);
@@ -185,6 +187,10 @@ export function applyListeningQuizResults(results: Array<{ sentence: string; isC
   const resultMap = new Map(results.map((item) => [item.sentence.toLowerCase(), item.isCorrect]));
 
   for (const item of listeningRepository.list()) {
+    if (item.known) {
+      continue;
+    }
+
     const isCorrect = resultMap.get(item.sentence.toLowerCase());
     if (typeof isCorrect !== 'boolean') {
       continue;
@@ -194,9 +200,17 @@ export function applyListeningQuizResults(results: Array<{ sentence: string; isC
       ? item.familiarity + 1
       : Math.max(0, item.familiarity - 1);
 
-    if (familiarity > 10) {
-      deleteAudioFile(item.audioFile);
-      listeningRepository.remove(item.id);
+    // Past the max familiarity the sentence is marked as known instead of
+    // being deleted: it stays in the list but is never picked for quizzes again.
+    if (familiarity > LISTENING_MAX_FAMILIARITY) {
+      const entry = normalizeEntryGroupId(normalizeListeningEntry(item));
+      listeningRepository.save({
+        ...item,
+        groupId: entry.groupId,
+        familiarity: LISTENING_MAX_FAMILIARITY,
+        known: true,
+        updatedAt: new Date().toISOString(),
+      });
       continue;
     }
 
@@ -288,14 +302,20 @@ export function rewardListeningFamiliarity(sentences: string[]) {
 
   const targetSet = new Set(sentences.map((item) => normalizeSentence(item)).filter(Boolean));
   for (const item of listeningRepository.list()) {
-    if (!targetSet.has(normalizeSentence(item.sentence))) {
+    if (item.known || !targetSet.has(normalizeSentence(item.sentence))) {
       continue;
     }
 
     const familiarity = item.familiarity + 1;
-    if (familiarity > 10) {
-      deleteAudioFile(item.audioFile);
-      listeningRepository.remove(item.id);
+    if (familiarity > LISTENING_MAX_FAMILIARITY) {
+      const entry = normalizeEntryGroupId(normalizeListeningEntry(item));
+      listeningRepository.save({
+        ...item,
+        groupId: entry.groupId,
+        familiarity: LISTENING_MAX_FAMILIARITY,
+        known: true,
+        updatedAt: new Date().toISOString(),
+      });
       continue;
     }
 
@@ -332,17 +352,17 @@ function collectWords(sentence: string) {
 }
 
 function pickBlankRatio(familiarity: number) {
-  if (familiarity >= 10) {
+  if (familiarity >= LISTENING_FULL_BLANK_FAMILIARITY) {
     return 1;
   }
 
-  return familiarity / 10;
+  return familiarity / LISTENING_FULL_BLANK_FAMILIARITY;
 }
 
 export function createListeningQuizDraft(entry: ListeningEntry): QuizDraftQuestion {
   const sentence = entry.sentence;
   const words = collectWords(sentence);
-  if (words.length === 0 || entry.familiarity >= 10) {
+  if (words.length === 0 || entry.familiarity >= LISTENING_FULL_BLANK_FAMILIARITY) {
     return {
       type: 'listening',
       word: sentence,

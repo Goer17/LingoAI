@@ -250,6 +250,7 @@ if (__VLS_ctx.word) {
     });
     (__VLS_ctx.word.type);
     (__VLS_ctx.word.familiarity);
+    (__VLS_ctx.word.known ? ' · known' : '');
     (__VLS_ctx.word.pronunciation);
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "result-actions" },

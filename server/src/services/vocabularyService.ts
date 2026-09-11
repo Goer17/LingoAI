@@ -1,4 +1,5 @@
 import { vocabularyRepository } from '../db/repositories.js';
+import { VOCABULARY_MAX_FAMILIARITY } from '../config/familiarity.js';
 import { createId } from '../utils/id.js';
 import type { SearchResult, VocabularyEntry } from '../types/models.js';
 import { deleteAudioFile } from './audioService.js';
@@ -102,6 +103,10 @@ export function applyQuizResults(results: Array<{ word: string; isCorrect: boole
   const resultMap = new Map(results.map((item) => [item.word.toLowerCase(), item.isCorrect]));
 
   for (const item of vocabularyRepository.list()) {
+    if (item.known) {
+      continue;
+    }
+
     const isCorrect = resultMap.get(item.text.toLowerCase());
     if (typeof isCorrect !== 'boolean') {
       continue;
@@ -111,8 +116,15 @@ export function applyQuizResults(results: Array<{ word: string; isCorrect: boole
       ? item.familiarity + 1
       : Math.max(0, item.familiarity - 1);
 
-    if (familiarity > 10) {
-      removeWord(item.id);
+    // Past the max familiarity the word is marked as known instead of being
+    // deleted: it stays in the list but is never picked for quizzes again.
+    if (familiarity > VOCABULARY_MAX_FAMILIARITY) {
+      vocabularyRepository.save({
+        ...item,
+        familiarity: VOCABULARY_MAX_FAMILIARITY,
+        known: true,
+        updatedAt: new Date().toISOString(),
+      });
       continue;
     }
 
@@ -159,13 +171,18 @@ export function rewardVocabularyFamiliarity(words: string[]) {
 
   const targetSet = new Set(words.map((item) => item.trim().toLowerCase()).filter(Boolean));
   for (const item of vocabularyRepository.list()) {
-    if (!targetSet.has(item.text.trim().toLowerCase())) {
+    if (item.known || !targetSet.has(item.text.trim().toLowerCase())) {
       continue;
     }
 
     const familiarity = item.familiarity + 1;
-    if (familiarity > 10) {
-      removeWord(item.id);
+    if (familiarity > VOCABULARY_MAX_FAMILIARITY) {
+      vocabularyRepository.save({
+        ...item,
+        familiarity: VOCABULARY_MAX_FAMILIARITY,
+        known: true,
+        updatedAt: new Date().toISOString(),
+      });
       continue;
     }
 

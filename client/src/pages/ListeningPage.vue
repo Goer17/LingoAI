@@ -4,7 +4,7 @@
       <div class="section-heading">
         <p class="eyebrow">Listening</p>
         <h2>Add Practice Sentences</h2>
-        <p class="subtle-copy">Each sentence starts at familiarity 0 and grows to 10.</p>
+        <p class="subtle-copy">Each sentence starts at familiarity 0 and grows to 12. Past 12 it is marked known and no longer picked.</p>
       </div>
 
       <div class="group-bar">
@@ -81,7 +81,7 @@
             >
               <div class="task-main sentence-item-main">
                 <p class="sentence-item-text">{{ item.sentence }}</p>
-                <p class="muted-text sentence-item-familiarity">Familiarity: {{ item.familiarity }}</p>
+                <p class="muted-text sentence-item-familiarity">{{ item.known ? 'Known' : `Familiarity: ${item.familiarity}` }}</p>
               </div>
             </button>
           </div>
@@ -103,7 +103,7 @@
       <div>
         <p class="eyebrow">Practice</p>
         <h2>Generate a Listening Session</h2>
-        <p class="subtle-copy">Blank ratio increases with familiarity. At 10, you fill the whole sentence.</p>
+        <p class="subtle-copy">Blank ratio increases with familiarity. At 10, you fill the whole sentence. Known sentences are skipped.</p>
       </div>
       <div class="learning-bar-actions">
         <button

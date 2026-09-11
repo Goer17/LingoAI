@@ -5,7 +5,7 @@
         <div>
           <p class="eyebrow">Details</p>
           <h2>{{ word.text }}</h2>
-          <p class="subtle-copy">{{ word.type }} · familiarity {{ word.familiarity }} · {{ word.pronunciation }}</p>
+          <p class="subtle-copy">{{ word.type }} · familiarity {{ word.familiarity }}{{ word.known ? ' · known' : '' }} · {{ word.pronunciation }}</p>
         </div>
         <div class="result-actions">
           <button

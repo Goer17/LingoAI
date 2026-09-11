@@ -36,8 +36,9 @@ for (const [item] of __VLS_getVForSourceType((__VLS_ctx.items))) {
     (item.text);
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
         ...{ class: "familiarity-pill" },
+        ...{ class: ({ known: item.known }) },
     });
-    (item.familiarity);
+    (item.known ? 'Known' : item.familiarity);
 }
 if (__VLS_ctx.items.length === 0) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({

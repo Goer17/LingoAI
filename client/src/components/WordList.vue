@@ -17,7 +17,7 @@
         @click="$emit('select', item.id)"
       >
         <span>{{ item.text }}</span>
-        <span class="familiarity-pill">{{ item.familiarity }}</span>
+        <span class="familiarity-pill" :class="{ known: item.known }">{{ item.known ? 'Known' : item.familiarity }}</span>
       </button>
       <p v-if="items.length === 0" class="empty-copy">No saved words yet.</p>
     </div>

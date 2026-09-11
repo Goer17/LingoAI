@@ -6,7 +6,7 @@
           <p class="eyebrow">Details</p>
           <h2>Sentence</h2>
           <p>{{ sentence.sentence }}</p>
-          <p class="subtle-copy">familiarity {{ sentence.familiarity }}</p>
+          <p class="subtle-copy">familiarity {{ sentence.familiarity }}{{ sentence.known ? ' · known' : '' }}</p>
         </div>
         <div class="result-actions">
           <button
