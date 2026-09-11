@@ -14,12 +14,35 @@ function emptyForm() {
         updatedAt: null,
     };
 }
+/**
+ * Normalize a category received from the server into `{ entries, activeIds }`.
+ * Tolerates the legacy single-selection format (`activeId`) and missing
+ * categories so the settings page never crashes on stale payloads.
+ */
+function normalizeCategory(raw) {
+    if (!raw || !Array.isArray(raw.entries)) {
+        return { entries: [], activeIds: [] };
+    }
+    const entries = raw.entries;
+    const knownIds = new Set(entries.map((entry) => entry.id));
+    let activeIds = Array.isArray(raw.activeIds)
+        ? [...new Set(raw.activeIds.filter((id) => typeof id === 'string' && knownIds.has(id)))]
+        : [];
+    if (activeIds.length === 0 && typeof raw.activeId === 'string' && knownIds.has(raw.activeId)) {
+        activeIds = [raw.activeId];
+    }
+    return { entries, activeIds };
+}
 export const useSettingsStore = defineStore('settings', () => {
     const form = reactive(emptyForm());
     const loading = ref(false);
     const saving = ref(false);
     function applyData(data) {
-        form.models = data.models;
+        form.models = {
+            language: normalizeCategory(data.models?.language),
+            audio: normalizeCategory(data.models?.audio),
+            image: normalizeCategory(data.models?.image),
+        };
         form.autoImageGeneration = data.autoImageGeneration ?? false;
         form.quizMaxQuestions = data.quizMaxQuestions ?? { vocabulary: 10, listening: 10 };
         form.autoDailyQuiz = data.autoDailyQuiz ?? false;
