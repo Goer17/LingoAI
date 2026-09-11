@@ -4,7 +4,8 @@
       <p class="eyebrow">Configuration</p>
       <h1>Model Providers</h1>
       <p class="subtle-copy">
-        Manage the model endpoints used across LingoAI. Add as many entries as you like to each category, then pick one to mark it active.
+        Manage the model endpoints used across LingoAI. Add as many entries as you like to each category, activate the ones you want to use, and drag active entries to set their priority.
+        Every call tries models from top to bottom and falls back to the next one when it fails.
       </p>
       <div class="settings-meta">
         <span class="settings-meta-label">Last saved</span>
@@ -31,8 +32,8 @@
         <div class="model-category-head-main">
           <h2>{{ group.title }}</h2>
           <p class="subtle-copy">
-            <span v-if="activeEntry(group.key)">
-              Active: <strong>{{ activeEntry(group.key)?.model || 'Untitled model' }}</strong>
+            <span v-if="activeCount(group.key) > 0">
+              Active: <strong class="model-active-chain">{{ activeSummary(group.key) }}</strong>
             </span>
             <span v-else>No model active</span>
             <span class="model-category-divider">·</span>
@@ -66,34 +67,54 @@
 
         <ul v-else class="model-entry-list">
           <li
-            v-for="(entry, index) in getCategory(group.key).entries"
+            v-for="entry in getCategory(group.key).entries"
             :key="entry.id"
             class="model-entry"
-            :class="{ 'model-entry-active': getCategory(group.key).activeId === entry.id }"
+            :class="{
+              'model-entry-active': isActive(group.key, entry.id),
+              'is-dragging': dragState?.id === entry.id,
+              'is-drop-target': dropTargetId === entry.id,
+            }"
+            @dragover.prevent="onDragOver(group.key, entry.id, $event)"
+            @drop.prevent="onDrop(group.key, entry.id, $event)"
           >
-            <label class="model-radio">
-              <input
-                type="radio"
-                :name="`active-${group.key}`"
-                :value="entry.id"
-                :checked="getCategory(group.key).activeId === entry.id"
-                @change="setActive(group.key, entry.id)"
-              />
-              <span class="model-radio-indicator" aria-hidden="true"></span>
-              <span class="model-radio-label">
-                <span class="model-entry-title">{{ entry.model || `Untitled model #${index + 1}` }}</span>
-                <span class="model-entry-sub">{{ entry.baseUrl || 'No Base URL' }}</span>
+            <span
+              class="model-drag-handle"
+              :class="{ 'is-disabled': !isActive(group.key, entry.id) }"
+              :draggable="isActive(group.key, entry.id)"
+              :title="isActive(group.key, entry.id) ? 'Drag to change priority' : 'Inactive models are ordered after active ones and cannot be moved'"
+              @dragstart="onDragStart(group.key, entry.id, $event)"
+              @dragend="onDragEnd"
+            >⠿</span>
+            <label class="model-entry-main">
+              <span class="model-entry-title-row">
                 <span
-                  v-if="testResults[entry.id]"
-                  class="model-entry-test"
-                  :class="testStatusClass(entry.id)"
-                >
-                  {{ testStatusLabel(entry.id) }}
+                  v-if="isActive(group.key, entry.id)"
+                  class="model-priority-badge"
+                  :title="`Priority ${priorityOf(group.key, entry.id)}`"
+                >{{ priorityOf(group.key, entry.id) }}</span>
+                <span class="model-entry-title">{{ entry.model || `Untitled model #${entryIndex(group.key, entry.id) + 1}` }}</span>
+                <span class="model-entry-status">
+                  {{ isActive(group.key, entry.id) ? 'Active' : 'Inactive' }}
                 </span>
               </span>
-              <span class="model-entry-status">
-                {{ getCategory(group.key).activeId === entry.id ? 'Active' : 'Inactive' }}
+              <span class="model-entry-sub">{{ entry.baseUrl || 'No Base URL' }}</span>
+              <span
+                v-if="testResults[entry.id]"
+                class="model-entry-test"
+                :class="testStatusClass(entry.id)"
+              >
+                {{ testStatusLabel(entry.id) }}
               </span>
+            </label>
+            <label class="toggle model-toggle" :title="isActive(group.key, entry.id) ? 'Deactivate this model' : 'Activate this model'">
+              <input
+                type="checkbox"
+                :checked="isActive(group.key, entry.id)"
+                @change="toggleActive(group.key, entry.id)"
+              />
+              <span class="toggle-track" aria-hidden="true"></span>
+              <span class="toggle-label">{{ isActive(group.key, entry.id) ? 'On' : 'Off' }}</span>
             </label>
             <div class="model-entry-actions">
               <button
@@ -364,6 +385,9 @@ const editingGroup = ref<CategoryGroup | null>(null);
 onMounted(async () => {
   try {
     await settings.fetchSettings();
+    for (const key of Object.keys(settings.form.models) as SettingsModelCategoryKey[]) {
+      normalizeCategoryOrder(settings.form.models[key]);
+    }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load settings.';
   }
@@ -373,9 +397,46 @@ function getCategory(key: SettingsModelCategoryKey): SettingsModelCategory {
   return settings.form.models[key];
 }
 
-function activeEntry(key: SettingsModelCategoryKey): SettingsModelEntry | null {
+function isActive(key: SettingsModelCategoryKey, id: string): boolean {
+  return getCategory(key).activeIds.includes(id);
+}
+
+function activeCount(key: SettingsModelCategoryKey): number {
+  return getCategory(key).activeIds.length;
+}
+
+/** Position within the display list (active first, then inactive). */
+function entryIndex(key: SettingsModelCategoryKey, id: string): number {
+  return getCategory(key).entries.findIndex((entry) => entry.id === id);
+}
+
+/** 1-based priority rank, or null when the entry is inactive. */
+function priorityOf(key: SettingsModelCategoryKey, id: string): number | null {
+  const index = getCategory(key).activeIds.indexOf(id);
+  return index === -1 ? null : index + 1;
+}
+
+/** Active models joined by '›' — the order they will be tried in. */
+function activeSummary(key: SettingsModelCategoryKey): string {
   const category = getCategory(key);
-  return category.entries.find((entry) => entry.id === category.activeId) ?? null;
+  return category.activeIds
+    .map((id) => category.entries.find((entry) => entry.id === id))
+    .filter((entry): entry is SettingsModelEntry => !!entry)
+    .map((entry) => entry.model || 'Untitled model')
+    .join(' › ');
+}
+
+/**
+ * Keep entries in display order: active models first (in `activeIds` priority
+ * order), then inactive models in their existing relative order.
+ */
+function normalizeCategoryOrder(category: SettingsModelCategory) {
+  const byId = new Map(category.entries.map((entry) => [entry.id, entry]));
+  const inactive = category.entries.filter((entry) => !category.activeIds.includes(entry.id));
+  category.entries = [
+    ...category.activeIds.map((id) => byId.get(id)).filter((entry): entry is SettingsModelEntry => !!entry),
+    ...inactive,
+  ];
 }
 
 function toggleExpanded(key: SettingsModelCategoryKey) {
@@ -399,8 +460,8 @@ function addEntry(key: SettingsModelCategoryKey) {
     extraBody: '',
   };
   category.entries.push(entry);
-  if (!category.activeId) {
-    category.activeId = entry.id;
+  if (category.activeIds.length === 0) {
+    category.activeIds = [entry.id];
   }
   expanded[key] = true;
   openEdit(key, entry.id);
@@ -414,13 +475,98 @@ function removeEntry(key: SettingsModelCategoryKey, id: string) {
     return;
   }
   category.entries.splice(index, 1);
-  if (category.activeId === id) {
-    category.activeId = category.entries[0]?.id ?? null;
+  if (category.activeIds.includes(id)) {
+    category.activeIds = category.activeIds.filter((activeId) => activeId !== id);
   }
 }
 
-function setActive(key: SettingsModelCategoryKey, id: string) {
-  getCategory(key).activeId = id;
+/**
+ * Activate / deactivate a model. The row always sinks to the correct position:
+ * activating appends it at the end of the active block (lowest priority),
+ * deactivating moves it to the end of the inactive block.
+ */
+function toggleActive(key: SettingsModelCategoryKey, id: string) {
+  const category = getCategory(key);
+  const position = category.activeIds.indexOf(id);
+  if (position !== -1) {
+    category.activeIds = category.activeIds.filter((activeId) => activeId !== id);
+    const index = category.entries.findIndex((entry) => entry.id === id);
+    if (index !== -1) {
+      const [removed] = category.entries.splice(index, 1);
+      category.entries.push(removed);
+    }
+    return;
+  }
+
+  category.activeIds = [...category.activeIds, id];
+  const index = category.entries.findIndex((entry) => entry.id === id);
+  if (index !== -1) {
+    const [removed] = category.entries.splice(index, 1);
+    const firstInactive = category.entries.findIndex((entry) => !category.activeIds.includes(entry.id));
+    if (firstInactive === -1) {
+      category.entries.push(removed);
+    } else {
+      category.entries.splice(firstInactive, 0, removed);
+    }
+  }
+}
+
+// Drag & drop reordering of active models. Inactive models are never
+// draggable and always stay at the end of the list.
+const dragState = ref<{ key: SettingsModelCategoryKey; id: string } | null>(null);
+const dropTargetId = ref<string | null>(null);
+
+function onDragStart(key: SettingsModelCategoryKey, id: string, event: DragEvent) {
+  if (!isActive(key, id)) {
+    event.preventDefault();
+    return;
+  }
+  dragState.value = { key, id };
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', id);
+  }
+}
+
+function onDragOver(key: SettingsModelCategoryKey, targetId: string, _event: DragEvent) {
+  if (!dragState.value || dragState.value.key !== key || !isActive(key, targetId)) {
+    return;
+  }
+  if (dropTargetId.value !== targetId) {
+    dropTargetId.value = targetId;
+  }
+}
+
+function onDrop(key: SettingsModelCategoryKey, targetId: string, event: DragEvent) {
+  event.preventDefault();
+  const source = dragState.value;
+  dragState.value = null;
+  dropTargetId.value = null;
+  if (!source || source.key !== key || source.id === targetId) {
+    return;
+  }
+  reorderActive(key, source.id, targetId);
+}
+
+function onDragEnd() {
+  dragState.value = null;
+  dropTargetId.value = null;
+}
+
+/** Move `sourceId` to `targetId`'s slot within the active block. */
+function reorderActive(key: SettingsModelCategoryKey, sourceId: string, targetId: string) {
+  const category = getCategory(key);
+  const activeIds = [...category.activeIds];
+  const fromIndex = activeIds.indexOf(sourceId);
+  const toIndex = activeIds.indexOf(targetId);
+  if (fromIndex === -1 || toIndex === -1) {
+    return;
+  }
+  activeIds.splice(fromIndex, 1);
+  activeIds.splice(toIndex, 0, sourceId);
+  category.activeIds = activeIds;
+
+  normalizeCategoryOrder(category);
 }
 
 function clearMaskedKey(entry: SettingsModelEntry) {

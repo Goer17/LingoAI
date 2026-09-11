@@ -30,9 +30,9 @@ function readJsonIfExists<T>(filePath: string): T | null {
 function emptySettings(): Settings {
   return {
     models: {
-      language: { entries: [], activeId: null },
-      audio: { entries: [], activeId: null },
-      image: { entries: [], activeId: null },
+      language: { entries: [], activeIds: [] },
+      audio: { entries: [], activeIds: [] },
+      image: { entries: [], activeIds: [] },
     },
     updatedAt: null,
   };
@@ -52,7 +52,7 @@ function buildSettingsFromLegacy(legacy: LegacySettings): Settings {
       extraBody: '',
     };
     settings.models.language.entries.push(entry);
-    settings.models.language.activeId = entry.id;
+    settings.models.language.activeIds = [entry.id];
   }
 
   if (legacy.audioModel) {
@@ -64,7 +64,7 @@ function buildSettingsFromLegacy(legacy: LegacySettings): Settings {
       extraBody: '',
     };
     settings.models.audio.entries.push(entry);
-    settings.models.audio.activeId = entry.id;
+    settings.models.audio.activeIds = [entry.id];
   }
 
   settings.updatedAt = legacy.updatedAt ?? null;

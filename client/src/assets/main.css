@@ -1098,7 +1098,6 @@ select:focus {
   text-transform: uppercase;
   color: var(--muted);
   flex-shrink: 0;
-  margin-left: 0.5rem;
 }
 
 .model-entry-active .model-entry-status {

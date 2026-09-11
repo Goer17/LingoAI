@@ -9,7 +9,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     model: string;
                     extraBody: string;
                 }[];
-                activeId: string | null;
+                activeIds: string[];
             };
             audio: {
                 entries: {
@@ -19,7 +19,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     model: string;
                     extraBody: string;
                 }[];
-                activeId: string | null;
+                activeIds: string[];
             };
             image: {
                 entries: {
@@ -29,7 +29,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     model: string;
                     extraBody: string;
                 }[];
-                activeId: string | null;
+                activeIds: string[];
             };
         };
         autoImageGeneration?: boolean | undefined;
@@ -55,7 +55,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     model: string;
                     extraBody: string;
                 }[];
-                activeId: string | null;
+                activeIds: string[];
             };
             audio: {
                 entries: {
@@ -65,7 +65,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     model: string;
                     extraBody: string;
                 }[];
-                activeId: string | null;
+                activeIds: string[];
             };
             image: {
                 entries: {
@@ -75,7 +75,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     model: string;
                     extraBody: string;
                 }[];
-                activeId: string | null;
+                activeIds: string[];
             };
         };
         autoImageGeneration?: boolean | undefined;
@@ -101,7 +101,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     model: string;
                     extraBody: string;
                 }[];
-                activeId: string | null;
+                activeIds: string[];
             };
             audio: {
                 entries: {
@@ -111,7 +111,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     model: string;
                     extraBody: string;
                 }[];
-                activeId: string | null;
+                activeIds: string[];
             };
             image: {
                 entries: {
@@ -121,7 +121,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
                     model: string;
                     extraBody: string;
                 }[];
-                activeId: string | null;
+                activeIds: string[];
             };
         };
         autoImageGeneration?: boolean | undefined;

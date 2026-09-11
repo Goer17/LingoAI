@@ -6,9 +6,9 @@ import type { SettingsForm } from '@/types/models';
 function emptyForm(): SettingsForm {
   return {
     models: {
-      language: { entries: [], activeId: null },
-      audio: { entries: [], activeId: null },
-      image: { entries: [], activeId: null },
+      language: { entries: [], activeIds: [] },
+      audio: { entries: [], activeIds: [] },
+      image: { entries: [], activeIds: [] },
     },
     autoImageGeneration: false,
     quizMaxQuestions: { vocabulary: 10, listening: 10 },

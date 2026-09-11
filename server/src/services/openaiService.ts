@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
-import { getActiveModelEntry } from './settingsService.js';
+import { getActiveModelEntries } from './settingsService.js';
 import type { PolishResult, QuizDraftQuestion, ScenarioSummary, SearchResult } from '../types/models.js';
 
 const meaningSchema = z.object({
@@ -132,13 +132,13 @@ function parseExtraBody(json: string | undefined): Record<string, unknown> {
   }
 }
 
-function getLanguageClient(): LangClient {
-  const entry = getActiveModelEntry('language');
-  if (!entry || !entry.baseUrl || !entry.apiKey || !entry.model) {
+function getLanguageClients(): LangClient[] {
+  const entries = getActiveModelEntries('language');
+  if (entries.length === 0) {
     throw new Error('Language model is not configured. Please pick one in Settings.');
   }
 
-  return {
+  return entries.map((entry) => ({
     model: entry.model,
     client: new OpenAI({
       baseURL: entry.baseUrl,
@@ -146,30 +146,53 @@ function getLanguageClient(): LangClient {
       timeout: REQUEST_TIMEOUT_MS,
     }),
     extraBody: parseExtraBody(entry.extraBody),
-  };
+  }));
+}
+
+/**
+ * Error surfaced when every configured model failed. Preserves the last
+ * failure message so the user can see why the chain gave up.
+ */
+function modelChainError(label: 'language' | 'audio' | 'image', count: number, lastError: unknown): Error {
+  const detail = lastError instanceof Error ? lastError.message : String(lastError);
+  const noun = count === 1 ? `${label} model` : `${label} models`;
+  return new Error(`All ${count} configured ${noun} failed. Last error: ${detail}`);
 }
 
 async function requestJson<T>(prompt: string, parser: z.ZodSchema<T>): Promise<T> {
-  const { client, model, extraBody } = getLanguageClient();
-  const response = await client.chat.completions.create({
-    model,
-    temperature: 0.3,
-    response_format: { type: 'json_object' },
-    messages: [
-      {
-        role: 'system',
-        content: 'Return valid JSON only.',
-      },
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
-    ...extraBody,
-  });
+  const clients = getLanguageClients();
+  let lastError: unknown;
 
-  const content = response.choices[0]?.message?.content ?? '';
-  return parseJsonContent(content, parser);
+  for (const { client, model, extraBody } of clients) {
+    try {
+      const response = await client.chat.completions.create({
+        model,
+        temperature: 0.3,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: 'Return valid JSON only.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        ...extraBody,
+      });
+
+      const content = response.choices[0]?.message?.content ?? '';
+      return parseJsonContent(content, parser);
+    } catch (error) {
+      // Any failure — network error, upstream API error, or a malformed
+      // response — counts as a failure for this model: fall through to the
+      // next configured model in priority order.
+      lastError = error;
+    }
+  }
+
+  throw modelChainError('language', clients.length, lastError);
 }
 
 /**
@@ -231,47 +254,61 @@ export async function generateQuizStreamed(
   prompt: string,
   onQuestionStart?: (index: number) => void,
 ): Promise<{ questions: QuizDraftQuestion[] }> {
-  const { client, model, extraBody } = getLanguageClient();
-  const stream = await client.chat.completions.create({
-    model,
-    temperature: 0.3,
-    response_format: { type: 'json_object' },
-    stream: true,
-    messages: [
-      {
-        role: 'system',
-        content: 'Return valid JSON only.',
-      },
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
-    ...extraBody,
-  });
+  const clients = getLanguageClients();
+  let lastError: unknown;
 
-  // Every question object in the streamed array starts with {"type": "…"}.
-  // Counting occurrences so far tells us, incrementally, how many questions
-  // the model has begun emitting. Optional whitespace is tolerated.
-  const questionStart = /\{\s*"type"\s*:\s*"(?:fill_blank|listening)"/g;
-  let content = '';
-  let seen = 0;
-  for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta?.content ?? '';
-    if (!delta) {
-      continue;
-    }
-    content += delta;
-    questionStart.lastIndex = 0;
-    const matches = content.match(questionStart);
-    const count = matches ? matches.length : 0;
-    while (seen < count) {
-      onQuestionStart?.(seen);
-      seen += 1;
+  for (const { client, model, extraBody } of clients) {
+    try {
+      const stream = await client.chat.completions.create({
+        model,
+        temperature: 0.3,
+        response_format: { type: 'json_object' },
+        stream: true,
+        messages: [
+          {
+            role: 'system',
+            content: 'Return valid JSON only.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        ...extraBody,
+      });
+
+      // Every question object in the streamed array starts with {"type": "…"}.
+      // Counting occurrences so far tells us, incrementally, how many questions
+      // the model has begun emitting. Optional whitespace is tolerated.
+      const questionStart = /\{\s*"type"\s*:\s*"(?:fill_blank|listening)"/g;
+      let content = '';
+      let seen = 0;
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content ?? '';
+        if (!delta) {
+          continue;
+        }
+        content += delta;
+        questionStart.lastIndex = 0;
+        const matches = content.match(questionStart);
+        const count = matches ? matches.length : 0;
+        while (seen < count) {
+          onQuestionStart?.(seen);
+          seen += 1;
+        }
+      }
+
+      return parseJsonContent(content, quizSchema);
+    } catch (error) {
+      // A provider may reject streaming entirely, error mid-stream, or return
+      // malformed JSON — each is a failure for this model, so fall through to
+      // the next configured model. Progress callbacks may fire more than once
+      // across fallback attempts, which the caller tolerates (clamped counts).
+      lastError = error;
     }
   }
 
-  return parseJsonContent(content, quizSchema);
+  throw modelChainError('language', clients.length, lastError);
 }
 
 export async function generateFillBlankRepair(prompt: string): Promise<{ maskedSentence: string; answer: string }> {
@@ -302,91 +339,136 @@ export async function streamScenarioChat(
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
   onDelta: (chunk: string) => void,
 ): Promise<string> {
-  const { client, model, extraBody } = getLanguageClient();
-  const stream = await client.chat.completions.create({
-    model,
-    temperature: 0.7,
-    stream: true,
-    messages,
-    ...extraBody,
-  });
+  const clients = getLanguageClients();
+  let lastError: unknown;
 
-  let fullText = '';
-  for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta?.content ?? '';
-    if (!delta) {
-      continue;
+  for (const { client, model, extraBody } of clients) {
+    let emitted = false;
+    try {
+      const stream = await client.chat.completions.create({
+        model,
+        temperature: 0.7,
+        stream: true,
+        messages,
+        ...extraBody,
+      });
+
+      let fullText = '';
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content ?? '';
+        if (!delta) {
+          continue;
+        }
+
+        emitted = true;
+        fullText += delta;
+        onDelta(delta);
+      }
+
+      const output = fullText.trim();
+      if (!output) {
+        throw new Error('The language model returned an empty reply.');
+      }
+
+      return output;
+    } catch (error) {
+      lastError = error;
+      // Content already streamed to the caller cannot be unstuck — failing
+      // over now would duplicate the partial reply in the UI.
+      if (emitted) {
+        throw error;
+      }
     }
-
-    fullText += delta;
-    onDelta(delta);
   }
 
-  const output = fullText.trim();
-  if (!output) {
-    throw new Error('The language model returned an empty reply.');
-  }
-
-  return output;
+  throw modelChainError('language', clients.length, lastError);
 }
 
 export async function askWordChat(prompt: string): Promise<string> {
-  const { client, model, extraBody } = getLanguageClient();
-  const response = await client.chat.completions.create({
-    model,
-    temperature: 0.6,
-    messages: [
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
-    ...extraBody,
-  });
+  const clients = getLanguageClients();
+  let lastError: unknown;
 
-  const content = response.choices[0]?.message?.content?.trim();
-  if (!content) {
-    throw new Error('The language model returned an empty reply.');
+  for (const { client, model, extraBody } of clients) {
+    try {
+      const response = await client.chat.completions.create({
+        model,
+        temperature: 0.6,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        ...extraBody,
+      });
+
+      const content = response.choices[0]?.message?.content?.trim();
+      if (!content) {
+        throw new Error('The language model returned an empty reply.');
+      }
+
+      return content;
+    } catch (error) {
+      // Fall through to the next configured language model in priority order.
+      lastError = error;
+    }
   }
 
-  return content;
+  throw modelChainError('language', clients.length, lastError);
 }
 
 export async function streamWordChat(
   prompt: string,
   onDelta: (chunk: string) => void,
 ): Promise<string> {
-  const { client, model, extraBody } = getLanguageClient();
-  const stream = await client.chat.completions.create({
-    model,
-    temperature: 0.6,
-    stream: true,
-    messages: [
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
-    ...extraBody,
-  });
+  const clients = getLanguageClients();
+  let lastError: unknown;
 
-  let fullText = '';
-  for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta?.content ?? '';
-    if (!delta) {
-      continue;
+  for (const { client, model, extraBody } of clients) {
+    let emitted = false;
+    try {
+      const stream = await client.chat.completions.create({
+        model,
+        temperature: 0.6,
+        stream: true,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        ...extraBody,
+      });
+
+      let fullText = '';
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content ?? '';
+        if (!delta) {
+          continue;
+        }
+
+        emitted = true;
+        fullText += delta;
+        onDelta(delta);
+      }
+
+      const output = fullText.trim();
+      if (!output) {
+        throw new Error('The language model returned an empty reply.');
+      }
+
+      return output;
+    } catch (error) {
+      lastError = error;
+      // Content already streamed to the caller cannot be unstuck — failing
+      // over now would duplicate the partial reply in the UI.
+      if (emitted) {
+        throw error;
+      }
     }
-
-    fullText += delta;
-    onDelta(delta);
   }
 
-  const output = fullText.trim();
-  if (!output) {
-    throw new Error('The language model returned an empty reply.');
-  }
-
-  return output;
+  throw modelChainError('language', clients.length, lastError);
 }
 
 const OPENAI_TTS_VOICES = [
@@ -442,38 +524,51 @@ function pickRequestHeaders(model: string): Record<string, Record<string, string
 }
 
 export async function generateAudioBase64(input: string): Promise<string> {
-  const entry = getActiveModelEntry('audio');
-  if (!entry || !entry.baseUrl || !entry.apiKey || !entry.model) {
+  const entries = getActiveModelEntries('audio');
+  if (entries.length === 0) {
     throw new Error('Audio model is not configured. Please pick one in Settings.');
   }
 
-  // Aliyun Model Studio (DashScope / *maas.aliyuncs.com): TTS models like
-  // qwen-audio-* do NOT expose the OpenAI-compatible /audio/speech route;
-  // they use the native synchronous `SpeechSynthesizer` endpoint instead.
-  if (isDashScopeBaseUrl(entry.baseUrl)) {
-    return generateAudioViaDashScope(entry, input);
+  let lastError: unknown;
+  for (const entry of entries) {
+    try {
+      // Aliyun Model Studio (DashScope / *maas.aliyuncs.com): TTS models like
+      // qwen-audio-* do NOT expose the OpenAI-compatible /audio/speech route;
+      // they use the native synchronous `SpeechSynthesizer` endpoint instead.
+      if (isDashScopeBaseUrl(entry.baseUrl)) {
+        return await generateAudioViaDashScope(entry, input);
+      }
+
+      const client = new OpenAI({
+        baseURL: entry.baseUrl,
+        apiKey: entry.apiKey,
+        timeout: REQUEST_TIMEOUT_MS,
+      });
+      const extraBody = parseExtraBody(entry.extraBody);
+      const voice = pickVoiceForModel(entry.model);
+      const response = await client.audio.speech.create(
+        {
+          model: entry.model,
+          voice,
+          input,
+          response_format: 'mp3',
+          ...extraBody,
+        },
+        pickRequestHeaders(entry.model),
+      );
+
+      const buffer = await fetchAudioBytes(response);
+      if (!buffer.length) {
+        throw new Error('Empty audio payload.');
+      }
+      return buffer.toString('base64');
+    } catch (error) {
+      // Fall through to the next configured audio model in priority order.
+      lastError = error;
+    }
   }
 
-  const client = new OpenAI({
-    baseURL: entry.baseUrl,
-    apiKey: entry.apiKey,
-    timeout: REQUEST_TIMEOUT_MS,
-  });
-  const extraBody = parseExtraBody(entry.extraBody);
-  const voice = pickVoiceForModel(entry.model);
-  const response = await client.audio.speech.create(
-    {
-      model: entry.model,
-      voice,
-      input,
-      response_format: 'mp3',
-      ...extraBody,
-    },
-    pickRequestHeaders(entry.model),
-  );
-
-  const buffer = await fetchAudioBytes(response);
-  return buffer.toString('base64');
+  throw modelChainError('audio', entries.length, lastError);
 }
 
 async function fetchAudioBytes(response: { headers: { get(name: string): string | null }; arrayBuffer(): Promise<ArrayBuffer>; json(): Promise<unknown> }, signal?: AbortSignal): Promise<Buffer> {
@@ -506,48 +601,58 @@ function extractAudioUrl(json: Record<string, unknown>): string | null {
 }
 
 export async function generateImageBase64(prompt: string): Promise<string> {
-  const entry = getActiveModelEntry('image');
-  if (!entry || !entry.baseUrl || !entry.apiKey || !entry.model) {
+  const entries = getActiveModelEntries('image');
+  if (entries.length === 0) {
     throw new Error('Image model is not configured. Please pick one in Settings.');
   }
 
-  // Aliyun Model Studio (DashScope / *maas.aliyuncs.com): image models like
-  // wan2.7-image do NOT expose an OpenAI-compatible /images/generations route;
-  // they use the native synchronous `multimodal-generation` endpoint and
-  // require `width*height` (asterisk) sizes instead of `WxH`.
-  if (isDashScopeBaseUrl(entry.baseUrl)) {
-    return generateImageViaDashScope(entry, prompt);
-  }
+  let lastError: unknown;
+  for (const entry of entries) {
+    try {
+      // Aliyun Model Studio (DashScope / *maas.aliyuncs.com): image models like
+      // wan2.7-image do NOT expose an OpenAI-compatible /images/generations route;
+      // they use the native synchronous `multimodal-generation` endpoint and
+      // require `width*height` (asterisk) sizes instead of `WxH`.
+      if (isDashScopeBaseUrl(entry.baseUrl)) {
+        return await generateImageViaDashScope(entry, prompt);
+      }
 
-  const client = new OpenAI({
-    baseURL: entry.baseUrl,
-    apiKey: entry.apiKey,
-    timeout: REQUEST_TIMEOUT_MS,
-  });
-  const extraBody = parseExtraBody(entry.extraBody);
+      const client = new OpenAI({
+        baseURL: entry.baseUrl,
+        apiKey: entry.apiKey,
+        timeout: REQUEST_TIMEOUT_MS,
+      });
+      const extraBody = parseExtraBody(entry.extraBody);
 
-  const response = await client.images.generate({
-    model: entry.model,
-    prompt,
-    n: 1,
-    size: '1024x1024',
-    ...extraBody,
-  });
+      const response = await client.images.generate({
+        model: entry.model,
+        prompt,
+        n: 1,
+        size: '1024x1024',
+        ...extraBody,
+      });
 
-  const first = response.data?.[0];
-  if (first?.b64_json) {
-    return first.b64_json;
-  }
+      const first = response.data?.[0];
+      if (first?.b64_json) {
+        return first.b64_json;
+      }
 
-  if (first?.url) {
-    const imageResponse = await fetch(first.url);
-    if (!imageResponse.ok) {
-      throw new Error(`Failed to download generated image (HTTP ${imageResponse.status})`);
+      if (first?.url) {
+        const imageResponse = await fetch(first.url);
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to download generated image (HTTP ${imageResponse.status})`);
+        }
+        return Buffer.from(await imageResponse.arrayBuffer()).toString('base64');
+      }
+
+      throw new Error('Image model returned an empty payload.');
+    } catch (error) {
+      // Fall through to the next configured image model in priority order.
+      lastError = error;
     }
-    return Buffer.from(await imageResponse.arrayBuffer()).toString('base64');
   }
 
-  throw new Error('Image model returned an empty payload.');
+  throw modelChainError('image', entries.length, lastError);
 }
 
 function isDashScopeBaseUrl(baseUrl: string): boolean {

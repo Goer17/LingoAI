@@ -47,6 +47,9 @@ const editingGroup = ref(null);
 onMounted(async () => {
     try {
         await settings.fetchSettings();
+        for (const key of Object.keys(settings.form.models)) {
+            normalizeCategoryOrder(settings.form.models[key]);
+        }
     }
     catch (err) {
         error.value = err instanceof Error ? err.message : 'Failed to load settings.';
@@ -55,9 +58,41 @@ onMounted(async () => {
 function getCategory(key) {
     return settings.form.models[key];
 }
-function activeEntry(key) {
+function isActive(key, id) {
+    return getCategory(key).activeIds.includes(id);
+}
+function activeCount(key) {
+    return getCategory(key).activeIds.length;
+}
+/** Position within the display list (active first, then inactive). */
+function entryIndex(key, id) {
+    return getCategory(key).entries.findIndex((entry) => entry.id === id);
+}
+/** 1-based priority rank, or null when the entry is inactive. */
+function priorityOf(key, id) {
+    const index = getCategory(key).activeIds.indexOf(id);
+    return index === -1 ? null : index + 1;
+}
+/** Active models joined by '›' — the order they will be tried in. */
+function activeSummary(key) {
     const category = getCategory(key);
-    return category.entries.find((entry) => entry.id === category.activeId) ?? null;
+    return category.activeIds
+        .map((id) => category.entries.find((entry) => entry.id === id))
+        .filter((entry) => !!entry)
+        .map((entry) => entry.model || 'Untitled model')
+        .join(' › ');
+}
+/**
+ * Keep entries in display order: active models first (in `activeIds` priority
+ * order), then inactive models in their existing relative order.
+ */
+function normalizeCategoryOrder(category) {
+    const byId = new Map(category.entries.map((entry) => [entry.id, entry]));
+    const inactive = category.entries.filter((entry) => !category.activeIds.includes(entry.id));
+    category.entries = [
+        ...category.activeIds.map((id) => byId.get(id)).filter((entry) => !!entry),
+        ...inactive,
+    ];
 }
 function toggleExpanded(key) {
     expanded[key] = !expanded[key];
@@ -78,8 +113,8 @@ function addEntry(key) {
         extraBody: '',
     };
     category.entries.push(entry);
-    if (!category.activeId) {
-        category.activeId = entry.id;
+    if (category.activeIds.length === 0) {
+        category.activeIds = [entry.id];
     }
     expanded[key] = true;
     openEdit(key, entry.id);
@@ -92,12 +127,90 @@ function removeEntry(key, id) {
         return;
     }
     category.entries.splice(index, 1);
-    if (category.activeId === id) {
-        category.activeId = category.entries[0]?.id ?? null;
+    if (category.activeIds.includes(id)) {
+        category.activeIds = category.activeIds.filter((activeId) => activeId !== id);
     }
 }
-function setActive(key, id) {
-    getCategory(key).activeId = id;
+/**
+ * Activate / deactivate a model. The row always sinks to the correct position:
+ * activating appends it at the end of the active block (lowest priority),
+ * deactivating moves it to the end of the inactive block.
+ */
+function toggleActive(key, id) {
+    const category = getCategory(key);
+    const position = category.activeIds.indexOf(id);
+    if (position !== -1) {
+        category.activeIds = category.activeIds.filter((activeId) => activeId !== id);
+        const index = category.entries.findIndex((entry) => entry.id === id);
+        if (index !== -1) {
+            const [removed] = category.entries.splice(index, 1);
+            category.entries.push(removed);
+        }
+        return;
+    }
+    category.activeIds = [...category.activeIds, id];
+    const index = category.entries.findIndex((entry) => entry.id === id);
+    if (index !== -1) {
+        const [removed] = category.entries.splice(index, 1);
+        const firstInactive = category.entries.findIndex((entry) => !category.activeIds.includes(entry.id));
+        if (firstInactive === -1) {
+            category.entries.push(removed);
+        }
+        else {
+            category.entries.splice(firstInactive, 0, removed);
+        }
+    }
+}
+// Drag & drop reordering of active models. Inactive models are never
+// draggable and always stay at the end of the list.
+const dragState = ref(null);
+const dropTargetId = ref(null);
+function onDragStart(key, id, event) {
+    if (!isActive(key, id)) {
+        event.preventDefault();
+        return;
+    }
+    dragState.value = { key, id };
+    if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', id);
+    }
+}
+function onDragOver(key, targetId, _event) {
+    if (!dragState.value || dragState.value.key !== key || !isActive(key, targetId)) {
+        return;
+    }
+    if (dropTargetId.value !== targetId) {
+        dropTargetId.value = targetId;
+    }
+}
+function onDrop(key, targetId, event) {
+    event.preventDefault();
+    const source = dragState.value;
+    dragState.value = null;
+    dropTargetId.value = null;
+    if (!source || source.key !== key || source.id === targetId) {
+        return;
+    }
+    reorderActive(key, source.id, targetId);
+}
+function onDragEnd() {
+    dragState.value = null;
+    dropTargetId.value = null;
+}
+/** Move `sourceId` to `targetId`'s slot within the active block. */
+function reorderActive(key, sourceId, targetId) {
+    const category = getCategory(key);
+    const activeIds = [...category.activeIds];
+    const fromIndex = activeIds.indexOf(sourceId);
+    const toIndex = activeIds.indexOf(targetId);
+    if (fromIndex === -1 || toIndex === -1) {
+        return;
+    }
+    activeIds.splice(fromIndex, 1);
+    activeIds.splice(toIndex, 0, sourceId);
+    category.activeIds = activeIds;
+    normalizeCategoryOrder(category);
 }
 function clearMaskedKey(entry) {
     if (entry.apiKey === '********') {
@@ -270,10 +383,12 @@ for (const [group] of __VLS_getVForSourceType((__VLS_ctx.categoryGroups))) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
         ...{ class: "subtle-copy" },
     });
-    if (__VLS_ctx.activeEntry(group.key)) {
+    if (__VLS_ctx.activeCount(group.key) > 0) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
-        (__VLS_ctx.activeEntry(group.key)?.model || 'Untitled model');
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({
+            ...{ class: "model-active-chain" },
+        });
+        (__VLS_ctx.activeSummary(group.key));
     }
     else {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
@@ -318,39 +433,65 @@ for (const [group] of __VLS_getVForSourceType((__VLS_ctx.categoryGroups))) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.ul, __VLS_intrinsicElements.ul)({
                 ...{ class: "model-entry-list" },
             });
-            for (const [entry, index] of __VLS_getVForSourceType((__VLS_ctx.getCategory(group.key).entries))) {
+            for (const [entry] of __VLS_getVForSourceType((__VLS_ctx.getCategory(group.key).entries))) {
                 __VLS_asFunctionalElement(__VLS_intrinsicElements.li, __VLS_intrinsicElements.li)({
-                    key: (entry.id),
-                    ...{ class: "model-entry" },
-                    ...{ class: ({ 'model-entry-active': __VLS_ctx.getCategory(group.key).activeId === entry.id }) },
-                });
-                __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
-                    ...{ class: "model-radio" },
-                });
-                __VLS_asFunctionalElement(__VLS_intrinsicElements.input)({
-                    ...{ onChange: (...[$event]) => {
+                    ...{ onDragover: (...[$event]) => {
                             if (!(__VLS_ctx.expanded[group.key]))
                                 return;
                             if (!!(__VLS_ctx.getCategory(group.key).entries.length === 0))
                                 return;
-                            __VLS_ctx.setActive(group.key, entry.id);
+                            __VLS_ctx.onDragOver(group.key, entry.id, $event);
                         } },
-                    type: "radio",
-                    name: (`active-${group.key}`),
-                    value: (entry.id),
-                    checked: (__VLS_ctx.getCategory(group.key).activeId === entry.id),
+                    ...{ onDrop: (...[$event]) => {
+                            if (!(__VLS_ctx.expanded[group.key]))
+                                return;
+                            if (!!(__VLS_ctx.getCategory(group.key).entries.length === 0))
+                                return;
+                            __VLS_ctx.onDrop(group.key, entry.id, $event);
+                        } },
+                    key: (entry.id),
+                    ...{ class: "model-entry" },
+                    ...{ class: ({
+                            'model-entry-active': __VLS_ctx.isActive(group.key, entry.id),
+                            'is-dragging': __VLS_ctx.dragState?.id === entry.id,
+                            'is-drop-target': __VLS_ctx.dropTargetId === entry.id,
+                        }) },
                 });
                 __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
-                    ...{ class: "model-radio-indicator" },
-                    'aria-hidden': "true",
+                    ...{ onDragstart: (...[$event]) => {
+                            if (!(__VLS_ctx.expanded[group.key]))
+                                return;
+                            if (!!(__VLS_ctx.getCategory(group.key).entries.length === 0))
+                                return;
+                            __VLS_ctx.onDragStart(group.key, entry.id, $event);
+                        } },
+                    ...{ onDragend: (__VLS_ctx.onDragEnd) },
+                    ...{ class: "model-drag-handle" },
+                    ...{ class: ({ 'is-disabled': !__VLS_ctx.isActive(group.key, entry.id) }) },
+                    draggable: (__VLS_ctx.isActive(group.key, entry.id)),
+                    title: (__VLS_ctx.isActive(group.key, entry.id) ? 'Drag to change priority' : 'Inactive models are ordered after active ones and cannot be moved'),
+                });
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
+                    ...{ class: "model-entry-main" },
                 });
                 __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
-                    ...{ class: "model-radio-label" },
+                    ...{ class: "model-entry-title-row" },
                 });
+                if (__VLS_ctx.isActive(group.key, entry.id)) {
+                    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                        ...{ class: "model-priority-badge" },
+                        title: (`Priority ${__VLS_ctx.priorityOf(group.key, entry.id)}`),
+                    });
+                    (__VLS_ctx.priorityOf(group.key, entry.id));
+                }
                 __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                     ...{ class: "model-entry-title" },
                 });
-                (entry.model || `Untitled model #${index + 1}`);
+                (entry.model || `Untitled model #${__VLS_ctx.entryIndex(group.key, entry.id) + 1}`);
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                    ...{ class: "model-entry-status" },
+                });
+                (__VLS_ctx.isActive(group.key, entry.id) ? 'Active' : 'Inactive');
                 __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                     ...{ class: "model-entry-sub" },
                 });
@@ -362,10 +503,29 @@ for (const [group] of __VLS_getVForSourceType((__VLS_ctx.categoryGroups))) {
                     });
                     (__VLS_ctx.testStatusLabel(entry.id));
                 }
-                __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
-                    ...{ class: "model-entry-status" },
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
+                    ...{ class: "toggle model-toggle" },
+                    title: (__VLS_ctx.isActive(group.key, entry.id) ? 'Deactivate this model' : 'Activate this model'),
                 });
-                (__VLS_ctx.getCategory(group.key).activeId === entry.id ? 'Active' : 'Inactive');
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.input)({
+                    ...{ onChange: (...[$event]) => {
+                            if (!(__VLS_ctx.expanded[group.key]))
+                                return;
+                            if (!!(__VLS_ctx.getCategory(group.key).entries.length === 0))
+                                return;
+                            __VLS_ctx.toggleActive(group.key, entry.id);
+                        } },
+                    type: "checkbox",
+                    checked: (__VLS_ctx.isActive(group.key, entry.id)),
+                });
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                    ...{ class: "toggle-track" },
+                    'aria-hidden': "true",
+                });
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                    ...{ class: "toggle-label" },
+                });
+                (__VLS_ctx.isActive(group.key, entry.id) ? 'On' : 'Off');
                 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
                     ...{ class: "model-entry-actions" },
                 });
@@ -633,6 +793,7 @@ if (__VLS_ctx.editing && __VLS_ctx.editingDraft) {
 /** @type {__VLS_StyleScopedClasses['model-category-icon']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-category-head-main']} */ ;
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
+/** @type {__VLS_StyleScopedClasses['model-active-chain']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-category-divider']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-category-chevron']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-category-body']} */ ;
@@ -643,13 +804,18 @@ if (__VLS_ctx.editing && __VLS_ctx.editingDraft) {
 /** @type {__VLS_StyleScopedClasses['model-empty']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-entry-list']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-entry']} */ ;
-/** @type {__VLS_StyleScopedClasses['model-radio']} */ ;
-/** @type {__VLS_StyleScopedClasses['model-radio-indicator']} */ ;
-/** @type {__VLS_StyleScopedClasses['model-radio-label']} */ ;
+/** @type {__VLS_StyleScopedClasses['model-drag-handle']} */ ;
+/** @type {__VLS_StyleScopedClasses['model-entry-main']} */ ;
+/** @type {__VLS_StyleScopedClasses['model-entry-title-row']} */ ;
+/** @type {__VLS_StyleScopedClasses['model-priority-badge']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-entry-title']} */ ;
+/** @type {__VLS_StyleScopedClasses['model-entry-status']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-entry-sub']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-entry-test']} */ ;
-/** @type {__VLS_StyleScopedClasses['model-entry-status']} */ ;
+/** @type {__VLS_StyleScopedClasses['toggle']} */ ;
+/** @type {__VLS_StyleScopedClasses['model-toggle']} */ ;
+/** @type {__VLS_StyleScopedClasses['toggle-track']} */ ;
+/** @type {__VLS_StyleScopedClasses['toggle-label']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-entry-actions']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
@@ -725,11 +891,21 @@ const __VLS_self = (await import('vue')).defineComponent({
             editingDraft: editingDraft,
             editingGroup: editingGroup,
             getCategory: getCategory,
-            activeEntry: activeEntry,
+            isActive: isActive,
+            activeCount: activeCount,
+            entryIndex: entryIndex,
+            priorityOf: priorityOf,
+            activeSummary: activeSummary,
             toggleExpanded: toggleExpanded,
             addEntry: addEntry,
             removeEntry: removeEntry,
-            setActive: setActive,
+            toggleActive: toggleActive,
+            dragState: dragState,
+            dropTargetId: dropTargetId,
+            onDragStart: onDragStart,
+            onDragOver: onDragOver,
+            onDrop: onDrop,
+            onDragEnd: onDragEnd,
             clearMaskedKey: clearMaskedKey,
             openEdit: openEdit,
             closeEdit: closeEdit,

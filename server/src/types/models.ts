@@ -48,7 +48,10 @@ export interface SettingsModelEntry {
 
 export interface SettingsModelCategory {
   entries: SettingsModelEntry[];
-  activeId: string | null;
+  /** Ordered ids of active entries — first in the array has the highest
+   *  priority. Every model call tries them in this order and falls back to
+   *  the next one when a call fails. */
+  activeIds: string[];
 }
 
 export interface Settings {

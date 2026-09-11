@@ -3,13 +3,17 @@ import type { Settings, SettingsModelCategory, SettingsModelEntry } from '../typ
 
 const REDACTED_API_KEY = '********';
 
+function emptyCategory(): SettingsModelCategory {
+  return { entries: [], activeIds: [] };
+}
+
 export function getSettings(): Settings {
   const stored = settingsRepository.get();
   return {
     models: stored?.models ?? {
-      language: { entries: [], activeId: null },
-      audio: { entries: [], activeId: null },
-      image: { entries: [], activeId: null },
+      language: emptyCategory(),
+      audio: emptyCategory(),
+      image: emptyCategory(),
     },
     autoImageGeneration: stored?.autoImageGeneration ?? false,
     quizMaxQuestions: {
@@ -43,7 +47,7 @@ export function getRedactedSettings(): Settings {
 
 function redactCategory(category: SettingsModelCategory): SettingsModelCategory {
   return {
-    activeId: category.activeId,
+    activeIds: category.activeIds,
     entries: category.entries.map((entry) => ({
       ...entry,
       apiKey: entry.apiKey ? REDACTED_API_KEY : '',
@@ -52,8 +56,34 @@ function redactCategory(category: SettingsModelCategory): SettingsModelCategory 
   };
 }
 
+/**
+ * Category as sent by the client. `activeId` is the legacy single-selection
+ * field older clients may still send — accept it as a fallback so a save
+ * from a stale tab cannot silently deactivate every model.
+ */
+interface IncomingModelCategory {
+  entries: SettingsModelEntry[];
+  activeIds?: string[];
+  activeId?: string | null;
+}
+
+interface IncomingSettings {
+  models: {
+    language: IncomingModelCategory;
+    audio: IncomingModelCategory;
+    image: IncomingModelCategory;
+  };
+  autoImageGeneration?: boolean;
+  quizMaxQuestions?: {
+    vocabulary?: number;
+    listening?: number;
+  };
+  autoDailyQuiz?: boolean;
+  updatedAt?: string | null;
+}
+
 function mergeCategoryWithStored(
-  incoming: SettingsModelCategory,
+  incoming: IncomingModelCategory,
   stored: SettingsModelCategory,
 ): SettingsModelCategory {
   const storedById = new Map(stored.entries.map((entry) => [entry.id, entry]));
@@ -71,12 +101,17 @@ function mergeCategoryWithStored(
   });
 
   const validIds = new Set(entries.map((entry) => entry.id));
-  const activeId = incoming.activeId && validIds.has(incoming.activeId) ? incoming.activeId : null;
+  // Priority order comes from activeIds; filter out ids that vanished and
+  // dedupe while preserving the client's order.
+  let activeIds = [...new Set((incoming.activeIds ?? []).filter((id) => validIds.has(id)))];
+  if (activeIds.length === 0 && incoming.activeId && validIds.has(incoming.activeId)) {
+    activeIds = [incoming.activeId];
+  }
 
-  return { entries, activeId };
+  return { entries, activeIds };
 }
 
-export function saveSettings(incoming: Settings) {
+export function saveSettings(incoming: IncomingSettings) {
   const current = getSettings();
   const next: Settings = {
     models: {
@@ -97,13 +132,27 @@ export function saveSettings(incoming: Settings) {
   return getRedactedSettings();
 }
 
+/**
+ * Active model entries for a category in priority order (best first).
+ * Only the configured ones — callers use this list to try each model in
+ * order and fall back to the next one when a call fails.
+ */
+export function getActiveModelEntries(
+  category: 'language' | 'audio' | 'image',
+): SettingsModelEntry[] {
+  const settings = getSettings();
+  const group = settings.models[category];
+  const byId = new Map(group.entries.map((entry) => [entry.id, entry]));
+  const order = [...new Set(group.activeIds ?? [])].filter((id) => byId.has(id));
+  return order
+    .map((id) => byId.get(id))
+    .filter((entry): entry is SettingsModelEntry => !!entry)
+    .filter((entry) => entry.baseUrl && entry.apiKey && entry.model);
+}
+
+/** Highest-priority active entry, or null. Kept for cache keys and tests. */
 export function getActiveModelEntry(
   category: 'language' | 'audio' | 'image',
 ): SettingsModelEntry | null {
-  const settings = getSettings();
-  const group = settings.models[category];
-  if (!group.activeId) {
-    return null;
-  }
-  return group.entries.find((entry) => entry.id === group.activeId) ?? null;
+  return getActiveModelEntries(category)[0] ?? null;
 }

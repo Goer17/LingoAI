@@ -33,7 +33,9 @@ const modelEntrySchema = z.object({
 
 const modelCategorySchema = z.object({
   entries: z.array(modelEntrySchema),
-  activeId: z.string().nullable(),
+  activeIds: z.array(z.string().min(1)).optional().default([]),
+  // Legacy single-selection field, accepted as a fallback for stale clients.
+  activeId: z.string().nullable().optional(),
 });
 
 const schema = z.object({

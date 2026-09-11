@@ -1,5 +1,5 @@
 import { db } from './database.js';
-import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, QuizSession, SentenceImage, Settings, VocabularyEntry, WritingTopic } from '../types/models.js';
+import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, QuizSession, SentenceImage, Settings, SettingsModelCategory, VocabularyEntry, WritingTopic } from '../types/models.js';
 
 function parseJson<T>(value: string): T {
   return JSON.parse(value) as T;
@@ -11,6 +11,30 @@ function compareFamiliarity<T extends { known?: boolean; familiarity: number; cr
   return Number(Boolean(a.known)) - Number(Boolean(b.known))
     || a.familiarity - b.familiarity
     || b.createdAt.localeCompare(a.createdAt);
+}
+
+/**
+ * Normalize a stored model category into `{ entries, activeIds }`.
+ * Handles the legacy single-selection format (`activeId`) that older
+ * installs may still have in `payload_json`, and drops ids that no longer
+ * match any entry.
+ */
+function normalizeModelCategory(raw: unknown): SettingsModelCategory {
+  if (!raw || typeof raw !== 'object') {
+    return { entries: [], activeIds: [] };
+  }
+  const obj = raw as Partial<SettingsModelCategory> & { activeId?: unknown };
+  const entries = Array.isArray(obj.entries) ? obj.entries : [];
+  const knownIds = new Set(entries.map((entry) => entry.id));
+
+  let activeIds: string[] = [];
+  if (Array.isArray(obj.activeIds)) {
+    activeIds = [...new Set(obj.activeIds.filter((id): id is string => typeof id === 'string' && knownIds.has(id)))];
+  } else if (typeof obj.activeId === 'string' && knownIds.has(obj.activeId)) {
+    activeIds = [obj.activeId];
+  }
+
+  return { entries, activeIds };
 }
 
 export const settingsRepository = {
@@ -38,9 +62,9 @@ export const settingsRepository = {
     return {
       ...parsed,
       models: {
-        language: parsed.models?.language ?? { entries: [], activeId: null },
-        audio: parsed.models?.audio ?? { entries: [], activeId: null },
-        image: parsed.models?.image ?? { entries: [], activeId: null },
+        language: normalizeModelCategory(parsed.models?.language),
+        audio: normalizeModelCategory(parsed.models?.audio),
+        image: normalizeModelCategory(parsed.models?.image),
       },
       updatedAt: row.updated_at,
     };
