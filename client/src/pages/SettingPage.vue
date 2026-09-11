@@ -86,60 +86,59 @@
               @dragstart="onDragStart(group.key, entry.id, $event)"
               @dragend="onDragEnd"
             >⠿</span>
-            <label class="model-entry-main">
-              <span class="model-entry-title-row">
+            <div class="model-entry-body">
+              <div class="model-entry-head">
                 <span
                   v-if="isActive(group.key, entry.id)"
                   class="model-priority-badge"
                   :title="`Priority ${priorityOf(group.key, entry.id)}`"
                 >{{ priorityOf(group.key, entry.id) }}</span>
                 <span class="model-entry-title">{{ entry.model || `Untitled model #${entryIndex(group.key, entry.id) + 1}` }}</span>
-                <span class="model-entry-status">
-                  {{ isActive(group.key, entry.id) ? 'Active' : 'Inactive' }}
+                <label class="toggle model-toggle" :title="isActive(group.key, entry.id) ? 'Deactivate this model' : 'Activate this model'">
+                  <input
+                    type="checkbox"
+                    :checked="isActive(group.key, entry.id)"
+                    @change="toggleActive(group.key, entry.id)"
+                  />
+                  <span class="toggle-track" aria-hidden="true"></span>
+                  <span class="toggle-label">{{ isActive(group.key, entry.id) ? 'On' : 'Off' }}</span>
+                </label>
+              </div>
+              <div class="model-entry-meta">
+                <span class="model-entry-sub" :title="entry.baseUrl || undefined">{{ entry.baseUrl || 'No Base URL' }}</span>
+                <span
+                  v-if="testResults[entry.id]"
+                  class="model-entry-test"
+                  :class="testStatusClass(entry.id)"
+                >
+                  {{ testStatusLabel(entry.id) }}
                 </span>
-              </span>
-              <span class="model-entry-sub">{{ entry.baseUrl || 'No Base URL' }}</span>
-              <span
-                v-if="testResults[entry.id]"
-                class="model-entry-test"
-                :class="testStatusClass(entry.id)"
-              >
-                {{ testStatusLabel(entry.id) }}
-              </span>
-            </label>
-            <label class="toggle model-toggle" :title="isActive(group.key, entry.id) ? 'Deactivate this model' : 'Activate this model'">
-              <input
-                type="checkbox"
-                :checked="isActive(group.key, entry.id)"
-                @change="toggleActive(group.key, entry.id)"
-              />
-              <span class="toggle-track" aria-hidden="true"></span>
-              <span class="toggle-label">{{ isActive(group.key, entry.id) ? 'On' : 'Off' }}</span>
-            </label>
-            <div class="model-entry-actions">
-              <button
-                class="button button-secondary button-tight"
-                type="button"
-                :disabled="testingId === entry.id"
-                @click="runTest(group.key, entry.id)"
-              >
-                {{ testingId === entry.id ? 'Testing...' : 'Test' }}
-              </button>
-              <button
-                class="button button-secondary button-tight"
-                type="button"
-                @click="openEdit(group.key, entry.id)"
-              >
-                Edit
-              </button>
-              <button
-                class="icon-button danger"
-                type="button"
-                :title="`Remove ${group.shortLabel} model`"
-                @click="removeEntry(group.key, entry.id)"
-              >
-                ×
-              </button>
+              </div>
+              <div class="model-entry-actions">
+                <button
+                  class="button button-secondary button-tight"
+                  type="button"
+                  :disabled="testingId === entry.id"
+                  @click="runTest(group.key, entry.id)"
+                >
+                  {{ testingId === entry.id ? 'Testing...' : 'Test' }}
+                </button>
+                <button
+                  class="button button-secondary button-tight"
+                  type="button"
+                  @click="openEdit(group.key, entry.id)"
+                >
+                  Edit
+                </button>
+                <button
+                  class="icon-button danger"
+                  type="button"
+                  :title="`Remove ${group.shortLabel} model`"
+                  @click="removeEntry(group.key, entry.id)"
+                >
+                  ×
+                </button>
+              </div>
             </div>
           </li>
         </ul>

@@ -471,11 +471,11 @@ for (const [group] of __VLS_getVForSourceType((__VLS_ctx.categoryGroups))) {
                     draggable: (__VLS_ctx.isActive(group.key, entry.id)),
                     title: (__VLS_ctx.isActive(group.key, entry.id) ? 'Drag to change priority' : 'Inactive models are ordered after active ones and cannot be moved'),
                 });
-                __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
-                    ...{ class: "model-entry-main" },
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                    ...{ class: "model-entry-body" },
                 });
-                __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
-                    ...{ class: "model-entry-title-row" },
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                    ...{ class: "model-entry-head" },
                 });
                 if (__VLS_ctx.isActive(group.key, entry.id)) {
                     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
@@ -488,21 +488,6 @@ for (const [group] of __VLS_getVForSourceType((__VLS_ctx.categoryGroups))) {
                     ...{ class: "model-entry-title" },
                 });
                 (entry.model || `Untitled model #${__VLS_ctx.entryIndex(group.key, entry.id) + 1}`);
-                __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
-                    ...{ class: "model-entry-status" },
-                });
-                (__VLS_ctx.isActive(group.key, entry.id) ? 'Active' : 'Inactive');
-                __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
-                    ...{ class: "model-entry-sub" },
-                });
-                (entry.baseUrl || 'No Base URL');
-                if (__VLS_ctx.testResults[entry.id]) {
-                    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
-                        ...{ class: "model-entry-test" },
-                        ...{ class: (__VLS_ctx.testStatusClass(entry.id)) },
-                    });
-                    (__VLS_ctx.testStatusLabel(entry.id));
-                }
                 __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
                     ...{ class: "toggle model-toggle" },
                     title: (__VLS_ctx.isActive(group.key, entry.id) ? 'Deactivate this model' : 'Activate this model'),
@@ -526,6 +511,21 @@ for (const [group] of __VLS_getVForSourceType((__VLS_ctx.categoryGroups))) {
                     ...{ class: "toggle-label" },
                 });
                 (__VLS_ctx.isActive(group.key, entry.id) ? 'On' : 'Off');
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                    ...{ class: "model-entry-meta" },
+                });
+                __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                    ...{ class: "model-entry-sub" },
+                    title: (entry.baseUrl || undefined),
+                });
+                (entry.baseUrl || 'No Base URL');
+                if (__VLS_ctx.testResults[entry.id]) {
+                    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                        ...{ class: "model-entry-test" },
+                        ...{ class: (__VLS_ctx.testStatusClass(entry.id)) },
+                    });
+                    (__VLS_ctx.testStatusLabel(entry.id));
+                }
                 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
                     ...{ class: "model-entry-actions" },
                 });
@@ -805,17 +805,17 @@ if (__VLS_ctx.editing && __VLS_ctx.editingDraft) {
 /** @type {__VLS_StyleScopedClasses['model-entry-list']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-entry']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-drag-handle']} */ ;
-/** @type {__VLS_StyleScopedClasses['model-entry-main']} */ ;
-/** @type {__VLS_StyleScopedClasses['model-entry-title-row']} */ ;
+/** @type {__VLS_StyleScopedClasses['model-entry-body']} */ ;
+/** @type {__VLS_StyleScopedClasses['model-entry-head']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-priority-badge']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-entry-title']} */ ;
-/** @type {__VLS_StyleScopedClasses['model-entry-status']} */ ;
-/** @type {__VLS_StyleScopedClasses['model-entry-sub']} */ ;
-/** @type {__VLS_StyleScopedClasses['model-entry-test']} */ ;
 /** @type {__VLS_StyleScopedClasses['toggle']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-toggle']} */ ;
 /** @type {__VLS_StyleScopedClasses['toggle-track']} */ ;
 /** @type {__VLS_StyleScopedClasses['toggle-label']} */ ;
+/** @type {__VLS_StyleScopedClasses['model-entry-meta']} */ ;
+/** @type {__VLS_StyleScopedClasses['model-entry-sub']} */ ;
+/** @type {__VLS_StyleScopedClasses['model-entry-test']} */ ;
 /** @type {__VLS_StyleScopedClasses['model-entry-actions']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
