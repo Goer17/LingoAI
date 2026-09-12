@@ -20,7 +20,10 @@ export function createSentenceImagePrompt(sentence: string) {
  *     ### text: <scene description>
  *
  * The text after the marker is extracted and fed to the image model, so the
- * reasoning never leaks into the image prompt.
+ * reasoning never leaks into the image prompt. The scene description does NOT
+ * have to contain the target word: ambiguous words (e.g. "pod" could make an
+ * image generator draw a pea shell) are replaced with synonyms or rephrasings
+ * that can only mean the intended sense (e.g. "escape capsule").
  */
 export function createSentenceImageSceneSystemPrompt(): string {
   return [
@@ -32,6 +35,7 @@ export function createSentenceImageSceneSystemPrompt(): string {
     '- HIGHLY SCENE-BASED and concrete: a specific person, animal or object in a specific place at a specific time of day, doing a specific action. Show a real moment — never a concept, symbol or abstraction (e.g. for "courage" do not draw a shield or a lion; show a person doing something visibly brave).',
     '- EASY TO UNDERSTAND: common, everyday objects and situations a student can recognize instantly; simple, clear composition.',
     '- FOCUSED ON THE TARGET WORD: the thing, action or situation the word refers to must be the main subject and visual center of the picture — foreground, large, well lit, clearly in action — so the student learns the word by looking at it.',
+    '- UNAMBIGUOUS WORDS: the scene description may NOT contain the target word, and should not contain any word that an image generator could draw with a different common meaning. If the target word has another common sense (e.g. "pod" also means a pea shell, "seal" also means an animal), replace it with a precise synonym or a short rephrasing that can only mean the intended sense (e.g. "escape capsule" for "escape pod", "riverbank" for "bank"). The scene must keep the exact same meaning — just said in words with no wrong reading.',
     '- TRUE TO THE GIVEN MEANING and grounded in the example sentence: keep the situation, people and objects from the sentence, but frame them so the target word reads unmistakably.',
     '',
     'Work in two steps:',
@@ -42,6 +46,7 @@ export function createSentenceImageSceneSystemPrompt(): string {
     'The scene description after "### text:" is the only part used to generate the image, so it must:',
     '- be 2-4 sentences of simple, visual, concrete English describing exactly what the picture shows: subject, action, location, light, time of day, mood;',
     '- read like a direct instruction to an image generator (what to draw), not an explanation;',
+    '- NOT necessarily contain the target word: what matters is that the picture shows exactly the same thing the word means here; if the word is ambiguous (e.g. "pod"), say it with a synonym or rephrasing instead (e.g. an "escape capsule" — a small detachable cabin breaking away from a spaceship);',
     '- allow NO readable text inside the picture: no words, signs, subtitles, captions, letters or numbers;',
     '- contain nothing but the scene description — no quotes, no prefixes, no comments.',
   ].join('\n');
