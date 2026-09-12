@@ -384,21 +384,29 @@ export async function streamScenarioChat(
   throw modelChainError('language', clients.length, lastError);
 }
 
-export async function askWordChat(prompt: string): Promise<string> {
+/**
+ * Non-streaming chat completion. `systemPrompt` is optional: when given, it is
+ * sent as the system message so callers can drive the output format there
+ * (e.g. the image scene-design step instructs the model to think first and end
+ * with a structured `### text:` block).
+ */
+export async function askWordChat(prompt: string, systemPrompt?: string): Promise<string> {
   const clients = getLanguageClients();
   let lastError: unknown;
 
   for (const { client, model, extraBody } of clients) {
     try {
+      const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = systemPrompt?.trim()
+        ? [
+            { role: 'system', content: systemPrompt.trim() },
+            { role: 'user', content: prompt },
+          ]
+        : [{ role: 'user', content: prompt }];
+
       const response = await client.chat.completions.create({
         model,
         temperature: 0.6,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
+        messages,
         ...extraBody,
       });
 

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { sentenceImageRepository } from '../db/repositories.js';
-import { REALISTIC_IMAGE_STYLE, createSentenceImagePolishPrompt, createSentenceImagePrompt } from '../prompts/sentenceImagePrompt.js';
+import { REALISTIC_IMAGE_STYLE, createSentenceImagePrompt, createSentenceImageSceneMaterialPrompt, createSentenceImageSceneSystemPrompt } from '../prompts/sentenceImagePrompt.js';
 import { createMatchSentencePrompt } from '../prompts/matchSentencePrompt.js';
 import { askWordChat, generateImageBase64, matchSentenceCandidates } from './openaiService.js';
 import { getMediaUrl } from './audioService.js';
@@ -176,15 +176,40 @@ function resolveMeaningText(word: string, explicitMeaning?: string): string | un
 async function buildImagePrompt(sentence: string, word?: string, explicitMeaning?: string): Promise<string> {
   try {
     const meaningText = resolveMeaningText(word ?? '', explicitMeaning);
-    const description = (await askWordChat(createSentenceImagePolishPrompt(sentence, word, meaningText))).trim();
+    const reply = (
+      await askWordChat(
+        createSentenceImageSceneMaterialPrompt(sentence, word, meaningText),
+        createSentenceImageSceneSystemPrompt(),
+      )
+    ).trim();
+    const description = extractSceneFromReply(reply);
     if (description) {
       return `${REALISTIC_IMAGE_STYLE}\nScene: ${description}`;
     }
   } catch {
-    // If the polish step fails, fall back to the raw sentence so generation still works.
+    // If the scene-design step fails, fall back to the raw sentence so generation still works.
   }
 
   return createSentenceImagePrompt(sentence);
+}
+
+/**
+ * The scene-design LLM thinks first, then ends its reply with a structured
+ * `### text: <scene description>` block on the last line. Take everything after
+ * the marker (the last occurrence, in case the marker appears in the reasoning
+ * too) and use it as the image prompt, so the reasoning never leaks into the
+ * generated picture. Returns undefined when no marker is present, letting the
+ * caller fall back.
+ */
+function extractSceneFromReply(reply: string): string | undefined {
+  const parts = reply.split(/###\s*text\s*[:：]?/i);
+  if (parts.length < 2) {
+    return undefined;
+  }
+  const scene = parts[parts.length - 1]
+    .replace(/^[\s"']+/, '')
+    .replace(/[\s"']+$/, '');
+  return scene.length > 0 ? scene : undefined;
 }
 
 function writeImageFile(base64: string): string {

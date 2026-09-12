@@ -9,34 +9,64 @@ export function createSentenceImagePrompt(sentence: string) {
 }
 
 /**
- * Polish prompt: turn (word + example sentence + meaning) into a concrete,
- * photorealistic scene description that makes the target word visually obvious.
- * `meaningText` is a short formatted gloss (part of speech + English/Chinese
- * meaning), so the LLM pins the exact sense of the word instead of guessing.
+ * System prompt for the scene-design step of the vocabulary image pipeline.
+ *
+ * Asking the LLM for a scene description directly produced generic, often
+ * non-visual text that image models render poorly (the reply could be an
+ * abstract gloss rather than a drawable moment). This system prompt makes the
+ * LLM first THINK about the best concrete scene for the target word, then emit
+ * — on the very last line — a single structured block:
+ *
+ *     ### text: <scene description>
+ *
+ * The text after the marker is extracted and fed to the image model, so the
+ * reasoning never leaks into the image prompt.
  */
-export function createSentenceImagePolishPrompt(sentence: string, word?: string, meaningText?: string) {
+export function createSentenceImageSceneSystemPrompt(): string {
+  return [
+    'You are a visual director and English teacher. Your job: design ONE concrete scene for a picture that teaches a language student the meaning of a target English word at a single glance.',
+    '',
+    'You will be given a target word, its part of speech and meaning, and one example sentence that uses the word.',
+    '',
+    'The scene must be:',
+    '- HIGHLY SCENE-BASED and concrete: a specific person, animal or object in a specific place at a specific time of day, doing a specific action. Show a real moment — never a concept, symbol or abstraction (e.g. for "courage" do not draw a shield or a lion; show a person doing something visibly brave).',
+    '- EASY TO UNDERSTAND: common, everyday objects and situations a student can recognize instantly; simple, clear composition.',
+    '- FOCUSED ON THE TARGET WORD: the thing, action or situation the word refers to must be the main subject and visual center of the picture — foreground, large, well lit, clearly in action — so the student learns the word by looking at it.',
+    '- TRUE TO THE GIVEN MEANING and grounded in the example sentence: keep the situation, people and objects from the sentence, but frame them so the target word reads unmistakably.',
+    '',
+    'Work in two steps:',
+    'Step 1 — THINK first. Reason step by step: which exact sense of the word should the picture show? What place, objects, people and actions make that sense visually undeniable? How can the word become the obvious center of the composition? Think before you write.',
+    'Step 2 — OUTPUT on the very last line of your reply only, in exactly this format:',
+    '### text: <scene description>',
+    '',
+    'The scene description after "### text:" is the only part used to generate the image, so it must:',
+    '- be 2-4 sentences of simple, visual, concrete English describing exactly what the picture shows: subject, action, location, light, time of day, mood;',
+    '- read like a direct instruction to an image generator (what to draw), not an explanation;',
+    '- allow NO readable text inside the picture: no words, signs, subtitles, captions, letters or numbers;',
+    '- contain nothing but the scene description — no quotes, no prefixes, no comments.',
+  ].join('\n');
+}
+
+/**
+ * User material for the scene-design step: target word + gloss + example
+ * sentence. `meaningText` is a short formatted gloss (part of speech +
+ * English/Chinese meaning) so the LLM pins the exact sense of the word instead
+ * of guessing. The design rules and the `### text:` output format live in the
+ * system prompt (`createSentenceImageSceneSystemPrompt`).
+ */
+export function createSentenceImageSceneMaterialPrompt(sentence: string, word?: string, meaningText?: string): string {
   const wordLine = word?.trim()
-    ? `Target word to highlight: "${word.trim()}"`
+    ? `Target word to learn: "${word.trim()}"`
     : 'Target word: not specified — emphasize the overall meaning of the sentence.';
   const meaningLine = meaningText?.trim()
     ? `Meaning of the target word:\n${meaningText.trim()}`
     : '';
 
   return [
-    'You are a visual director for a photorealistic image generator. Rewrite the sentence into a scene description that any viewer can understand from the picture alone.',
-    '',
     `Example sentence: "${sentence.trim()}"`,
     wordLine,
     ...(meaningLine ? [meaningLine] : []),
     '',
-    'Requirements:',
-    '- Build the scene around the TARGET WORD: its visual essence (the object, person, action, or situation it refers to) must be unmistakable in the picture.',
-    '- Make the target word the undeniable focus: show it as the main subject, most visible element, or center of visual attention (big, foreground, correctly lit, in action).',
-    '- If a meaning is given, choose the visual that fits that exact sense of the word (e.g. for "bank" use the riverside sense if the meaning says so), not another sense.',
-    '- Ground the scene in the example sentence: keep the situation, people and objects described there, but frame them so the target word reads clearly.',
-    '- Specify concrete visual details: who/what is in the scene, what are they doing, where, what light, time of day, mood.',
-    '- Use simple, visual English. Keep it to 2-4 sentences.',
-    '- No readable text allowed in the image: no words, signs, captions, letters or numbers in the scene.',
-    '- Return only the scene description itself — no quotes, no prefixes, no explanation.',
+    'Think about the best concrete scene, then end your reply with the "### text:" line.',
   ].join('\n');
 }
