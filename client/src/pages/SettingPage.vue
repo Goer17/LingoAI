@@ -207,7 +207,7 @@
           <div class="more-setting-text">
             <strong>Daily Auto Quiz</strong>
             <p class="subtle-copy">
-              When enabled, a vocabulary quiz and a listening quiz (from a random topic with more than one sentence) are generated automatically every day at 06:00.
+              When enabled, three quizzes are generated automatically every day at 06:00: one vocabulary quiz and two listening quizzes (first from the Default topic, then from the topic with the lowest average familiarity).
               Expression practice auto-generation is not included yet.
             </p>
           </div>
