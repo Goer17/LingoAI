@@ -46,8 +46,8 @@ async function refreshWordCommonAudio() {
         wordCommonUrl.value = null;
     }
 }
-watch(() => store.searchResult, () => void refreshSearchCommonAudio());
-watch(() => store.selectedWord?.id, () => void refreshWordCommonAudio());
+watch(() => store.searchResult, () => void refreshSearchCommonAudio(), { immediate: true });
+watch(() => store.selectedWord?.id, () => void refreshWordCommonAudio(), { immediate: true });
 onMounted(async () => {
     try {
         await store.fetchVocabulary();
