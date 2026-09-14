@@ -102,11 +102,13 @@ async function refreshWordCommonAudio() {
 watch(
   () => store.searchResult,
   () => void refreshSearchCommonAudio(),
+  { immediate: true },
 );
 
 watch(
   () => store.selectedWord?.id,
   () => void refreshWordCommonAudio(),
+  { immediate: true },
 );
 
 onMounted(async () => {

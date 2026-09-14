@@ -8,20 +8,21 @@ import { getMediaUrl } from './audioService.js';
 import { findWordByText } from './vocabularyService.js';
 import { createId } from '../utils/id.js';
 import { env } from '../config/env.js';
-import type { SentenceImage } from '../types/models.js';
+import type { Meaning, SentenceImage } from '../types/models.js';
 
 const FUZZY_MATCH_CANDIDATE_LIMIT = 24;
 
 export interface SentenceImageOptions {
   word?: string;
-  /** Explicitly provided word gloss (part of speech + English/Chinese meaning).
-   *  When absent, it is looked up from the vocabulary entry for `word`. */
+  /**
+   * Explicitly provided gloss for the single meaning this sentence belongs to
+   * (part of speech + English/Chinese meaning). When absent, it is looked up
+   * from the vocabulary entry for `word` — preferring the meaning whose
+   * example matches the sentence, falling back to the first meaning. Only ONE
+   * meaning is ever sent to the LLM: an example sentence belongs to exactly
+   * one meaning.
+   */
   meaning?: string;
-  force?: boolean;
-}
-
-export interface SentenceImageOptions {
-  word?: string;
   force?: boolean;
 }
 
@@ -146,11 +147,22 @@ function saveAlias(normalizedSentence: string, sentence: string, imageFile: stri
   });
 }
 
+/** Format a single meaning's gloss as "- pos: english (中文)". */
+export function formatMeaningText(meaning: Meaning): string {
+  const pos = meaning.partOfSpeech ? `${meaning.partOfSpeech}: ` : '';
+  const zh = meaning.chineseMeaning ? ` (${meaning.chineseMeaning})` : '';
+  return `- ${pos}${meaning.englishMeaning ?? ''}${zh}`;
+}
+
 /**
- * Pull the word's gloss (part of speech + English/Chinese meaning) from the
- * vocabulary entry, formatted so the LLM can pin the exact sense of the word.
+ * Pull the gloss for a SINGLE meaning (part of speech + English/Chinese
+ * meaning) so the LLM can pin the exact sense of the word. An example sentence
+ * belongs to exactly one meaning, so this prefers the meaning whose example
+ * matches `sentence`; when the sentence does not match any cached example
+ * (e.g. a user-typed sentence), it falls back to the first meaning. Never more
+ * than one meaning.
  */
-function resolveMeaningText(word: string, explicitMeaning?: string): string | undefined {
+function resolveMeaningText(sentence: string, word: string, explicitMeaning?: string): string | undefined {
   if (explicitMeaning?.trim()) {
     return explicitMeaning.trim();
   }
@@ -163,11 +175,10 @@ function resolveMeaningText(word: string, explicitMeaning?: string): string | un
     if (!entry?.meanings?.length) {
       return undefined;
     }
-    return entry.meanings.slice(0, 2).map((m) => {
-      const pos = m.partOfSpeech ? `${m.partOfSpeech}: ` : '';
-      const zh = m.chineseMeaning ? ` (${m.chineseMeaning})` : '';
-      return `- ${pos}${m.englishMeaning ?? ''}${zh}`;
-    }).join('\n');
+    const normalizedTarget = normalizeSentence(sentence);
+    const matched = entry.meanings.find((m) => m.example && normalizeSentence(m.example) === normalizedTarget);
+    const meaning = matched ?? entry.meanings[0];
+    return formatMeaningText(meaning);
   } catch {
     return undefined;
   }
@@ -175,7 +186,7 @@ function resolveMeaningText(word: string, explicitMeaning?: string): string | un
 
 async function buildImagePrompt(sentence: string, word?: string, explicitMeaning?: string): Promise<string> {
   try {
-    const meaningText = resolveMeaningText(word ?? '', explicitMeaning);
+    const meaningText = resolveMeaningText(sentence, word ?? '', explicitMeaning);
     const reply = (
       await askWordChat(
         createSentenceImageSceneMaterialPrompt(sentence, word, meaningText),

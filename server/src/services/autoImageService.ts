@@ -1,5 +1,5 @@
 import { getSettings } from './settingsService.js';
-import { getOrCreateSentenceImage } from './imageService.js';
+import { formatMeaningText, getOrCreateSentenceImage } from './imageService.js';
 import { sentenceImageRepository, vocabularyRepository } from '../db/repositories.js';
 import type { VocabularyEntry } from '../types/models.js';
 
@@ -19,6 +19,8 @@ import type { VocabularyEntry } from '../types/models.js';
 interface QueuedItem {
   sentence: string;
   word: string;
+  /** Gloss of the single meaning this sentence is an example of. */
+  meaning?: string;
 }
 
 const queue: QueuedItem[] = [];
@@ -44,18 +46,18 @@ export function enqueueAutoImageGeneration(entry: VocabularyEntry) {
     return;
   }
 
-  const examples = (entry.meanings ?? [])
-    .map((meaning) => meaning.example?.trim())
-    .filter((sentence): sentence is string => Boolean(sentence));
-
   let enqueued = 0;
-  for (const sentence of examples) {
+  for (const meaning of entry.meanings ?? []) {
+    const sentence = meaning.example?.trim();
+    if (!sentence) {
+      continue;
+    }
     const key = sentence.toLowerCase();
     if (pendingKeys.has(key) || queue.length >= MAX_QUEUE_SIZE) {
       continue;
     }
     pendingKeys.add(key);
-    queue.push({ sentence, word: entry.text });
+    queue.push({ sentence, word: entry.text, meaning: formatMeaningText(meaning) });
     enqueued += 1;
   }
 
@@ -77,7 +79,7 @@ async function drainQueue(): Promise<void> {
       }
       pendingKeys.delete(item.sentence.toLowerCase());
       try {
-        await getOrCreateSentenceImage(item.sentence, { word: item.word });
+        await getOrCreateSentenceImage(item.sentence, { word: item.word, meaning: item.meaning });
       } catch {
         // Best-effort: a failed generation must not stall the queue.
       }
@@ -132,7 +134,7 @@ export function scanAndEnqueueMissing(limit = 50): number {
         continue;
       }
       pendingKeys.add(key);
-      queue.push({ sentence, word: entry.text });
+      queue.push({ sentence, word: entry.text, meaning: formatMeaningText(meaning) });
       enqueued += 1;
     }
   }
