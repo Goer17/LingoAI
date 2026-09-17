@@ -1,5 +1,9 @@
 import { listeningRepository, listeningGroupRepository } from '../db/repositories.js';
-import { LISTENING_FULL_BLANK_FAMILIARITY, LISTENING_MAX_FAMILIARITY } from '../config/familiarity.js';
+import {
+  LISTENING_FULL_BLANK_FAMILIARITY,
+  LISTENING_MAX_FAMILIARITY,
+  LISTENING_MIN_BLANK_RATIO,
+} from '../config/familiarity.js';
 import type { ChatMessage, ListeningEntry, ListeningGroup, QuizDraftQuestion } from '../types/models.js';
 import { createId } from '../utils/id.js';
 import { deleteAudioFile } from './audioService.js';
@@ -356,7 +360,8 @@ function pickBlankRatio(familiarity: number) {
     return 1;
   }
 
-  return familiarity / LISTENING_FULL_BLANK_FAMILIARITY;
+  const progress = familiarity / LISTENING_FULL_BLANK_FAMILIARITY;
+  return LISTENING_MIN_BLANK_RATIO + (1 - LISTENING_MIN_BLANK_RATIO) * progress;
 }
 
 export function createListeningQuizDraft(entry: ListeningEntry): QuizDraftQuestion {
@@ -379,9 +384,12 @@ export function createListeningQuizDraft(entry: ListeningEntry): QuizDraftQuesti
 
   const ratio = pickBlankRatio(entry.familiarity);
   const blankWordCount = Math.max(1, Math.min(words.length, Math.round(words.length * ratio)));
-  const shuffled = words
+  // Prefer blanking the longest words: they are harder to recall from audio
+  // and carry more of the sentence's meaning, so low-familiarity quizzes stay
+  // meaningful. Ties are broken randomly to keep repeat attempts fresh.
+  const blanked = words
     .map((word, idx) => ({ word, idx }))
-    .sort(() => Math.random() - 0.5)
+    .sort((a, b) => b.word.text.length - a.word.text.length || Math.random() - 0.5)
     .slice(0, blankWordCount)
     .sort((a, b) => a.idx - b.idx)
     .map((item) => item.word);
@@ -392,7 +400,7 @@ export function createListeningQuizDraft(entry: ListeningEntry): QuizDraftQuesti
     sentence,
     answer: sentence,
     ttsText: sentence,
-    blanks: shuffled.map((word) => ({
+    blanks: blanked.map((word) => ({
       start: word.index,
       end: word.end,
       answer: word.text,
