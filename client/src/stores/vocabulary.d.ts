@@ -1,4 +1,9 @@
 import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, QuizSession, SearchResult, VocabularyEntry, WritingKnowledgePoint, WritingTopic } from '@/types/models';
+interface ExampleImageState {
+    url: string;
+    loading: boolean;
+    error: string;
+}
 export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabulary", Pick<{
     items: import("vue").Ref<{
         id: string;
@@ -409,6 +414,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     saveWord: () => Promise<{
         created: boolean;
         entry: VocabularyEntry;
+        pendingImages: string[];
     }>;
     updateNote: (note: string) => Promise<void>;
     sendChatMessage: (message: string) => Promise<string>;
@@ -505,7 +511,17 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
-}, "loading" | "items" | "selectedId" | "searchResult" | "searching" | "savingWord" | "quizSession" | "tasks" | "mistakes" | "tasksLoading" | "listeningItems" | "listeningLoading" | "selectedListeningId" | "listeningGroups" | "selectedListeningGroupId" | "writingTopics" | "selectedWritingTopicId" | "selectedWritingPointId" | "writingLoading">, Pick<{
+    exampleImageState: (example: string) => ExampleImageState;
+    exampleImageUrl: (example: string) => string;
+    isExampleImageLoading: (example: string) => boolean;
+    exampleImageError: (example: string) => string;
+    exampleImageLabel: (example: string) => "Generate image" | "Generating..." | "Image ready";
+    exampleImageButtonTitle: (example: string) => "Generating..." | "Regenerate image" | "Generate an image for this sentence";
+    generateExampleImage: (example: string, word?: string, force?: boolean) => Promise<void>;
+    markExampleImagesLoading: (sentences: string[]) => void;
+    checkExampleImage: (example: string) => Promise<string | null>;
+    startExampleImagePolling: () => void;
+}, "items" | "selectedId" | "searchResult" | "loading" | "searching" | "savingWord" | "quizSession" | "tasks" | "mistakes" | "tasksLoading" | "listeningItems" | "listeningLoading" | "selectedListeningId" | "listeningGroups" | "selectedListeningGroupId" | "writingTopics" | "selectedWritingTopicId" | "selectedWritingPointId" | "writingLoading">, Pick<{
     items: import("vue").Ref<{
         id: string;
         text: string;
@@ -915,6 +931,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     saveWord: () => Promise<{
         created: boolean;
         entry: VocabularyEntry;
+        pendingImages: string[];
     }>;
     updateNote: (note: string) => Promise<void>;
     sendChatMessage: (message: string) => Promise<string>;
@@ -1011,6 +1028,16 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
+    exampleImageState: (example: string) => ExampleImageState;
+    exampleImageUrl: (example: string) => string;
+    isExampleImageLoading: (example: string) => boolean;
+    exampleImageError: (example: string) => string;
+    exampleImageLabel: (example: string) => "Generate image" | "Generating..." | "Image ready";
+    exampleImageButtonTitle: (example: string) => "Generating..." | "Regenerate image" | "Generate an image for this sentence";
+    generateExampleImage: (example: string, word?: string, force?: boolean) => Promise<void>;
+    markExampleImagesLoading: (sentences: string[]) => void;
+    checkExampleImage: (example: string) => Promise<string | null>;
+    startExampleImagePolling: () => void;
 }, "selectedWord" | "selectedListening" | "selectedWritingTopic" | "selectedWritingPoint">, Pick<{
     items: import("vue").Ref<{
         id: string;
@@ -1421,6 +1448,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     saveWord: () => Promise<{
         created: boolean;
         entry: VocabularyEntry;
+        pendingImages: string[];
     }>;
     updateNote: (note: string) => Promise<void>;
     sendChatMessage: (message: string) => Promise<string>;
@@ -1517,4 +1545,15 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
-}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "deleteWord" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "createListeningTaskForGroup" | "fetchListeningGroups" | "createListeningGroup" | "deleteListeningGroup" | "selectListeningGroup" | "fetchWritingTopics" | "addWritingTopic" | "updateWritingTopicTitle" | "deleteWritingTopic" | "selectWritingTopic" | "selectWritingPoint" | "addWritingKnowledgePoint" | "updateWritingKnowledgePoint" | "deleteWritingKnowledgePoint" | "sendWritingKnowledgePointChatMessage" | "clearWritingKnowledgePointChat" | "createExpressionTask" | "ensureWordAudio" | "ensureListeningAudio" | "selectListening" | "updateListeningNote" | "sendListeningChatMessage" | "clearListeningChatHistory" | "startTask" | "clearTask" | "retryTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "submitQuizAnswer">>;
+    exampleImageState: (example: string) => ExampleImageState;
+    exampleImageUrl: (example: string) => string;
+    isExampleImageLoading: (example: string) => boolean;
+    exampleImageError: (example: string) => string;
+    exampleImageLabel: (example: string) => "Generate image" | "Generating..." | "Image ready";
+    exampleImageButtonTitle: (example: string) => "Generating..." | "Regenerate image" | "Generate an image for this sentence";
+    generateExampleImage: (example: string, word?: string, force?: boolean) => Promise<void>;
+    markExampleImagesLoading: (sentences: string[]) => void;
+    checkExampleImage: (example: string) => Promise<string | null>;
+    startExampleImagePolling: () => void;
+}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "deleteWord" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "createListeningTaskForGroup" | "fetchListeningGroups" | "createListeningGroup" | "deleteListeningGroup" | "selectListeningGroup" | "fetchWritingTopics" | "addWritingTopic" | "updateWritingTopicTitle" | "deleteWritingTopic" | "selectWritingTopic" | "selectWritingPoint" | "addWritingKnowledgePoint" | "updateWritingKnowledgePoint" | "deleteWritingKnowledgePoint" | "sendWritingKnowledgePointChatMessage" | "clearWritingKnowledgePointChat" | "createExpressionTask" | "ensureWordAudio" | "ensureListeningAudio" | "selectListening" | "updateListeningNote" | "sendListeningChatMessage" | "clearListeningChatHistory" | "startTask" | "clearTask" | "retryTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "submitQuizAnswer" | "exampleImageState" | "exampleImageUrl" | "isExampleImageLoading" | "exampleImageError" | "exampleImageLabel" | "exampleImageButtonTitle" | "generateExampleImage" | "markExampleImagesLoading" | "checkExampleImage" | "startExampleImagePolling">>;
+export {};

@@ -44,6 +44,7 @@ export declare const api: {
     saveWord(result: SearchResult): Promise<{
         created: boolean;
         entry: VocabularyEntry;
+        pendingImages: string[];
     }>;
     updateNote(id: string, note: string): Promise<VocabularyEntry>;
     ensureWordAudio(id: string): Promise<{

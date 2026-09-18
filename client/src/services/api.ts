@@ -72,7 +72,9 @@ export const api = {
     );
   },
   saveWord(result: SearchResult) {
-    return unwrap<{ created: boolean; entry: VocabularyEntry }>(http.post('/vocabulary', { result }));
+    return unwrap<{ created: boolean; entry: VocabularyEntry; pendingImages: string[] }>(
+      http.post('/vocabulary', { result }),
+    );
   },
   updateNote(id: string, note: string) {
     return unwrap<VocabularyEntry>(http.post(`/vocabulary/${id}/note`, { note }));

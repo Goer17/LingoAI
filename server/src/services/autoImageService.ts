@@ -40,12 +40,15 @@ function isAutoImageGenerationEnabled(): boolean {
 /**
  * Queue the example sentences of a freshly added vocabulary entry for image
  * generation. No-op when the setting is off or the entry has no examples.
+ * Returns the sentences actually enqueued so the client can surface them as
+ * "Generating..." without racing the background job.
  */
-export function enqueueAutoImageGeneration(entry: VocabularyEntry) {
+export function enqueueAutoImageGeneration(entry: VocabularyEntry): string[] {
   if (!isAutoImageGenerationEnabled()) {
-    return;
+    return [];
   }
 
+  const enqueuedSentences: string[] = [];
   let enqueued = 0;
   for (const meaning of entry.meanings ?? []) {
     const sentence = meaning.example?.trim();
@@ -59,11 +62,13 @@ export function enqueueAutoImageGeneration(entry: VocabularyEntry) {
     pendingKeys.add(key);
     queue.push({ sentence, word: entry.text, meaning: formatMeaningText(meaning) });
     enqueued += 1;
+    enqueuedSentences.push(sentence);
   }
 
   if (enqueued > 0) {
     void drainQueue();
   }
+  return enqueuedSentences;
 }
 
 async function drainQueue(): Promise<void> {

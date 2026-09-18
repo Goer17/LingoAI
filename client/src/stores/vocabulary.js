@@ -35,6 +35,161 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     function updateWord(id, updater) {
         items.value = items.value.map((item) => (item.id === id ? updater(item) : item));
     }
+    // ---------------------------------------------------------------------------
+    // Example-sentence image state (shared, survives page navigation).
+    // A sentence is keyed by its text; state is seeded optimistically when a new
+    // word is saved with Auto Generation enabled and resolved by polling the
+    // server's check-image endpoint (images render as soon as the background job
+    // finishes, even across page switches). Manual generation uses the same map.
+    // ---------------------------------------------------------------------------
+    const exampleImages = ref({});
+    const MAX_EXAMPLE_IMAGE_POLL_MS = 3 * 60 * 1000;
+    const pendingSince = new Map();
+    let exampleImagePollTimer = null;
+    function exampleImageState(example) {
+        return exampleImages.value[example] ?? null;
+    }
+    function exampleImageUrl(example) {
+        return exampleImages.value[example]?.url ?? '';
+    }
+    function isExampleImageLoading(example) {
+        return Boolean(exampleImages.value[example]?.loading);
+    }
+    function exampleImageError(example) {
+        return exampleImages.value[example]?.error ?? '';
+    }
+    function exampleImageLabel(example) {
+        const state = exampleImages.value[example];
+        if (!state) {
+            return 'Generate image';
+        }
+        if (state.loading) {
+            return 'Generating...';
+        }
+        return state.url ? 'Image ready' : 'Generate image';
+    }
+    function exampleImageButtonTitle(example) {
+        const state = exampleImages.value[example];
+        if (state?.loading) {
+            return 'Generating...';
+        }
+        return state?.url ? 'Regenerate image' : 'Generate an image for this sentence';
+    }
+    async function generateExampleImage(example, word, force = false) {
+        const current = exampleImages.value[example];
+        if (current?.loading) {
+            return;
+        }
+        exampleImages.value[example] = {
+            url: current?.url ?? '',
+            loading: true,
+            error: '',
+        };
+        startExampleImagePolling();
+        try {
+            const result = await api.generateSentenceImage(example, word, force);
+            exampleImages.value[example] = {
+                url: result.imageUrl,
+                loading: false,
+                error: '',
+            };
+        }
+        catch (err) {
+            exampleImages.value[example] = {
+                url: current?.url ?? '',
+                loading: false,
+                error: err instanceof Error ? err.message : 'Image generation failed.',
+            };
+        }
+    }
+    /**
+     * Mark the given example sentences as generating. Used when a new word is
+     * saved with Auto Generation enabled and the server enqueues the images in
+     * the background: the UI immediately shows "Generating..." and polling picks
+     * up the finished image without any user action.
+     */
+    function markExampleImagesLoading(sentences) {
+        let marked = false;
+        for (const sentence of sentences) {
+            const existing = exampleImages.value[sentence];
+            if (existing?.url && !existing.loading) {
+                continue;
+            }
+            exampleImages.value[sentence] = {
+                url: existing?.url ?? '',
+                loading: true,
+                error: '',
+            };
+            marked = true;
+        }
+        if (marked) {
+            startExampleImagePolling();
+        }
+    }
+    /**
+     * Ask the server whether an image exists for the sentence and adopt it. Used
+     * when a word detail card is (re)opened so cached images show up.
+     */
+    async function checkExampleImage(example) {
+        try {
+            const { imageUrl } = await api.checkSentenceImage(example);
+            if (imageUrl) {
+                exampleImages.value[example] = { url: imageUrl, loading: false, error: '' };
+                return imageUrl;
+            }
+        }
+        catch {
+            // Ignore check failures; the user can still generate manually.
+        }
+        return null;
+    }
+    function startExampleImagePolling() {
+        if (exampleImagePollTimer) {
+            return;
+        }
+        exampleImagePollTimer = setInterval(() => {
+            void pollExampleImages();
+        }, 3000);
+    }
+    function stopExampleImagePolling() {
+        if (exampleImagePollTimer) {
+            clearInterval(exampleImagePollTimer);
+            exampleImagePollTimer = null;
+        }
+    }
+    async function pollExampleImages() {
+        const now = Date.now();
+        let hasPending = false;
+        for (const [sentence, state] of Object.entries(exampleImages.value)) {
+            if (!state.loading || state.url) {
+                pendingSince.delete(sentence);
+                continue;
+            }
+            const since = pendingSince.get(sentence) ?? now;
+            pendingSince.set(sentence, since);
+            if (now - since > MAX_EXAMPLE_IMAGE_POLL_MS) {
+                // Background generation did not finish in time (failed/lost job). Fall
+                // back to idle so the user can generate manually.
+                exampleImages.value[sentence] = { url: '', loading: false, error: '' };
+                pendingSince.delete(sentence);
+                continue;
+            }
+            hasPending = true;
+            try {
+                const { imageUrl } = await api.checkSentenceImage(sentence);
+                if (imageUrl) {
+                    exampleImages.value[sentence] = { url: imageUrl, loading: false, error: '' };
+                    pendingSince.delete(sentence);
+                }
+            }
+            catch {
+                // Transient failure: keep the loading state, retry on the next tick.
+            }
+        }
+        if (!hasPending) {
+            stopExampleImagePolling();
+        }
+    }
     async function fetchVocabulary() {
         loading.value = true;
         try {
@@ -75,6 +230,12 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
             const data = await api.saveWord(searchResult.value);
             items.value = await api.getVocabulary();
             selectedId.value = data.entry.id;
+            // New word saved with Auto Generation enabled: the server queues the
+            // example-sentence images in the background. Surface it immediately as
+            // "Generating..." so the detail panel doesn't fall back to idle.
+            if (data.created && data.pendingImages.length > 0) {
+                markExampleImagesLoading(data.pendingImages);
+            }
             return data;
         }
         finally {
@@ -584,6 +745,16 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
         deleteListeningSentence,
         loadQuiz,
         submitQuizAnswer,
+        exampleImageState,
+        exampleImageUrl,
+        isExampleImageLoading,
+        exampleImageError,
+        exampleImageLabel,
+        exampleImageButtonTitle,
+        generateExampleImage,
+        markExampleImagesLoading,
+        checkExampleImage,
+        startExampleImagePolling,
     };
 });
 function createClientMessageId(prefix) {

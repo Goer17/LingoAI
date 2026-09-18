@@ -1,6 +1,7 @@
 import { nextTick, ref, watch } from 'vue';
 import { Check, Image, Loader2, RefreshCw, Volume2 } from 'lucide-vue-next';
-import { api } from '@/services/api';
+import { useVocabularyStore } from '@/stores/vocabulary';
+const store = useVocabularyStore();
 const draft = ref('');
 const chatHistoryRef = ref(null);
 const props = defineProps();
@@ -137,65 +138,9 @@ function escapeHtml(value) {
         .replaceAll('"', '&quot;')
         .replaceAll('\'', '&#39;');
 }
-const exampleImages = ref({});
-function exampleImageState(example) {
-    return exampleImages.value[example] ?? null;
-}
-function exampleImageUrl(example) {
-    return exampleImages.value[example]?.url ?? '';
-}
-function isExampleImageLoading(example) {
-    return Boolean(exampleImages.value[example]?.loading);
-}
-function exampleImageError(example) {
-    return exampleImages.value[example]?.error ?? '';
-}
-function exampleImageLabel(example) {
-    const state = exampleImages.value[example];
-    if (!state) {
-        return 'Generate image';
-    }
-    if (state.loading) {
-        return 'Generating...';
-    }
-    return state.url ? 'Image ready' : 'Generate image';
-}
-function exampleImageButtonTitle(example) {
-    const state = exampleImages.value[example];
-    if (!state || !state.url) {
-        return 'Generate an image for this sentence';
-    }
-    if (state.loading) {
-        return 'Generating...';
-    }
-    return 'Regenerate image';
-}
-async function handleExampleImage(example) {
-    const current = exampleImages.value[example];
-    if (current?.loading) {
-        return;
-    }
-    const force = Boolean(current?.url);
-    exampleImages.value[example] = {
-        url: current?.url ?? '',
-        loading: true,
-        error: '',
-    };
-    try {
-        const result = await api.generateSentenceImage(example, props.word?.text, force);
-        exampleImages.value[example] = {
-            url: result.imageUrl,
-            loading: false,
-            error: '',
-        };
-    }
-    catch (err) {
-        exampleImages.value[example] = {
-            url: current?.url ?? '',
-            loading: false,
-            error: err instanceof Error ? err.message : 'Image generation failed.',
-        };
-    }
+function handleExampleImage(example) {
+    const state = store.exampleImageState(example);
+    void store.generateExampleImage(example, props.word?.text ?? undefined, Boolean(state?.url));
 }
 watch(() => props.word?.id, async (id) => {
     if (!id) {
@@ -212,16 +157,11 @@ watch(() => props.word?.id, async (id) => {
     // Re-check every time this card is opened: cached example images may have
     // been generated in the background (Auto Generation) after a previous visit.
     for (const example of examples) {
-        try {
-            const { imageUrl } = await api.checkSentenceImage(example);
-            if (imageUrl) {
-                exampleImages.value[example] = { url: imageUrl, loading: false, error: '' };
-            }
-        }
-        catch {
-            // Ignore check failures; the user can still generate manually.
-        }
+        await store.checkExampleImage(example);
     }
+    // Keep resolving pending (auto/manual) generations while this card is open;
+    // the shared store keeps the state intact across page switches regardless.
+    store.startExampleImagePolling();
 }, { immediate: true });
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
@@ -363,11 +303,11 @@ if (__VLS_ctx.word) {
                 } },
             ...{ class: "icon-button example-image-btn" },
             type: "button",
-            disabled: (__VLS_ctx.isExampleImageLoading(meaning.example)),
-            title: (__VLS_ctx.exampleImageButtonTitle(meaning.example)),
-            'aria-label': (__VLS_ctx.exampleImageButtonTitle(meaning.example)),
+            disabled: (__VLS_ctx.store.isExampleImageLoading(meaning.example)),
+            title: (__VLS_ctx.store.exampleImageButtonTitle(meaning.example)),
+            'aria-label': (__VLS_ctx.store.exampleImageButtonTitle(meaning.example)),
         });
-        if (!__VLS_ctx.exampleImageState(meaning.example)) {
+        if (!__VLS_ctx.store.exampleImageState(meaning.example)) {
             const __VLS_12 = {}.Image;
             /** @type {[typeof __VLS_components.Image, ]} */ ;
             // @ts-ignore
@@ -378,7 +318,7 @@ if (__VLS_ctx.word) {
                 size: (14),
             }, ...__VLS_functionalComponentArgsRest(__VLS_13));
         }
-        else if (!__VLS_ctx.isExampleImageLoading(meaning.example)) {
+        else if (!__VLS_ctx.store.isExampleImageLoading(meaning.example)) {
             const __VLS_16 = {}.RefreshCw;
             /** @type {[typeof __VLS_components.RefreshCw, ]} */ ;
             // @ts-ignore
@@ -405,16 +345,16 @@ if (__VLS_ctx.word) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
             ...{ class: "muted-text example-image-label" },
         });
-        (__VLS_ctx.exampleImageLabel(meaning.example));
-        if (__VLS_ctx.exampleImageError(meaning.example)) {
+        (__VLS_ctx.store.exampleImageLabel(meaning.example));
+        if (__VLS_ctx.store.exampleImageError(meaning.example)) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "error-text example-image-error" },
             });
-            (__VLS_ctx.exampleImageError(meaning.example));
+            (__VLS_ctx.store.exampleImageError(meaning.example));
         }
-        if (__VLS_ctx.exampleImageUrl(meaning.example)) {
+        if (__VLS_ctx.store.exampleImageUrl(meaning.example)) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.img)({
-                src: (__VLS_ctx.exampleImageUrl(meaning.example)),
+                src: (__VLS_ctx.store.exampleImageUrl(meaning.example)),
                 ...{ class: "example-image" },
                 alt: "Illustration for this example sentence",
             });
@@ -568,6 +508,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             Loader2: Loader2,
             RefreshCw: RefreshCw,
             Volume2: Volume2,
+            store: store,
             draft: draft,
             chatHistoryRef: chatHistoryRef,
             deleteConfirm: deleteConfirm,
@@ -577,12 +518,6 @@ const __VLS_self = (await import('vue')).defineComponent({
             handleDeleteClick: handleDeleteClick,
             handleRegenerateClick: handleRegenerateClick,
             renderMarkdown: renderMarkdown,
-            exampleImageState: exampleImageState,
-            exampleImageUrl: exampleImageUrl,
-            isExampleImageLoading: isExampleImageLoading,
-            exampleImageError: exampleImageError,
-            exampleImageLabel: exampleImageLabel,
-            exampleImageButtonTitle: exampleImageButtonTitle,
             handleExampleImage: handleExampleImage,
         };
     },

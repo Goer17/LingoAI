@@ -731,10 +731,12 @@ vocabularyRouter.post('/', (req, res) => {
 
   const response = addWord(parsed.data.result);
   if (response.created) {
-    // Auto Generation setting: queue example-sentence images in background.
-    void enqueueAutoImageGeneration(response.entry);
+    // Auto Generation setting: queue example-sentence images in background and
+    // tell the client which ones are pending so it can show "Generating...".
+    const pendingImages = enqueueAutoImageGeneration(response.entry);
+    return ok(res, { ...response, pendingImages });
   }
-  return ok(res, response);
+  return ok(res, { ...response, pendingImages: [] });
 });
 
 vocabularyRouter.get('/:id', (req, res) => {
