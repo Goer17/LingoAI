@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json && node -e \"const fs=require('fs'),p='dist/data';fs.mkdirSync(p,{recursive:true});fs.copyFileSync('src/data/common-words.json',p+'/common-words.json')\"",
+    "build": "tsc -p tsconfig.json && node -e \"const fs=require('fs'),p='dist/data';fs.mkdirSync(p,{recursive:true});for(const f of ['common-words.json','common-pronunciations.json']){const s='src/data/'+f;if(fs.existsSync(s))fs.copyFileSync(s,p+'/'+f)}\"",
     "start": "node dist/index.js"
   },
   "dependencies": {

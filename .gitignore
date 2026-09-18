@@ -40,3 +40,4 @@ Thumbs.db
 
 # Local planning docs
 plan.md
+server/src/data/pronunciations-failures.txt

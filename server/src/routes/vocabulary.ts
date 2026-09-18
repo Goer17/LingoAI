@@ -13,6 +13,7 @@ import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '..
 import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningGroup, createListeningQuizDraft, deleteListeningGroup, getListeningEntryById, getListeningGroupById, listListeningEntries, listListeningGroups, pickListeningEntries, pickListeningEntriesByGroup, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
 import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, removeWord, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
 import { checkSentenceImage, getOrCreateSentenceImage } from '../services/imageService.js';
+import { resolvePronunciation } from '../services/commonPronunciationService.js';
 import { enqueueAutoImageGeneration } from '../services/autoImageService.js';
 import { getSettings } from '../services/settingsService.js';
 import { getTaskProgress, setTaskProgress } from '../services/taskProgressService.js';
@@ -717,6 +718,10 @@ vocabularyRouter.post('/search-word', async (req, res) => {
   try {
     const prompt = createSearchWordPrompt(parsed.data.query.trim());
     const result = await searchWord(prompt);
+    // Prefer the crawled Youdao IPA over the LLM transcription (audio logic is
+    // untouched — this only swaps the displayed transcription). Keep the LLM
+    // value (or "N/A") when no local transcription exists.
+    result.pronunciation = resolvePronunciation(result.text) ?? result.pronunciation;
     return ok(res, result);
   } catch (error) {
     return fail(res, 500, error instanceof Error ? error.message : 'Search failed.');

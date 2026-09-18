@@ -3,6 +3,7 @@ import { VOCABULARY_MAX_FAMILIARITY } from '../config/familiarity.js';
 import { createId } from '../utils/id.js';
 import type { SearchResult, VocabularyEntry } from '../types/models.js';
 import { deleteAudioFile } from './audioService.js';
+import { resolvePronunciation } from './commonPronunciationService.js';
 
 export function listVocabulary() {
   return vocabularyRepository.list();
@@ -31,7 +32,7 @@ export function addWord(result: SearchResult) {
     createdAt: now,
     updatedAt: now,
     note: '',
-    pronunciation: result.pronunciation,
+    pronunciation: resolvePronunciation(result.text) ?? result.pronunciation,
     meanings: result.meanings,
     derivatives: result.derivatives,
     ttsText: result.ttsText,
