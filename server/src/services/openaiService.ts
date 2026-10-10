@@ -70,6 +70,13 @@ const fillBlankRepairSchema = z.object({
   answer: z.string().min(1),
 });
 
+const exampleFillBlankSchema = z.object({
+  questions: z.array(z.object({
+    answer: z.string().min(1),
+    maskedSentence: optionalString,
+  })).min(1),
+});
+
 const scenarioSchema = z.object({
   setting: z.string().min(1),
   userRole: z.string().min(1),
@@ -313,6 +320,10 @@ export async function generateQuizStreamed(
 
 export async function generateFillBlankRepair(prompt: string): Promise<{ maskedSentence: string; answer: string }> {
   return requestJson(prompt, fillBlankRepairSchema);
+}
+
+export async function generateExampleFillBlank(prompt: string): Promise<{ questions: Array<{ answer: string; maskedSentence?: string }> }> {
+  return requestJson(prompt, exampleFillBlankSchema);
 }
 
 export async function matchSentenceCandidates(prompt: string): Promise<{ matchedIndices: number[] }> {

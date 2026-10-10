@@ -3,16 +3,17 @@ import { z } from 'zod';
 import { createChatWordPrompt } from '../prompts/chatWordPrompt.js';
 import { createChatListeningSentencePrompt } from '../prompts/chatListeningSentencePrompt.js';
 import { createGenerateQuizPrompt } from '../prompts/generateQuizPrompt.js';
+import { createExampleFillBlankPrompt } from '../prompts/exampleFillBlankPrompt.js';
 import { createQuizQuestionChatPrompt } from '../prompts/quizQuestionChatPrompt.js';
 import { createSearchWordPrompt } from '../prompts/searchWordPrompt.js';
 import { suggestWords } from '../services/suggestionService.js';
 import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, createQuizAudioUrl, deleteAudioFile, getMediaUrl } from '../services/audioService.js';
 import { getCommonAudioUrl, hasCommonAudio } from '../services/commonAudioService.js';
-import { askWordChat, generateQuiz, generateQuizStreamed, searchWord, streamWordChat } from '../services/openaiService.js';
+import { askWordChat, generateExampleFillBlank, generateQuiz, generateQuizStreamed, searchWord, streamWordChat } from '../services/openaiService.js';
 import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '../services/fillBlankService.js';
 import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningGroup, createListeningQuizDraft, deleteListeningGroup, getListeningEntryById, getListeningGroupById, listListeningEntries, listListeningGroups, pickListeningEntries, pickListeningEntriesByGroup, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
 import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, removeWord, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
-import { checkSentenceImage, getOrCreateSentenceImage } from '../services/imageService.js';
+import { checkSentenceImage, formatMeaningText, getOrCreateSentenceImage } from '../services/imageService.js';
 import { resolvePronunciation } from '../services/commonPronunciationService.js';
 import { enqueueAutoImageGeneration } from '../services/autoImageService.js';
 import { getSettings } from '../services/settingsService.js';
@@ -35,7 +36,7 @@ import {
 } from '../services/taskService.js';
 import { createId } from '../utils/id.js';
 import { fail, ok } from '../utils/http.js';
-import type { QuizBlank, QuizDraftQuestion, QuizQuestion } from '../types/models.js';
+import type { Meaning, QuizBlank, QuizDraftQuestion, QuizQuestion, VocabularyEntry } from '../types/models.js';
 
 const searchSchema = z.object({
   query: z.string().min(1),
@@ -155,6 +156,46 @@ async function enrichQuestion(question: QuestionLike): Promise<{ question: Quest
 // per-question progress and copy flowing from the start.
 const AUTHORING_CHUNK = 5;
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+interface PickedExample {
+  meaning: Meaning;
+  /** The example sentence of the picked meaning, whitespace-collapsed. */
+  sentence: string;
+}
+
+/**
+ * Randomly pick ONE meaning that has an example sentence. The quiz reuses the
+ * word's own examples (and therefore the images the system already generated
+ * for them) instead of letting the AI invent new sentences — a new sentence
+ * would force a brand-new illustration every time.
+ */
+function pickRandomMeaningWithExample(entry: VocabularyEntry): PickedExample | null {
+  const withExample = (entry.meanings ?? []).filter((meaning) => meaning.example?.trim());
+  if (withExample.length === 0) {
+    return null;
+  }
+  const meaning = withExample[Math.floor(Math.random() * withExample.length)];
+  return { meaning, sentence: meaning.example.trim().replace(/\s+/g, ' ') };
+}
+
+/**
+ * Deterministic fallback: find the target word/phrase as it literally appears
+ * in the sentence (whole-word match) and return its surface form. Only covers
+ * the lemma-present-verbatim case — inflected forms fall through to the
+ * repair chain inside `ensureFillBlankMaskedSentence`.
+ */
+function matchLemmaInSentence(sentence: string, text: string): string | null {
+  if (!text.trim()) {
+    return null;
+  }
+  const pattern = new RegExp(`\\b${escapeRegExp(text.trim())}\\b`, 'i');
+  const matched = sentence.match(pattern);
+  return matched?.[0] ?? null;
+}
+
 async function generateVocabularyQuizSession(limit = 10, onProgress?: (progress: TaskProgress) => void) {
   const entries = pickQuizEntries(listVocabulary(), limit);
   if (entries.length === 0) {
@@ -208,8 +249,63 @@ async function generateVocabularyQuizSession(limit = 10, onProgress?: (progress:
       credits += (drafts.length - streamedCount) * 0.5;
     }
 
+    // fill_blank questions never reuse AI-invented sentences: for every one of
+    // them the server picks a random meaning, uses its example sentence VERBATIM
+    // as the question, and resolves the image from the sentence-image cache
+    // (exact → fuzzy → generate). Invented sentences would otherwise force a
+    // brand-new illustration on every quiz. Entries without any example go
+    // through the AI's draft untouched (no cached image exists anyway).
+    const rebuilt = new Map<number, QuestionLike>();
+    const rebuildTargets: Array<{ index: number; entry: VocabularyEntry; picked: PickedExample }> = [];
+    drafts.forEach((draft, index) => {
+      if (draft.type !== 'fill_blank') {
+        return;
+      }
+      const entry = chunk[index];
+      const picked = entry ? pickRandomMeaningWithExample(entry) : null;
+      if (picked) {
+        rebuildTargets.push({ index, entry, picked });
+      }
+    });
+
+    if (rebuildTargets.length > 0) {
+      let extracted: Array<{ answer: string; maskedSentence?: string }> = [];
+      try {
+        const prompt = createExampleFillBlankPrompt(rebuildTargets.map(({ entry, picked }) => ({
+          word: entry.text,
+          sentence: picked.sentence,
+          meaningText: formatMeaningText(picked.meaning),
+        })));
+        extracted = (await generateExampleFillBlank(prompt)).questions;
+      } catch {
+        // Extraction is best-effort — fall back to the lemma match below.
+      }
+
+      rebuildTargets.forEach(({ index, entry, picked }, position) => {
+        const payload = extracted[position];
+        let answer = entry.text.trim();
+        let maskedSentence: string | undefined;
+        if (payload?.answer?.trim()) {
+          answer = payload.answer.trim();
+          maskedSentence = payload.maskedSentence?.trim() || undefined;
+        } else {
+          const matched = matchLemmaInSentence(picked.sentence, entry.text);
+          if (matched) {
+            answer = matched;
+          }
+        }
+        rebuilt.set(index, {
+          type: 'fill_blank',
+          word: entry.text,
+          sentence: picked.sentence,
+          answer,
+          maskedSentence,
+        });
+      });
+    }
+
     for (let index = 0; index < drafts.length; index += 1) {
-      const draft = drafts[index];
+      const draft = rebuilt.get(index) ?? drafts[index];
       const kind = draft.type === 'listening' ? 'audio' : 'image';
       const questionNumber = base + index + 1;
       report(
@@ -244,10 +340,10 @@ export async function processVocabularyTask(taskId: string, limit = 10) {
     const { session, failedCount } = await generateVocabularyQuizSession(limit, report);
     if (failedCount > 0) {
       // Stash the partially generated session — successful questions are reused
-      // on Retry, which only back-fills the ones that are still missing audio.
+      // on Retry, which only back-fills the ones that are still missing assets.
       markLearningTaskFailed(
         taskId,
-        `${session.questions.length - failedCount}/${session.questions.length} questions ready — ${failedCount} still missing audio. Click Retry to finish them.`,
+        `${session.questions.length - failedCount}/${session.questions.length} questions ready — ${failedCount} still missing assets. Click Retry to finish them.`,
         { quizSessionId: session.id },
       );
       return;
@@ -306,7 +402,7 @@ export async function processListeningTask(taskId: string, groupId?: string, lim
     if (failedCount > 0) {
       markLearningTaskFailed(
         taskId,
-        `${session.questions.length - failedCount}/${session.questions.length} sentences ready — ${failedCount} still missing audio. Click Retry to finish them.`,
+        `${session.questions.length - failedCount}/${session.questions.length} sentences ready — ${failedCount} still missing assets. Click Retry to finish them.`,
         { quizSessionId: session.id },
       );
       return;
@@ -387,7 +483,7 @@ async function processTaskRetry(taskId: string) {
 
   markLearningTaskFailed(
     taskId,
-    `${questions.length - failedCount}/${questions.length} questions ready — ${failedCount} still missing audio. Click Retry to try again.`,
+    `${questions.length - failedCount}/${questions.length} questions ready — ${failedCount} still missing assets. Click Retry to try again.`,
     { quizSessionId: session.id },
   );
 }
