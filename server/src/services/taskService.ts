@@ -1,5 +1,6 @@
 import { mistakeRepository, taskRepository } from '../db/repositories.js';
 import { clearTaskProgress } from './taskProgressService.js';
+import { ensureListeningMaskedSentence } from './fillBlankService.js';
 import type { LearningTask, MistakeEntry, QuizSession, ScenarioData } from '../types/models.js';
 import { createId } from '../utils/id.js';
 import { createQuizSession } from './quizService.js';
@@ -225,6 +226,47 @@ export async function createMistakeReviewSession() {
         }
       } catch {
         // Image generation is best-effort: the question stays usable without it.
+      }
+    }
+
+    // Legacy vocabulary listening mistakes may have stored the target phrase's
+    // lemma ("hand out") instead of the surface form the sentence actually
+    // uses ("handed out"), leaving the review with no blank to fill. Re-run
+    // the same blank normalization as generation (LLM repair + deterministic
+    // fallback) so the review still shows a blank AND grades against what the
+    // learner hears, and persist the corrected answer so the notebook
+    // self-heals. (Listening-task mistakes keep their inline `blanks` render
+    // path untouched.)
+    if (entry.type === 'listening' && !(Array.isArray(entry.blanks) && entry.blanks.length > 0)) {
+      const normalized = await ensureListeningMaskedSentence({
+        type: 'listening',
+        word: entry.word,
+        sentence: entry.sentence,
+        answer: entry.answer,
+      });
+      // Fallback returns the raw sentence as maskedSentence — only swap in the
+      // question when we actually produced a blank.
+      if (normalized.maskedSentence !== normalized.sentence) {
+        if (normalized.answer !== entry.answer) {
+          mistakeRepository.save({
+            ...entry,
+            answer: normalized.answer,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+        return {
+          id: createId('question'),
+          type: entry.type,
+          word: entry.word,
+          sentence: normalized.sentence,
+          answer: normalized.answer,
+          answerVariants: normalized.answerVariants,
+          maskedSentence: normalized.maskedSentence,
+          ttsText: entry.ttsText,
+          audioUrl: entry.audioUrl,
+          imageUrl,
+          mistakeId: entry.id,
+        };
       }
     }
 

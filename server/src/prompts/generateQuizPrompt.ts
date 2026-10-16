@@ -12,7 +12,7 @@ export function createGenerateQuizPrompt(entries: VocabularyEntry[]) {
     '3) answer must be the surface form used in the sentence.',
     '4) answerVariants must be acceptable forms of the SAME target word/phrase only (e.g., tense/number), including answer itself.',
     '5) candidates must be 4-8 options, and every option must still be a form of the SAME target word/phrase only.',
-    'For listening: sentence must naturally use the target word in a common way. answer must be the exact target word. ttsText should match the sentence.',
+    'For listening: sentence must naturally use the target word in a common way. answer must be the EXACT surface form of the target word as it appears in the sentence (copy it verbatim from the sentence, including any inflection — e.g. "handed out" for the vocabulary word "hand out"). ttsText should match the sentence.',
     'maskedSentence is for fill_blank questions ONLY — listening questions must omit it entirely (never send an empty string).',
     'candidates and answerVariants are for fill_blank ONLY — omit them for listening questions.',
     'Never output a field with an empty string or an empty array. If a field does not apply to a question, omit it.',

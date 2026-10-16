@@ -263,6 +263,14 @@ function buildBeInflections(answer: string) {
   ];
 }
 
+function ensureSingleBlankRun(maskedSentence: string) {
+  const runs = maskedSentence.match(/_{6,}/g) ?? [];
+  return runs.length === 1;
+}
+
+/** Candidate forms to search verbatim in the sentence: the answer, its
+ *  variants, and the inflections of a leading "be" ("am ready" for "be
+ *  ready"). Longest first so phrases outrank words. */
 function buildListeningMaskCandidates(question: QuizDraftQuestion) {
   const base = normalizeUnique([
     question.answer,
@@ -272,9 +280,44 @@ function buildListeningMaskCandidates(question: QuizDraftQuestion) {
   return base.sort((a, b) => b.length - a.length);
 }
 
-function ensureSingleBlankRun(maskedSentence: string) {
-  const runs = maskedSentence.match(/_{6,}/g) ?? [];
-  return runs.length === 1;
+/** Cheap last-resort matcher (no LLM): find the sentence word that plausibly
+ *  corresponds to the answer's head token — verbatim or a common inflection
+ *  (handed/hand, running/run, studies/study). Irregular forms (went/go,
+ *  took/take) are the LLM repair's job, not this heuristics'. */
+function maskByWordHeuristic(sentence: string, answer: string): { maskedSentence: string; surface: string } | null {
+  const head = normalizeSpaces(answer).split(/\s+/)[0]?.toLowerCase();
+  if (!head) {
+    return null;
+  }
+
+  const words: Array<{ text: string; start: number; end: number }> = [];
+  for (const match of sentence.matchAll(/[A-Za-z']+/g)) {
+    if (match.index == null) {
+      continue;
+    }
+    words.push({ text: match[0], start: match.index, end: match.index + match[0].length });
+  }
+
+  for (const word of words) {
+    const w = word.text.toLowerCase();
+    const matches = w === head
+      || (head.length >= 3 && w.startsWith(head))
+      || w === `${head}s`
+      || w === `${head}es`
+      || w === `${head}ed`
+      || (head.endsWith('e') && w === `${head}d`)
+      || (head.endsWith('y') && w === `${head.slice(0, -1)}ied`)
+      || (w.endsWith('ies') && head.endsWith('y') && w.slice(0, -3) === head.slice(0, -1));
+    if (!matches) {
+      continue;
+    }
+
+    const mask = '_'.repeat(Math.max(MIN_BLANK_LENGTH, word.text.length));
+    const maskedSentence = `${sentence.slice(0, word.start)}${mask}${sentence.slice(word.end)}`;
+    return { maskedSentence, surface: word.text };
+  }
+
+  return null;
 }
 
 export async function ensureListeningMaskedSentence(question: QuizDraftQuestion): Promise<QuizDraftQuestion> {
@@ -283,42 +326,62 @@ export async function ensureListeningMaskedSentence(question: QuizDraftQuestion)
   }
 
   const sentence = normalizeSpaces(question.sentence);
-  const normalizedAnswer = normalizeSpaces(question.answer);
+  const originalAnswer = normalizeSpaces(question.answer);
 
-  if (!sentence || !normalizedAnswer) {
+  if (!sentence || !originalAnswer) {
     return {
       ...question,
       sentence,
-      answer: normalizedAnswer,
+      answer: originalAnswer,
     };
   }
 
+  // The AI occasionally emits maskedSentence for listening questions even
+  // though the prompt says not to. Adopt it when its blank lines up with a
+  // surface form we can identify; keep it as-is otherwise.
   if (question.maskedSentence && ensureSingleBlankRun(question.maskedSentence)) {
+    const provided = normalizeSpaces(question.maskedSentence);
+    const heuristic = maskByWordHeuristic(sentence, originalAnswer);
+    if (heuristic && provided.replace(/_+/g, '_') === heuristic.maskedSentence.replace(/_+/g, '_')) {
+      return {
+        ...question,
+        sentence,
+        answer: heuristic.surface,
+        answerVariants: normalizeUnique([originalAnswer, heuristic.surface]),
+        maskedSentence: provided,
+      };
+    }
     return {
       ...question,
       sentence,
-      answer: normalizedAnswer,
-      maskedSentence: normalizeSpaces(question.maskedSentence),
+      answer: originalAnswer,
+      maskedSentence: provided,
     };
   }
 
+  // 1) The target appears verbatim in the sentence — done, no LLM needed.
   for (const candidate of buildListeningMaskCandidates(question)) {
     const masked = maskByExactAnswer(sentence, candidate);
     if (masked) {
       return {
         ...question,
         sentence,
-        answer: normalizedAnswer,
+        answer: candidate,
+        answerVariants: normalizeUnique([originalAnswer, candidate]),
         maskedSentence: masked,
       };
     }
   }
 
+  // 2) LLM 挖空: the repair model re-blanks the sentence and returns the exact
+  //    surface form hidden by the blank ("handed out" for "hand out"). We
+  //    adopt that surface form as the answer — this is what makes the graded
+  //    answer actually match the sentence.
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt += 1) {
     const prompt = createRepairFillBlankPrompt({
       word: question.word,
       sentence,
-      answer: normalizedAnswer,
+      answer: originalAnswer,
       attempt,
       maxRetries: MAX_RETRIES,
     });
@@ -330,7 +393,8 @@ export async function ensureListeningMaskedSentence(question: QuizDraftQuestion)
         return {
           ...question,
           sentence,
-          answer: normalizedAnswer,
+          answer: extracted.answer,
+          answerVariants: normalizeUnique([originalAnswer, extracted.answer]),
           maskedSentence: extracted.maskedSentence,
         };
       }
@@ -339,10 +403,25 @@ export async function ensureListeningMaskedSentence(question: QuizDraftQuestion)
     }
   }
 
+  // 3) Deterministic safety net so a flaky/unsuccessful repair never leaves
+  //    the learner with a sentence that has no blank at all.
+  const heuristic = maskByWordHeuristic(sentence, originalAnswer);
+  if (heuristic) {
+    return {
+      ...question,
+      sentence,
+      answer: heuristic.surface,
+      answerVariants: normalizeUnique([originalAnswer, heuristic.surface]),
+      maskedSentence: heuristic.maskedSentence,
+    };
+  }
+
+  // 4) True last resort: the target word appears nowhere (even inflected) —
+  //    keep the draft so audio still works; Retry is the recovery path.
   return {
     ...question,
     sentence,
-    answer: normalizedAnswer,
+    answer: originalAnswer,
     maskedSentence: sentence,
   };
 }
