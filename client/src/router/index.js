@@ -6,6 +6,7 @@ import SettingPage from '@/pages/SettingPage.vue';
 import VocabularyPage from '@/pages/VocabularyPage.vue';
 import QuizPage from '@/pages/QuizPage.vue';
 import TasksPage from '@/pages/TasksPage.vue';
+import TutorPage from '@/pages/TutorPage.vue';
 import ListeningPage from '@/pages/ListeningPage.vue';
 import WritingPage from '@/pages/WritingPage.vue';
 import ExpressionPracticePage from '@/pages/ExpressionPracticePage.vue';
@@ -44,6 +45,11 @@ const router = createRouter({
                     path: 'setting',
                     name: 'setting',
                     component: SettingPage,
+                },
+                {
+                    path: 'tutor',
+                    name: 'tutor',
+                    component: TutorPage,
                 },
                 {
                     path: 'tasks',

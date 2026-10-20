@@ -8,6 +8,7 @@ A full-stack English learning app. Look up words, save vocabulary, get AI explan
 - **Pronunciation** — a bundled library of 40,000+ real voice recordings for common words, with AI speech fallback for everything else
 - **AI explanations** — structured definitions, examples, parts of speech, and derivatives, in English or Chinese
 - **AI tutor chat** — ask any word, sentence, or concept a follow-up question at any time
+- **Tutor agent** — a chat tutor with persistent sessions and long-term memory that can read your notebook, add listening examples, and start quizzes on request
 - **Vocabulary notebook** — save words, track familiarity, and review the ones you know least first
 - **Quizzes** — auto-generated fill-in-the-blank and listening questions, with a mistakes notebook for review
 - **Listening practice** — collect sentences, practise masked fill-in exercises, and track familiarity

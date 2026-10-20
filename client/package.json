@@ -11,11 +11,13 @@
   "dependencies": {
     "axios": "^1.9.0",
     "lucide-vue-next": "^1.0.0",
+    "markdown-it": "^14.3.3",
     "pinia": "^3.0.3",
     "vue": "^3.5.13",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@types/markdown-it": "^14.2.0",
     "@types/node": "^22.15.17",
     "@vitejs/plugin-vue": "^5.2.3",
     "typescript": "^5.8.3",

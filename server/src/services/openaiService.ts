@@ -490,6 +490,157 @@ export async function streamWordChat(
   throw modelChainError('language', clients.length, lastError);
 }
 
+export interface AgentToolDefinition {
+  name: string;
+  description: string;
+  /** JSON Schema object describing the tool's arguments. */
+  parameters: Record<string, unknown>;
+}
+
+export interface AgentToolCall {
+  id: string;
+  name: string;
+  arguments: string;
+}
+
+export type AgentMessage = OpenAI.Chat.Completions.ChatCompletionMessageParam;
+
+interface AgentStreamResult {
+  content: string;
+  toolCalls: AgentToolCall[];
+}
+
+function toOpenAITools(tools: AgentToolDefinition[]) {
+  return tools.map((tool) => ({
+    type: 'function' as const,
+    function: {
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters,
+    },
+  }));
+}
+
+/**
+ * One streamed agent turn. Text deltas go straight to `onDelta`; tool calls
+ * are accumulated from the streamed fragments (OpenAI-compatible providers
+ * split both the arguments and, occasionally, the function name across
+ * chunks) and returned once the stream finishes.
+ */
+async function runAgentStream(
+  client: OpenAI,
+  model: string,
+  extraBody: Record<string, unknown>,
+  messages: AgentMessage[],
+  tools: AgentToolDefinition[],
+  onDelta: (chunk: string) => void,
+  markEmitted: () => void,
+): Promise<AgentStreamResult> {
+  const stream = await client.chat.completions.create({
+    model,
+    temperature: 0.7,
+    stream: true,
+    messages,
+    ...(tools.length > 0 ? { tools: toOpenAITools(tools), tool_choice: 'auto' as const } : {}),
+    ...extraBody,
+  });
+
+  let content = '';
+  const calls = new Map<number, AgentToolCall>();
+
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta;
+    if (!delta) {
+      continue;
+    }
+
+    if (delta.content) {
+      markEmitted();
+      content += delta.content;
+      onDelta(delta.content);
+    }
+
+    for (const part of delta.tool_calls ?? []) {
+      markEmitted();
+      const index = part.index ?? calls.size;
+      const current = calls.get(index) ?? { id: '', name: '', arguments: '' };
+      if (part.id) {
+        current.id = part.id;
+      }
+      if (part.function?.name) {
+        // OpenAI streams the function name once; some compatible providers
+        // repeat it in every chunk. Replace on an exact/prefix repeat, append
+        // only when the fragment is genuinely new.
+        const incoming = part.function.name;
+        current.name = !current.name
+          ? incoming
+          : incoming.startsWith(current.name)
+            ? incoming
+            : current.name + incoming;
+      }
+      if (part.function?.arguments) {
+        current.arguments += part.function.arguments;
+      }
+      calls.set(index, current);
+    }
+  }
+
+  const toolCalls = [...calls.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([index, call]) => ({
+      id: call.id || `call_${index}_${Date.now()}`,
+      name: call.name.trim(),
+      arguments: call.arguments || '{}',
+    }))
+    .filter((call) => call.name !== '');
+
+  return { content: content.trim(), toolCalls };
+}
+
+/**
+ * Streamed agent chat with tool calling. Uses the configured language-model
+ * chain: each model is tried until one produces output. A provider that does
+ * not support `tools` (or rejects them alongside other options) is retried
+ * once without tools so the tutor still answers instead of failing outright.
+ */
+export async function streamAgentCompletion(
+  messages: AgentMessage[],
+  tools: AgentToolDefinition[],
+  onDelta: (chunk: string) => void,
+): Promise<AgentStreamResult> {
+  const clients = getLanguageClients();
+  let lastError: unknown;
+
+  for (const { client, model, extraBody } of clients) {
+    let emitted = false;
+    const markEmitted = () => {
+      emitted = true;
+    };
+
+    try {
+      return await runAgentStream(client, model, extraBody, messages, tools, onDelta, markEmitted);
+    } catch (error) {
+      lastError = error;
+      if (emitted) {
+        throw error;
+      }
+
+      if (tools.length > 0) {
+        try {
+          return await runAgentStream(client, model, extraBody, messages, [], onDelta, markEmitted);
+        } catch (retryError) {
+          lastError = retryError;
+          if (emitted) {
+            throw retryError;
+          }
+        }
+      }
+    }
+  }
+
+  throw modelChainError('language', clients.length, lastError);
+}
+
 const OPENAI_TTS_VOICES = [
   'alloy',
   'echo',

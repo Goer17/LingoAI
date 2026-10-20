@@ -73,6 +73,7 @@ Both `POST /api/vocabulary/:id/audio` and `GET /api/vocabulary/common-audio` fol
 | Quizzes | `quizService` | `quiz_sessions` | `/api/vocabulary/quiz` |
 | Learning Tasks | `taskService` | `learning_tasks` | `/api/vocabulary/tasks` |
 | Mistakes | `taskService` | `mistake_entries` | `/api/vocabulary/tasks` |
+| Tutor Agent | `tutorService` + `tutorTools` | `tutor_sessions`, `tutor_messages`, `tutor_memories` | `/api/tutor` |
 
 ### Learning Task Pipeline
 
@@ -81,6 +82,10 @@ Quiz generation is async: client creates a learning task → server returns imme
 ### SSE Streaming Pattern
 
 Chat endpoints have paired routes: `/chat-word` (full response) and `/chat-word/stream` (SSE). SSE format: `data: {"type":"delta","content":"..."}`, `data: {"type":"done"}`, `data: {"type":"error","error":"..."}`.
+
+### Tutor Agent
+
+`TutorPage` is a session-based agent chat (`/api/tutor`). `tutorService` builds the system prompt (`createTutorPrompt`) with the notebook snapshot plus the chronological memory log, then runs a streamed tool loop through `streamAgentCompletion` in `openaiService` (configured language-model chain). Tools are declared and executed in `tutorTools.ts` as thin wrappers over existing services (vocabulary, listening, quiz tasks, mistakes, memories). SSE events add `tool` lifecycle frames next to `delta`/`done`/`error`; tool traces are persisted on the assistant message so the UI can show what the agent did.
 
 ## Conventions
 

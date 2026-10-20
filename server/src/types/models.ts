@@ -233,6 +233,46 @@ export interface ScenarioSummary {
   encouragement: string;
 }
 
+export interface TutorSession {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  /** Number of stored messages — filled by the session list query. */
+  messageCount: number;
+  /** First line of the latest message, for the session list. */
+  preview: string;
+}
+
+export type TutorMemoryKind = 'note' | 'preference' | 'goal' | 'progress';
+
+export interface TutorMemory {
+  id: string;
+  kind: TutorMemoryKind;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  /** Session that produced the memory (absent for manually added notes). */
+  sessionId?: string;
+}
+
+/** Compact trace of one tool call, shown under the assistant reply and
+ *  persisted so the transcript still explains what the agent did. */
+export interface TutorToolTrace {
+  name: string;
+  label: string;
+  ok: boolean;
+  summary?: string;
+}
+
+export interface TutorMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
+  toolCalls?: TutorToolTrace[];
+}
+
 export interface PolishResult {
   index: number;
   original: string;

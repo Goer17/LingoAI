@@ -423,4 +423,87 @@ export const api = {
     polishUserMessages(scenario, messages) {
         return unwrap(http.post('/writing/scenarios/polish', { scenario, messages }));
     },
+    listTutorSessions() {
+        return unwrap(http.get('/tutor/sessions'));
+    },
+    createTutorSession(title) {
+        return unwrap(http.post('/tutor/sessions', title ? { title } : {}));
+    },
+    getTutorSession(id) {
+        return unwrap(http.get(`/tutor/sessions/${id}`));
+    },
+    renameTutorSession(id, title) {
+        return unwrap(http.post(`/tutor/sessions/${id}/title`, { title }));
+    },
+    deleteTutorSession(id) {
+        return unwrap(http.post(`/tutor/sessions/${id}/delete`));
+    },
+    listTutorMemories() {
+        return unwrap(http.get('/tutor/memories'));
+    },
+    addTutorMemory(content, kind) {
+        return unwrap(http.post('/tutor/memories', { content, kind }));
+    },
+    deleteTutorMemory(id) {
+        return unwrap(http.post(`/tutor/memories/${id}/delete`));
+    },
+    async streamTutorChat(sessionId, message, handlers) {
+        const token = getStoredAccessToken();
+        const response = await fetch(`/api/tutor/sessions/${sessionId}/chat/stream`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'x-access-token': token } : {}),
+            },
+            body: JSON.stringify({ message }),
+        });
+        if (!response.ok || !response.body) {
+            throw new Error('Tutor chat failed.');
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let donePayload = null;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            buffer += decoder.decode(value, { stream: true });
+            const events = buffer.split('\n\n');
+            buffer = events.pop() ?? '';
+            for (const event of events) {
+                const dataLine = event
+                    .split('\n')
+                    .map((line) => line.trim())
+                    .find((line) => line.startsWith('data:'));
+                if (!dataLine) {
+                    continue;
+                }
+                const payload = JSON.parse(dataLine.slice(5).trim());
+                if (payload.type === 'delta' && payload.content) {
+                    handlers.onDelta(payload.content);
+                }
+                if (payload.type === 'tool' && payload.status && payload.name && payload.label) {
+                    handlers.onTool?.({
+                        status: payload.status,
+                        name: payload.name,
+                        label: payload.label,
+                        ok: payload.ok,
+                        summary: payload.summary,
+                    });
+                }
+                if (payload.type === 'error') {
+                    throw new Error(payload.error || 'Tutor chat failed.');
+                }
+                if (payload.type === 'done' && payload.message && payload.session) {
+                    donePayload = { message: payload.message, session: payload.session };
+                }
+            }
+        }
+        if (!donePayload) {
+            throw new Error('Tutor chat stream ended unexpectedly.');
+        }
+        return donePayload;
+    },
 };

@@ -10,6 +10,11 @@ import type {
   ScenarioSummary,
   SearchResult,
   SettingsForm,
+  TutorMemory,
+  TutorMemoryKind,
+  TutorMessage,
+  TutorSession,
+  TutorSessionDetail,
   VocabularyEntry,
   WritingKnowledgePoint,
   WritingTopic,
@@ -565,5 +570,125 @@ export const api = {
     return unwrap<{ results: PolishResult[] }>(
       http.post('/writing/scenarios/polish', { scenario, messages }),
     );
+  },
+  listTutorSessions() {
+    return unwrap<TutorSession[]>(http.get('/tutor/sessions'));
+  },
+  createTutorSession(title?: string) {
+    return unwrap<TutorSession>(http.post('/tutor/sessions', title ? { title } : {}));
+  },
+  getTutorSession(id: string) {
+    return unwrap<TutorSessionDetail>(http.get(`/tutor/sessions/${id}`));
+  },
+  renameTutorSession(id: string, title: string) {
+    return unwrap<TutorSession>(http.post(`/tutor/sessions/${id}/title`, { title }));
+  },
+  deleteTutorSession(id: string) {
+    return unwrap<{ removed: boolean }>(http.post(`/tutor/sessions/${id}/delete`));
+  },
+  listTutorMemories() {
+    return unwrap<TutorMemory[]>(http.get('/tutor/memories'));
+  },
+  addTutorMemory(content: string, kind?: TutorMemoryKind) {
+    return unwrap<TutorMemory>(http.post('/tutor/memories', { content, kind }));
+  },
+  deleteTutorMemory(id: string) {
+    return unwrap<{ removed: boolean }>(http.post(`/tutor/memories/${id}/delete`));
+  },
+  async streamTutorChat(
+    sessionId: string,
+    message: string,
+    handlers: {
+      onDelta: (chunk: string) => void;
+      onTool?: (event: {
+        status: 'start' | 'done';
+        name: string;
+        label: string;
+        ok?: boolean;
+        summary?: string;
+      }) => void;
+    },
+  ) {
+    const token = getStoredAccessToken();
+    const response = await fetch(`/api/tutor/sessions/${sessionId}/chat/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'x-access-token': token } : {}),
+      },
+      body: JSON.stringify({ message }),
+    });
+
+    if (!response.ok || !response.body) {
+      throw new Error('Tutor chat failed.');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let donePayload: { message: TutorMessage; session: TutorSession } | null = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop() ?? '';
+
+      for (const event of events) {
+        const dataLine = event
+          .split('\n')
+          .map((line) => line.trim())
+          .find((line) => line.startsWith('data:'));
+
+        if (!dataLine) {
+          continue;
+        }
+
+        const payload = JSON.parse(dataLine.slice(5).trim()) as {
+          type: 'delta' | 'tool' | 'done' | 'error';
+          content?: string;
+          error?: string;
+          status?: 'start' | 'done';
+          name?: string;
+          label?: string;
+          ok?: boolean;
+          summary?: string;
+          message?: TutorMessage;
+          session?: TutorSession;
+        };
+
+        if (payload.type === 'delta' && payload.content) {
+          handlers.onDelta(payload.content);
+        }
+
+        if (payload.type === 'tool' && payload.status && payload.name && payload.label) {
+          handlers.onTool?.({
+            status: payload.status,
+            name: payload.name,
+            label: payload.label,
+            ok: payload.ok,
+            summary: payload.summary,
+          });
+        }
+
+        if (payload.type === 'error') {
+          throw new Error(payload.error || 'Tutor chat failed.');
+        }
+
+        if (payload.type === 'done' && payload.message && payload.session) {
+          donePayload = { message: payload.message, session: payload.session };
+        }
+      }
+    }
+
+    if (!donePayload) {
+      throw new Error('Tutor chat stream ended unexpectedly.');
+    }
+
+    return donePayload;
   },
 };

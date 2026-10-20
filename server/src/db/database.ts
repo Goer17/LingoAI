@@ -125,6 +125,41 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_writing_topics_created
     ON writing_topics (created_at DESC);
+
+  CREATE TABLE IF NOT EXISTS tutor_sessions (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS tutor_messages (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    payload_json TEXT NOT NULL DEFAULT '{}'
+  );
+
+  CREATE TABLE IF NOT EXISTS tutor_memories (
+    id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    session_id TEXT,
+    payload_json TEXT NOT NULL DEFAULT '{}'
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_tutor_sessions_updated
+    ON tutor_sessions (updated_at DESC);
+
+  CREATE INDEX IF NOT EXISTS idx_tutor_messages_session
+    ON tutor_messages (session_id, created_at ASC);
+
+  CREATE INDEX IF NOT EXISTS idx_tutor_memories_created
+    ON tutor_memories (created_at ASC);
 `);
 
 try {

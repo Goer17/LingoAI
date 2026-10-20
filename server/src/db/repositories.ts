@@ -1,5 +1,5 @@
 import { db } from './database.js';
-import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, QuizSession, SentenceImage, Settings, SettingsModelCategory, VocabularyEntry, WritingTopic } from '../types/models.js';
+import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, QuizSession, SentenceImage, Settings, SettingsModelCategory, TutorMemory, TutorMessage, TutorSession, VocabularyEntry, WritingTopic } from '../types/models.js';
 
 function parseJson<T>(value: string): T {
   return JSON.parse(value) as T;
@@ -537,5 +537,188 @@ export const writingTopicRepository = {
 
   remove(id: string) {
     db.prepare('DELETE FROM writing_topics WHERE id = ?').run(id);
+  },
+};
+
+export const tutorSessionRepository = {
+  list(): TutorSession[] {
+    const rows = db.prepare(`
+      SELECT
+        s.id,
+        s.title,
+        s.created_at,
+        s.updated_at,
+        (SELECT COUNT(*) FROM tutor_messages m WHERE m.session_id = s.id) AS message_count,
+        (
+          SELECT m.content FROM tutor_messages m
+          WHERE m.session_id = s.id
+          ORDER BY m.created_at DESC, m.rowid DESC
+          LIMIT 1
+        ) AS preview
+      FROM tutor_sessions s
+      ORDER BY s.updated_at DESC
+    `).all() as Array<{
+      id: string;
+      title: string;
+      created_at: string;
+      updated_at: string;
+      message_count: number;
+      preview: string | null;
+    }>;
+
+    return rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      messageCount: Number(row.message_count) || 0,
+      preview: row.preview ?? '',
+    }));
+  },
+
+  getById(id: string): TutorSession | null {
+    const row = db.prepare(`
+      SELECT
+        s.id,
+        s.title,
+        s.created_at,
+        s.updated_at,
+        (SELECT COUNT(*) FROM tutor_messages m WHERE m.session_id = s.id) AS message_count,
+        (
+          SELECT m.content FROM tutor_messages m
+          WHERE m.session_id = s.id
+          ORDER BY m.created_at DESC, m.rowid DESC
+          LIMIT 1
+        ) AS preview
+      FROM tutor_sessions s
+      WHERE s.id = ?
+    `).get(id) as {
+      id: string;
+      title: string;
+      created_at: string;
+      updated_at: string;
+      message_count: number;
+      preview: string | null;
+    } | undefined;
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      title: row.title,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      messageCount: Number(row.message_count) || 0,
+      preview: row.preview ?? '',
+    };
+  },
+
+  save(session: Pick<TutorSession, 'id' | 'title' | 'createdAt' | 'updatedAt'>) {
+    db.prepare(`
+      INSERT INTO tutor_sessions (id, title, created_at, updated_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        title = excluded.title,
+        updated_at = excluded.updated_at
+    `).run(session.id, session.title, session.createdAt, session.updatedAt);
+  },
+
+  remove(id: string) {
+    db.prepare('DELETE FROM tutor_messages WHERE session_id = ?').run(id);
+    db.prepare('DELETE FROM tutor_sessions WHERE id = ?').run(id);
+  },
+};
+
+export const tutorMessageRepository = {
+  listBySession(sessionId: string): TutorMessage[] {
+    const rows = db.prepare(`
+      SELECT payload_json
+      FROM tutor_messages
+      WHERE session_id = ?
+      ORDER BY created_at ASC, rowid ASC
+    `).all(sessionId) as Array<{ payload_json: string }>;
+
+    return rows.map((row) => parseJson<TutorMessage>(row.payload_json));
+  },
+
+  listRecent(sessionId: string, limit: number): TutorMessage[] {
+    const rows = db.prepare(`
+      SELECT payload_json
+      FROM tutor_messages
+      WHERE session_id = ?
+      ORDER BY created_at DESC, rowid DESC
+      LIMIT ?
+    `).all(sessionId, limit) as Array<{ payload_json: string }>;
+
+    return rows.map((row) => parseJson<TutorMessage>(row.payload_json)).reverse();
+  },
+
+  save(sessionId: string, message: TutorMessage) {
+    db.prepare(`
+      INSERT INTO tutor_messages (id, session_id, role, content, created_at, payload_json)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        role = excluded.role,
+        content = excluded.content,
+        created_at = excluded.created_at,
+        payload_json = excluded.payload_json
+    `).run(
+      message.id,
+      sessionId,
+      message.role,
+      message.content,
+      message.createdAt,
+      JSON.stringify(message),
+    );
+  },
+};
+
+export const tutorMemoryRepository = {
+  list(): TutorMemory[] {
+    const rows = db.prepare(`
+      SELECT payload_json
+      FROM tutor_memories
+      ORDER BY created_at ASC, rowid ASC
+    `).all() as Array<{ payload_json: string }>;
+
+    return rows.map((row) => parseJson<TutorMemory>(row.payload_json));
+  },
+
+  getById(id: string): TutorMemory | null {
+    const row = db.prepare(`
+      SELECT payload_json
+      FROM tutor_memories
+      WHERE id = ?
+    `).get(id) as { payload_json: string } | undefined;
+
+    return row ? parseJson<TutorMemory>(row.payload_json) : null;
+  },
+
+  save(memory: TutorMemory) {
+    db.prepare(`
+      INSERT INTO tutor_memories (id, kind, content, created_at, updated_at, session_id, payload_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        kind = excluded.kind,
+        content = excluded.content,
+        created_at = excluded.created_at,
+        updated_at = excluded.updated_at,
+        session_id = excluded.session_id,
+        payload_json = excluded.payload_json
+    `).run(
+      memory.id,
+      memory.kind,
+      memory.content,
+      memory.createdAt,
+      memory.updatedAt,
+      memory.sessionId ?? null,
+      JSON.stringify(memory),
+    );
+  },
+
+  remove(id: string) {
+    db.prepare('DELETE FROM tutor_memories WHERE id = ?').run(id);
   },
 };

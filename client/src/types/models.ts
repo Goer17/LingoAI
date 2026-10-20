@@ -226,3 +226,43 @@ export interface PolishResult {
   isPerfect: boolean;
   explanation: string;
 }
+
+export interface TutorSession {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  messageCount: number;
+  preview: string;
+}
+
+export type TutorMemoryKind = 'note' | 'preference' | 'goal' | 'progress';
+
+export interface TutorMemory {
+  id: string;
+  kind: TutorMemoryKind;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  sessionId?: string;
+}
+
+export interface TutorToolTrace {
+  name: string;
+  label: string;
+  ok: boolean;
+  summary?: string;
+}
+
+export interface TutorMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
+  toolCalls?: TutorToolTrace[];
+}
+
+export interface TutorSessionDetail {
+  session: TutorSession;
+  messages: TutorMessage[];
+}
