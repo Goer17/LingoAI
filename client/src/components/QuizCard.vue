@@ -18,6 +18,20 @@
       class="quiz-image"
       alt="Hint image for this sentence"
     />
+    <div
+      v-if="canRegenerateImage"
+      class="quiz-image-regen"
+    >
+      <span class="quiz-image-regen-copy">Think this image doesn't fit? Want to regenerate it?</span>
+      <button
+        class="button button-secondary button-tight quiz-image-regen-button"
+        type="button"
+        :disabled="regeneratingImage"
+        @click="handleRegenerateImage"
+      >
+        {{ regeneratingImage ? 'Generating...' : (regenerateConfirm ? 'Confirm' : 'Regenerate image') }}
+      </button>
+    </div>
     <div v-if="question.type === 'listening'" class="audio-box">
       <button class="icon-button" type="button" aria-label="Play audio" title="Play audio" @click="$emit('play-audio')">
         <Volume2 :size="18" />
@@ -136,13 +150,22 @@ const props = defineProps<{
   total: number;
   submitting: boolean;
   awaitingNext: boolean;
+  regeneratingImage?: boolean;
   submittedListeningAnswers: string[];
 }>();
 
 const emit = defineEmits<{
   submit: [payload?: { response: string; blankAnswers: string[] }];
   'play-audio': [];
+  'regenerate-image': [];
 }>();
+
+const canRegenerateImage = computed(() => (
+  props.awaitingNext
+  && props.question?.type === 'fill_blank'
+  && Boolean(props.question.imageUrl)
+));
+const regenerateConfirm = ref(false);
 
 const maskedSentence = computed(() => {
   if (!props.question) {
@@ -316,6 +339,8 @@ watch(
       return;
     }
 
+    regenerateConfirm.value = false;
+
     if (props.awaitingNext) {
       return;
     }
@@ -379,6 +404,16 @@ function handleSubmit() {
   }
 
   emit('submit');
+}
+
+function handleRegenerateImage() {
+  if (!regenerateConfirm.value) {
+    regenerateConfirm.value = true;
+    return;
+  }
+
+  regenerateConfirm.value = false;
+  emit('regenerate-image');
 }
 
 function getBlankWidth(answer: string) {

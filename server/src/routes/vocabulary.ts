@@ -5,11 +5,12 @@ import { createChatListeningSentencePrompt } from '../prompts/chatListeningSente
 import { createGenerateQuizPrompt } from '../prompts/generateQuizPrompt.js';
 import { createExampleFillBlankPrompt } from '../prompts/exampleFillBlankPrompt.js';
 import { createQuizQuestionChatPrompt } from '../prompts/quizQuestionChatPrompt.js';
+import { createQuizAppealPrompt } from '../prompts/quizAppealPrompt.js';
 import { createSearchWordPrompt } from '../prompts/searchWordPrompt.js';
 import { suggestWords } from '../services/suggestionService.js';
 import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, createQuizAudioUrl, deleteAudioFile, getMediaUrl } from '../services/audioService.js';
 import { getCommonAudioUrl, hasCommonAudio } from '../services/commonAudioService.js';
-import { askWordChat, generateExampleFillBlank, generateQuiz, generateQuizStreamed, searchWord, streamWordChat } from '../services/openaiService.js';
+import { askWordChat, generateExampleFillBlank, generateQuiz, generateQuizStreamed, judgeQuizAppeal, searchWord, streamWordChat } from '../services/openaiService.js';
 import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '../services/fillBlankService.js';
 import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningGroup, createListeningQuizDraft, deleteListeningGroup, getListeningEntryById, getListeningGroupById, listListeningEntries, listListeningGroups, pickListeningEntries, pickListeningEntriesByGroup, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
 import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, removeWord, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
@@ -19,7 +20,7 @@ import { enqueueAutoImageGeneration } from '../services/autoImageService.js';
 import { getSettings } from '../services/settingsService.js';
 import { getTaskProgress, setTaskProgress } from '../services/taskProgressService.js';
 import type { TaskProgress } from '../services/taskProgressService.js';
-import { createQuizSession, getQuizSession, pickQuizEntries, submitQuizAnswer, updateQuizSession } from '../services/quizService.js';
+import { createQuizSession, getQuizSession, pickQuizEntries, setQuizAnswerCorrectness, setQuizQuestionImage, submitQuizAnswer, updateQuizSession } from '../services/quizService.js';
 import {
   createLearningTask,
   createMistakeReviewSession,
@@ -31,6 +32,7 @@ import {
   markLearningTaskPending,
   markLearningTaskReady,
   removeLearningTaskByQuizSessionId,
+  removeMistakeForQuestion,
   reconcileMistakesForCompletedSession,
   upsertMistakesFromSession,
 } from '../services/taskService.js';
@@ -1107,6 +1109,90 @@ vocabularyRouter.post('/quiz/:id/answer', (req, res) => {
   }
 
   return ok(res, { session: updated });
+});
+
+const quizAppealRequestSchema = z.object({
+  questionId: z.string().min(1),
+});
+
+/**
+ * Learner appeal: let the language model re-judge one submitted answer.
+ * When the model accepts the answer, the stored grade is flipped to correct
+ * so the quiz page immediately shows the "correct" state.
+ */
+vocabularyRouter.post('/quiz/:id/appeal', async (req, res) => {
+  const parsed = quizAppealRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return fail(res, 400, 'Invalid appeal payload.');
+  }
+
+  const session = getQuizSession(req.params.id);
+  if (!session) {
+    return fail(res, 404, 'Quiz session not found.');
+  }
+
+  const question = session.questions.find((item) => item.id === parsed.data.questionId);
+  const answer = session.answers.find((item) => item.questionId === parsed.data.questionId);
+  if (!question || !answer) {
+    return fail(res, 404, 'Answered question not found.');
+  }
+
+  try {
+    const verdict = await judgeQuizAppeal(createQuizAppealPrompt({
+      word: question.word,
+      sentence: question.sentence,
+      type: question.type,
+      answer: question.answer,
+      answerVariants: question.answerVariants,
+      userResponse: answer.response,
+      hasImage: Boolean(question.imageUrl),
+    }));
+
+    let updated = session;
+    if (verdict.acceptable && !answer.isCorrect) {
+      updated = setQuizAnswerCorrectness(session.id, question.id, true) ?? session;
+      if (updated.completed) {
+        removeMistakeForQuestion(updated, question.id);
+        reconcileMistakesForCompletedSession(updated);
+      }
+    }
+
+    return ok(res, {
+      accepted: verdict.acceptable,
+      reason: verdict.reason,
+      session: updated,
+    });
+  } catch (error) {
+    return fail(res, 500, error instanceof Error ? error.message : 'Appeal failed.');
+  }
+});
+
+/** Regenerate the illustration for a single quiz question. */
+vocabularyRouter.post('/quiz/:id/questions/:questionId/regenerate-image', async (req, res) => {
+  const session = getQuizSession(req.params.id);
+  if (!session) {
+    return fail(res, 404, 'Quiz session not found.');
+  }
+
+  const question = session.questions.find((item) => item.id === req.params.questionId);
+  if (!question) {
+    return fail(res, 404, 'Question not found.');
+  }
+
+  if (question.type !== 'fill_blank') {
+    return fail(res, 400, 'Only fill-in-the-blank questions have images.');
+  }
+
+  try {
+    const image = await getOrCreateSentenceImage(question.sentence, {
+      word: question.word,
+      force: true,
+    });
+    const updated = setQuizQuestionImage(session.id, question.id, image.imageUrl) ?? session;
+    return ok(res, { imageUrl: image.imageUrl, session: updated });
+  } catch (error) {
+    return fail(res, 500, error instanceof Error ? error.message : 'Image generation failed.');
+  }
 });
 
 const quizQuestionChatSchema = z.object({

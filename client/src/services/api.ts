@@ -294,6 +294,16 @@ export const api = {
   submitQuizAnswer(id: string, questionId: string, response: string) {
     return unwrap<{ session: QuizSession; vocabulary?: VocabularyEntry[]; listening?: ListeningEntry[] }>(http.post(`/vocabulary/quiz/${id}/answer`, { questionId, response }));
   },
+  appealQuizAnswer(id: string, questionId: string) {
+    return unwrap<{ accepted: boolean; reason: string; session: QuizSession }>(
+      http.post(`/vocabulary/quiz/${id}/appeal`, { questionId }),
+    );
+  },
+  regenerateQuizQuestionImage(id: string, questionId: string) {
+    return unwrap<{ imageUrl: string; session: QuizSession }>(
+      http.post(`/vocabulary/quiz/${id}/questions/${questionId}/regenerate-image`),
+    );
+  },
   async streamQuizQuestionChat(
     payload: {
       messages: Array<{ role: 'user' | 'assistant'; content: string }>;

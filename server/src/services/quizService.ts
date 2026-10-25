@@ -95,3 +95,56 @@ export function submitQuizAnswer(
   quizRepository.save(updated);
   return updated;
 }
+
+/**
+ * Re-grade an already submitted answer after a successful learner appeal.
+ * Only the stored correctness flag changes; the submitted response and the
+ * session's progress stay untouched.
+ */
+export function setQuizAnswerCorrectness(
+  id: string,
+  questionId: string,
+  isCorrect: boolean,
+): QuizSession | null {
+  const session = getQuizSession(id);
+  if (!session) {
+    return null;
+  }
+
+  const hasAnswer = session.answers.some((item) => item.questionId === questionId);
+  if (!hasAnswer) {
+    return session;
+  }
+
+  const updated: QuizSession = {
+    ...session,
+    answers: session.answers.map((item) => (
+      item.questionId === questionId ? { ...item, isCorrect } : item
+    )),
+  };
+
+  quizRepository.save(updated);
+  return updated;
+}
+
+/** Persist a freshly regenerated illustration on a quiz question. */
+export function setQuizQuestionImage(
+  id: string,
+  questionId: string,
+  imageUrl: string,
+): QuizSession | null {
+  const session = getQuizSession(id);
+  if (!session) {
+    return null;
+  }
+
+  const updated: QuizSession = {
+    ...session,
+    questions: session.questions.map((question) => (
+      question.id === questionId ? { ...question, imageUrl } : question
+    )),
+  };
+
+  quizRepository.save(updated);
+  return updated;
+}

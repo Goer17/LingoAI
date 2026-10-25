@@ -3,6 +3,10 @@ import { Check, Volume2, X } from 'lucide-vue-next';
 const model = defineModel({ required: true });
 const props = defineProps();
 const emit = defineEmits();
+const canRegenerateImage = computed(() => (props.awaitingNext
+    && props.question?.type === 'fill_blank'
+    && Boolean(props.question.imageUrl)));
+const regenerateConfirm = ref(false);
 const maskedSentence = computed(() => {
     if (!props.question) {
         return '';
@@ -133,6 +137,7 @@ watch(() => props.question?.id, (nextId, prevId) => {
     if (!nextId || nextId === prevId || props.submitting) {
         return;
     }
+    regenerateConfirm.value = false;
     if (props.awaitingNext) {
         return;
     }
@@ -185,6 +190,14 @@ function handleSubmit() {
     }
     emit('submit');
 }
+function handleRegenerateImage() {
+    if (!regenerateConfirm.value) {
+        regenerateConfirm.value = true;
+        return;
+    }
+    regenerateConfirm.value = false;
+    emit('regenerate-image');
+}
 function getBlankWidth(answer) {
     return `${Math.max(6, answer.length + 3)}ch`;
 }
@@ -235,6 +248,21 @@ if (__VLS_ctx.question) {
             ...{ class: "quiz-image" },
             alt: "Hint image for this sentence",
         });
+    }
+    if (__VLS_ctx.canRegenerateImage) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "quiz-image-regen" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+            ...{ class: "quiz-image-regen-copy" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (__VLS_ctx.handleRegenerateImage) },
+            ...{ class: "button button-secondary button-tight quiz-image-regen-button" },
+            type: "button",
+            disabled: (__VLS_ctx.regeneratingImage),
+        });
+        (__VLS_ctx.regeneratingImage ? 'Generating...' : (__VLS_ctx.regenerateConfirm ? 'Confirm' : 'Regenerate image'));
     }
     if (__VLS_ctx.question.type === 'listening') {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -430,6 +458,12 @@ if (__VLS_ctx.question) {
 /** @type {__VLS_StyleScopedClasses['quiz-meta']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-instruction']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-image']} */ ;
+/** @type {__VLS_StyleScopedClasses['quiz-image-regen']} */ ;
+/** @type {__VLS_StyleScopedClasses['quiz-image-regen-copy']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-tight']} */ ;
+/** @type {__VLS_StyleScopedClasses['quiz-image-regen-button']} */ ;
 /** @type {__VLS_StyleScopedClasses['audio-box']} */ ;
 /** @type {__VLS_StyleScopedClasses['icon-button']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-form']} */ ;
@@ -462,6 +496,8 @@ const __VLS_self = (await import('vue')).defineComponent({
             Volume2: Volume2,
             X: X,
             model: model,
+            canRegenerateImage: canRegenerateImage,
+            regenerateConfirm: regenerateConfirm,
             maskedSentence: maskedSentence,
             showInlineListeningBlanks: showInlineListeningBlanks,
             listeningAnswers: listeningAnswers,
@@ -478,6 +514,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             setBlankRef: setBlankRef,
             handleBlankKeydown: handleBlankKeydown,
             handleSubmit: handleSubmit,
+            handleRegenerateImage: handleRegenerateImage,
             getBlankWidth: getBlankWidth,
             isIncorrectBlank: isIncorrectBlank,
             getBlankReviewClass: getBlankReviewClass,

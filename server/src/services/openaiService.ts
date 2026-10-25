@@ -77,6 +77,11 @@ const exampleFillBlankSchema = z.object({
   })).min(1),
 });
 
+const quizAppealSchema = z.object({
+  acceptable: z.boolean(),
+  reason: z.string().min(1),
+});
+
 const scenarioSchema = z.object({
   setting: z.string().min(1),
   userRole: z.string().min(1),
@@ -328,6 +333,10 @@ export async function generateExampleFillBlank(prompt: string): Promise<{ questi
 
 export async function matchSentenceCandidates(prompt: string): Promise<{ matchedIndices: number[] }> {
   return requestJson(prompt, sentenceMatchSchema);
+}
+
+export async function judgeQuizAppeal(prompt: string): Promise<{ acceptable: boolean; reason: string }> {
+  return requestJson(prompt, quizAppealSchema);
 }
 
 export async function generateScenario(prompt: string) {

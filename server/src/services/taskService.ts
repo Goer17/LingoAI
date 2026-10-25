@@ -205,6 +205,29 @@ export function removeMistakeEntries(ids: string[]) {
   return mistakeRepository.list();
 }
 
+/**
+ * Remove the mistake entry produced by a specific quiz question. Used when a
+ * learner appeal flips an answer from wrong to right after the session was
+ * already graded.
+ */
+export function removeMistakeForQuestion(session: QuizSession, questionId: string) {
+  const question = session.questions.find((item) => item.id === questionId);
+  if (!question) {
+    return mistakeRepository.list();
+  }
+
+  const draft = {
+    type: question.type,
+    word: question.word,
+    sentence: question.sentence,
+    answer: question.answer,
+  };
+
+  const matched = mistakeRepository.list().filter((item) => sameMistake(item, draft));
+
+  return removeMistakeEntries(matched.map((item) => item.id));
+}
+
 export async function createMistakeReviewSession() {
   const mistakes = mistakeRepository.list().slice(0, 10);
   if (mistakes.length === 0) {

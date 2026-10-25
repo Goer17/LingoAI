@@ -115,6 +115,15 @@ export declare const api: {
         vocabulary?: VocabularyEntry[];
         listening?: ListeningEntry[];
     }>;
+    appealQuizAnswer(id: string, questionId: string): Promise<{
+        accepted: boolean;
+        reason: string;
+        session: QuizSession;
+    }>;
+    regenerateQuizQuestionImage(id: string, questionId: string): Promise<{
+        imageUrl: string;
+        session: QuizSession;
+    }>;
     streamQuizQuestionChat(payload: {
         messages: Array<{
             role: "user" | "assistant";

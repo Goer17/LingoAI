@@ -231,6 +231,12 @@ export const api = {
     submitQuizAnswer(id, questionId, response) {
         return unwrap(http.post(`/vocabulary/quiz/${id}/answer`, { questionId, response }));
     },
+    appealQuizAnswer(id, questionId) {
+        return unwrap(http.post(`/vocabulary/quiz/${id}/appeal`, { questionId }));
+    },
+    regenerateQuizQuestionImage(id, questionId) {
+        return unwrap(http.post(`/vocabulary/quiz/${id}/questions/${questionId}/regenerate-image`));
+    },
     async streamQuizQuestionChat(payload, onDelta) {
         const token = getStoredAccessToken();
         const response = await fetch('/api/vocabulary/quiz/question-chat/stream', {

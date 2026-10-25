@@ -775,6 +775,35 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     quizSession.value = await api.getQuiz(id);
   }
 
+  function setQuizSession(session: QuizSession) {
+    quizSession.value = session;
+  }
+
+  function setQuizQuestionImage(questionId: string, imageUrl: string) {
+    if (!quizSession.value) {
+      return;
+    }
+
+    quizSession.value = {
+      ...quizSession.value,
+      questions: quizSession.value.questions.map((question) => (
+        question.id === questionId ? { ...question, imageUrl } : question
+      )),
+    };
+  }
+
+  async function saveWordNoteById(id: string, note: string) {
+    const entry = await api.updateNote(id, note);
+    items.value = items.value.map((item) => (item.id === entry.id ? entry : item));
+    return entry;
+  }
+
+  async function saveListeningNoteById(id: string, note: string) {
+    const entry = await api.updateListeningNote(id, note);
+    listeningItems.value = listeningItems.value.map((item) => (item.id === entry.id ? entry : item));
+    return entry;
+  }
+
   async function submitQuizAnswer(questionId: string, response: string) {
     if (!quizSession.value) {
       throw new Error('No quiz session loaded.');
@@ -858,6 +887,10 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
     addListeningSentence,
     deleteListeningSentence,
     loadQuiz,
+    setQuizSession,
+    setQuizQuestionImage,
+    saveWordNoteById,
+    saveListeningNoteById,
     submitQuizAnswer,
     exampleImageState,
     exampleImageUrl,

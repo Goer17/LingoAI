@@ -1,5 +1,19 @@
 <template>
-  <section class="card quiz-chat-card">
+  <section class="card quiz-chat-card quiz-chat-float">
+    <div class="quiz-chat-float-head">
+      <button
+        v-if="canAppeal && !appealAccepted"
+        class="button button-secondary button-tight quiz-chat-appeal"
+        type="button"
+        :disabled="appealing || loading"
+        title="Ask the tutor to re-judge this answer"
+        @click="handleAppeal"
+      >
+        <Scale :size="14" />
+        {{ appealing ? 'Reviewing...' : 'Appeal' }}
+      </button>
+      <span class="quiz-chat-float-title">Tutor</span>
+    </div>
     <div class="detail-content">
       <div class="quiz-chat-context">
         <p class="eyebrow">Question {{ questionIndex + 1 }} / {{ questionTotal }}</p>
@@ -25,6 +39,7 @@
         <p v-if="chatMessages.length === 0" class="empty-copy">
           Ask the tutor about this question.
         </p>
+        <p v-if="error" class="error-text">{{ error }}</p>
       </div>
 
       <form class="chat-form" @submit.prevent="handleSend">
@@ -45,8 +60,9 @@
 
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue';
-import { Check, X } from 'lucide-vue-next';
+import { Check, Scale, X } from 'lucide-vue-next';
 import { api } from '@/services/api';
+import type { QuizSession } from '@/types/models';
 
 interface ChatMsg {
   role: 'user' | 'assistant';
@@ -54,18 +70,27 @@ interface ChatMsg {
 }
 
 const props = defineProps<{
+  sessionId: string;
+  questionId: string;
   word: string;
   sentence: string;
   type: 'fill_blank' | 'listening';
   answer: string;
   userResponse: string;
   isCorrect: boolean;
+  canAppeal: boolean;
   questionIndex: number;
   questionTotal: number;
 }>();
 
+const emit = defineEmits<{
+  'appeal-resolved': [payload: { session: QuizSession; accepted: boolean }];
+}>();
+
 const draft = ref('');
 const loading = ref(false);
+const appealing = ref(false);
+const appealAccepted = ref(false);
 const chatMessages = ref<ChatMsg[]>([]);
 const chatHistoryRef = ref<HTMLElement | null>(null);
 const error = ref('');
@@ -76,6 +101,8 @@ watch(
     chatMessages.value = [];
     draft.value = '';
     error.value = '';
+    appealAccepted.value = false;
+    appealing.value = false;
   },
 );
 
@@ -90,6 +117,49 @@ watch(
     chatHistoryRef.value.scrollTop = chatHistoryRef.value.scrollHeight;
   },
 );
+
+async function handleAppeal() {
+  if (appealing.value || loading.value) {
+    return;
+  }
+
+  appealing.value = true;
+  error.value = '';
+  chatMessages.value = [
+    ...chatMessages.value,
+    {
+      role: 'user',
+      content: 'Appeal: I believe my answer should be accepted. Please re-judge it and explain your reasoning.',
+    },
+  ];
+
+  try {
+    const result = await api.appealQuizAnswer(props.sessionId, props.questionId);
+    const verdictLine = result.accepted
+      ? '**Re-judged: Correct.**'
+      : '**Re-judged: Still incorrect.**';
+    chatMessages.value = [
+      ...chatMessages.value,
+      {
+        role: 'assistant',
+        content: `${verdictLine}\n\n${result.reason}`,
+      },
+    ];
+
+    if (result.accepted) {
+      appealAccepted.value = true;
+    }
+
+    emit('appeal-resolved', {
+      session: result.session,
+      accepted: result.accepted,
+    });
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Appeal failed.';
+  } finally {
+    appealing.value = false;
+  }
+}
 
 async function handleSend() {
   const text = draft.value.trim();

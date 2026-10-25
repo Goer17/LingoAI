@@ -19,11 +19,25 @@
         :total="total"
         :submitting="submitting"
         :awaiting-next="awaitingNext"
+        :regenerating-image="regeneratingImage"
         :source-type="store.quizSession?.sourceType ?? 'vocabulary_task'"
         @submit="submit"
         @play-audio="playAudio"
+        @regenerate-image="regenerateQuestionImage"
       />
-      <div v-if="awaitingNext && displayQuestion" class="quiz-connected-stack">
+      <div v-if="awaitingNext && displayQuestion" class="quiz-answer-stack">
+        <label v-if="noteTarget" class="card quiz-note-card field">
+          <span class="eyebrow">Note</span>
+          <textarea
+            v-model="noteDraft"
+            rows="3"
+            placeholder="Add your own note..."
+            :disabled="noteSaving"
+            @change="saveNote"
+          />
+          <span v-if="noteSaving" class="subtle-copy quiz-note-status">Saving...</span>
+          <span v-else-if="noteError" class="error-text quiz-note-status">{{ noteError }}</span>
+        </label>
         <SearchResultCard
           v-if="answerWordResult"
           :result="answerWordResult"
@@ -36,17 +50,29 @@
           @play-audio="playAnswerWordAudio"
           @regenerate-audio="regenerateAnswerWordAudio"
         />
-        <QuizChatBox
-          :word="displayQuestion.word"
-          :sentence="displayQuestion.sentence"
-          :type="displayQuestion.type"
-          :answer="displayQuestion.answer"
-          :user-response="submittedAnswer"
-          :is-correct="feedbackIsCorrect"
-          :question-index="displayIndex"
-          :question-total="total"
-        />
+        <section v-else-if="displayQuestion.type === 'listening'" class="card quiz-sentence-card">
+          <p class="eyebrow">Sentence</p>
+          <p class="quiz-sentence-text">{{ answerSentenceText }}</p>
+          <p v-if="answerSentenceEntry" class="subtle-copy">
+            familiarity {{ answerSentenceEntry.familiarity }}{{ answerSentenceEntry.known ? ' · known' : '' }}
+          </p>
+        </section>
       </div>
+      <QuizChatBox
+        v-if="awaitingNext && displayQuestion"
+        :session-id="store.quizSession?.id ?? ''"
+        :question-id="displayQuestion.id"
+        :word="displayQuestion.word"
+        :sentence="displayQuestion.sentence"
+        :type="displayQuestion.type"
+        :answer="displayQuestion.answer"
+        :user-response="submittedAnswer"
+        :is-correct="feedbackIsCorrect"
+        :can-appeal="canAppeal"
+        :question-index="displayIndex"
+        :question-total="total"
+        @appeal-resolved="handleAppealResolved"
+      />
       <p v-if="error" class="error-text quiz-error">{{ error }}</p>
     </template>
   </div>
@@ -54,7 +80,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import type { QuizQuestion, SearchResult } from '@/types/models';
+import type { ListeningEntry, QuizQuestion, QuizSession, SearchResult } from '@/types/models';
 import { RouterLink, useRoute } from 'vue-router';
 import QuizCard from '@/components/QuizCard.vue';
 import QuizChatBox from '@/components/QuizChatBox.vue';
@@ -78,12 +104,28 @@ const lastAutoPlayedQuestionId = ref('');
 const autoPlayArmed = ref(true);
 const showChinese = ref(false);
 const answerCommonUrl = ref<string | null>(null);
+const listeningEntries = ref<ListeningEntry[]>([]);
+const noteDraft = ref('');
+const noteSaving = ref(false);
+const noteError = ref('');
+const regeneratingImage = ref(false);
 
 onMounted(async () => {
   try {
     await store.loadQuiz(String(route.params.id));
     if (store.items.length === 0) {
       await store.fetchVocabulary().catch(() => undefined);
+    }
+
+    const needsListeningEntries = store.quizSession?.questions.some(
+      (question) => question.type === 'listening',
+    );
+    if (needsListeningEntries) {
+      if (store.listeningItems.length > 0) {
+        listeningEntries.value = [...store.listeningItems];
+      } else {
+        listeningEntries.value = await api.getListening().catch(() => []);
+      }
     }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load quiz.';
@@ -117,8 +159,8 @@ const displayIndex = computed(() => {
 
   return Math.max(currentIndex.value - 1, 0);
 });
-const answerWordResult = computed<SearchResult | null>(() => {
-  if (!awaitingNext.value || !displayQuestion.value?.word) {
+const answerWordEntry = computed(() => {
+  if (!awaitingNext.value || displayQuestion.value?.type !== 'fill_blank' || !displayQuestion.value.word) {
     return null;
   }
 
@@ -127,7 +169,10 @@ const answerWordResult = computed<SearchResult | null>(() => {
     return null;
   }
 
-  const entry = store.items.find((item) => item.text.trim().toLowerCase() === target);
+  return store.items.find((item) => item.text.trim().toLowerCase() === target) ?? null;
+});
+const answerWordResult = computed<SearchResult | null>(() => {
+  const entry = answerWordEntry.value;
   if (!entry) {
     return null;
   }
@@ -142,6 +187,46 @@ const answerWordResult = computed<SearchResult | null>(() => {
     ttsText: entry.ttsText,
   };
 });
+const answerSentenceEntry = computed(() => {
+  const question = displayQuestion.value;
+  if (!awaitingNext.value || question?.type !== 'listening') {
+    return null;
+  }
+
+  const target = question.sentence.trim().replace(/\s+/g, ' ').toLowerCase();
+  if (!target) {
+    return null;
+  }
+
+  const candidates = [
+    ...listeningEntries.value,
+    ...store.listeningItems,
+  ];
+  return candidates.find((item) => (
+    item.sentence.trim().replace(/\s+/g, ' ').toLowerCase() === target
+  )) ?? null;
+});
+const answerSentenceText = computed(() => (
+  answerSentenceEntry.value?.sentence ?? displayQuestion.value?.sentence ?? ''
+));
+const noteTarget = computed(() => {
+  const word = answerWordEntry.value;
+  if (word) {
+    return { kind: 'word' as const, id: word.id, note: word.note ?? '' };
+  }
+
+  const sentence = answerSentenceEntry.value;
+  if (sentence) {
+    return { kind: 'listening' as const, id: sentence.id, note: sentence.note ?? '' };
+  }
+
+  return null;
+});
+const canAppeal = computed(() => (
+  !feedbackIsCorrect.value
+  && displayQuestion.value?.type === 'fill_blank'
+  && Boolean(displayQuestion.value.imageUrl)
+));
 
 async function submit(payload?: { response: string; blankAnswers: string[] }) {
   if (submitting.value) {
@@ -197,6 +282,76 @@ async function submit(payload?: { response: string; blankAnswers: string[] }) {
     submitting.value = false;
   }
 }
+
+async function saveNote() {
+  const target = noteTarget.value;
+  if (!target || noteSaving.value) {
+    return;
+  }
+
+  if (noteDraft.value === (target.note ?? '')) {
+    return;
+  }
+
+  noteSaving.value = true;
+  noteError.value = '';
+  try {
+    if (target.kind === 'word') {
+      await store.saveWordNoteById(target.id, noteDraft.value);
+    } else {
+      const entry = await store.saveListeningNoteById(target.id, noteDraft.value);
+      listeningEntries.value = listeningEntries.value.map((item) => (
+        item.id === entry.id ? entry : item
+      ));
+    }
+  } catch (err) {
+    noteError.value = err instanceof Error ? err.message : 'Failed to save the note.';
+    noteDraft.value = target.note ?? '';
+  } finally {
+    noteSaving.value = false;
+  }
+}
+
+async function regenerateQuestionImage() {
+  const question = displayQuestion.value;
+  const session = store.quizSession;
+  if (!question || !session || regeneratingImage.value) {
+    return;
+  }
+
+  error.value = '';
+  regeneratingImage.value = true;
+  try {
+    const data = await api.regenerateQuizQuestionImage(session.id, question.id);
+    store.setQuizSession(data.session);
+    if (frozenQuestion.value?.id === question.id) {
+      frozenQuestion.value = { ...frozenQuestion.value, imageUrl: data.imageUrl };
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Image regeneration failed.';
+  } finally {
+    regeneratingImage.value = false;
+  }
+}
+
+function handleAppealResolved(payload: { session: QuizSession; accepted: boolean }) {
+  store.setQuizSession(payload.session);
+  if (payload.accepted) {
+    feedbackIsCorrect.value = true;
+    feedback.value = payload.session.completed
+      ? 'Press Enter again to finish.'
+      : 'Press Enter again for next question.';
+  }
+}
+
+watch(
+  () => `${noteTarget.value?.kind ?? ''}:${noteTarget.value?.id ?? ''}`,
+  () => {
+    noteDraft.value = noteTarget.value?.note ?? '';
+    noteError.value = '';
+  },
+  { immediate: true },
+);
 
 async function playAudio() {
   if (!displayQuestion.value?.audioUrl) {
