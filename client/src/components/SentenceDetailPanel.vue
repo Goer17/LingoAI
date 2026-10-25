@@ -24,6 +24,7 @@
             <Volume2 :size="18" />
           </button>
           <button
+            v-if="!hideDelete"
             class="button button-secondary delete-action"
             type="button"
             :class="{ confirm: deleteConfirm }"
@@ -34,12 +35,12 @@
         </div>
       </div>
 
-      <label class="field">
+      <label v-if="!hideNote" class="field">
         <span>Note</span>
         <textarea :value="sentence.note" rows="5" placeholder="Add your own note..." @change="handleNoteChange" />
       </label>
 
-      <div class="chat-shell">
+      <div v-if="!hideChat" class="chat-shell">
         <div class="section-heading inline-heading">
           <div>
             <p class="eyebrow">Tutor Chat</p>
@@ -93,6 +94,9 @@ const chatHistoryRef = ref<HTMLElement | null>(null);
 const props = defineProps<{
   sentence: ListeningEntry | null;
   loading: boolean;
+  hideNote?: boolean;
+  hideChat?: boolean;
+  hideDelete?: boolean;
 }>();
 
 const emit = defineEmits<{

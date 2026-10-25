@@ -257,13 +257,15 @@ if (__VLS_ctx.word) {
         type: "button",
     });
     (__VLS_ctx.showChinese ? 'Hide Chinese' : 'Show Chinese');
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
-        ...{ onClick: (__VLS_ctx.handleDeleteClick) },
-        ...{ class: "button button-secondary delete-action" },
-        type: "button",
-        ...{ class: ({ confirm: __VLS_ctx.deleteConfirm }) },
-    });
-    (__VLS_ctx.deleteConfirm ? 'Confirm' : 'Delete');
+    if (!__VLS_ctx.hideDelete) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (__VLS_ctx.handleDeleteClick) },
+            ...{ class: "button button-secondary delete-action" },
+            type: "button",
+            ...{ class: ({ confirm: __VLS_ctx.deleteConfirm }) },
+        });
+        (__VLS_ctx.deleteConfirm ? 'Confirm' : 'Delete');
+    }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "meaning-grid detail-grid" },
     });
@@ -365,78 +367,84 @@ if (__VLS_ctx.word) {
     });
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
     (__VLS_ctx.word.derivatives.join(' · ') || 'None');
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
-        ...{ class: "field" },
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.textarea)({
-        ...{ onChange: (__VLS_ctx.handleNoteChange) },
-        value: (__VLS_ctx.word.note),
-        rows: "5",
-        placeholder: "Add your own note...",
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "chat-shell" },
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "section-heading inline-heading" },
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({});
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-        ...{ class: "eyebrow" },
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.h3, __VLS_intrinsicElements.h3)({});
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
-        ...{ onClick: (...[$event]) => {
-                if (!(__VLS_ctx.word))
-                    return;
-                __VLS_ctx.$emit('clear-chat');
-            } },
-        ...{ class: "button button-secondary" },
-        type: "button",
-        disabled: (__VLS_ctx.loading || __VLS_ctx.word.chatHistory.length === 0),
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ref: "chatHistoryRef",
-        ...{ class: "chat-history" },
-    });
-    /** @type {typeof __VLS_ctx.chatHistoryRef} */ ;
-    for (const [message] of __VLS_getVForSourceType((__VLS_ctx.word.chatHistory))) {
+    if (!__VLS_ctx.hideNote) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
+            ...{ class: "field" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.textarea)({
+            ...{ onChange: (__VLS_ctx.handleNoteChange) },
+            value: (__VLS_ctx.word.note),
+            rows: "5",
+            placeholder: "Add your own note...",
+        });
+    }
+    if (!__VLS_ctx.hideChat) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            key: (message.id),
-            ...{ class: "chat-bubble" },
-            ...{ class: (message.role) },
+            ...{ class: "chat-shell" },
         });
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
-            ...{ class: "chat-role" },
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "section-heading inline-heading" },
         });
-        (message.role);
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.div)({
-            ...{ class: "chat-content markdown-content" },
-        });
-        __VLS_asFunctionalDirective(__VLS_directives.vHtml)(null, { ...__VLS_directiveBindingRestFields, value: (__VLS_ctx.renderMarkdown(message.content)) }, null, null);
-    }
-    if (__VLS_ctx.word.chatHistory.length === 0) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({});
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-            ...{ class: "empty-copy" },
+            ...{ class: "eyebrow" },
         });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.h3, __VLS_intrinsicElements.h3)({});
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (...[$event]) => {
+                    if (!(__VLS_ctx.word))
+                        return;
+                    if (!(!__VLS_ctx.hideChat))
+                        return;
+                    __VLS_ctx.$emit('clear-chat');
+                } },
+            ...{ class: "button button-secondary" },
+            type: "button",
+            disabled: (__VLS_ctx.loading || __VLS_ctx.word.chatHistory.length === 0),
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ref: "chatHistoryRef",
+            ...{ class: "chat-history" },
+        });
+        /** @type {typeof __VLS_ctx.chatHistoryRef} */ ;
+        for (const [message] of __VLS_getVForSourceType((__VLS_ctx.word.chatHistory))) {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+                key: (message.id),
+                ...{ class: "chat-bubble" },
+                ...{ class: (message.role) },
+            });
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                ...{ class: "chat-role" },
+            });
+            (message.role);
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.div)({
+                ...{ class: "chat-content markdown-content" },
+            });
+            __VLS_asFunctionalDirective(__VLS_directives.vHtml)(null, { ...__VLS_directiveBindingRestFields, value: (__VLS_ctx.renderMarkdown(message.content)) }, null, null);
+        }
+        if (__VLS_ctx.word.chatHistory.length === 0) {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+                ...{ class: "empty-copy" },
+            });
+        }
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.form, __VLS_intrinsicElements.form)({
+            ...{ onSubmit: (__VLS_ctx.submit) },
+            ...{ class: "chat-form" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.textarea)({
+            ...{ onKeydown: (__VLS_ctx.submit) },
+            value: (__VLS_ctx.draft),
+            rows: "3",
+            placeholder: "Ask about collocations, tone, or common mistakes...",
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ class: "button button-primary" },
+            type: "submit",
+            disabled: (__VLS_ctx.loading || !__VLS_ctx.draft.trim()),
+        });
+        (__VLS_ctx.loading ? 'Sending...' : 'Send');
     }
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.form, __VLS_intrinsicElements.form)({
-        ...{ onSubmit: (__VLS_ctx.submit) },
-        ...{ class: "chat-form" },
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.textarea)({
-        ...{ onKeydown: (__VLS_ctx.submit) },
-        value: (__VLS_ctx.draft),
-        rows: "3",
-        placeholder: "Ask about collocations, tone, or common mistakes...",
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
-        ...{ class: "button button-primary" },
-        type: "submit",
-        disabled: (__VLS_ctx.loading || !__VLS_ctx.draft.trim()),
-    });
-    (__VLS_ctx.loading ? 'Sending...' : 'Send');
 }
 else {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({

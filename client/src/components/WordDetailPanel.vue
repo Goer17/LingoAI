@@ -33,6 +33,7 @@
             {{ showChinese ? 'Hide Chinese' : 'Show Chinese' }}
           </button>
           <button
+            v-if="!hideDelete"
             class="button button-secondary delete-action"
             type="button"
             :class="{ confirm: deleteConfirm }"
@@ -79,12 +80,12 @@
 
       <p class="token-row"><span>Derivatives</span> {{ word.derivatives.join(' · ') || 'None' }}</p>
 
-      <label class="field">
+      <label v-if="!hideNote" class="field">
         <span>Note</span>
         <textarea :value="word.note" rows="5" placeholder="Add your own note..." @change="handleNoteChange" />
       </label>
 
-      <div class="chat-shell">
+      <div v-if="!hideChat" class="chat-shell">
         <div class="section-heading inline-heading">
           <div>
             <p class="eyebrow">Tutor Chat</p>
@@ -144,6 +145,9 @@ const props = defineProps<{
   showChinese: boolean;
   loading: boolean;
   hasCommonAudio?: boolean;
+  hideNote?: boolean;
+  hideChat?: boolean;
+  hideDelete?: boolean;
 }>();
 
 const emit = defineEmits<{

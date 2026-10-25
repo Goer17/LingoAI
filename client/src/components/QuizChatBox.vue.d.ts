@@ -10,7 +10,6 @@ type __VLS_Props = {
     isCorrect: boolean;
     canAppeal: boolean;
     questionIndex: number;
-    questionTotal: number;
 };
 declare const _default: import("vue").DefineComponent<__VLS_Props, {}, {}, {}, {}, import("vue").ComponentOptionsMixin, import("vue").ComponentOptionsMixin, {
     "appeal-resolved": (payload: {

@@ -26,6 +26,33 @@
         @regenerate-image="regenerateQuestionImage"
       />
       <div v-if="awaitingNext && displayQuestion" class="quiz-answer-stack">
+        <WordDetailPanel
+          v-if="answerWordEntry"
+          :word="answerWordEntry"
+          :show-chinese="showChinese"
+          :loading="false"
+          :has-common-audio="!!answerCommonUrl"
+          :hide-note="true"
+          :hide-chat="true"
+          :hide-delete="true"
+          @toggle-translation="showChinese = !showChinese"
+          @play-audio="playAnswerWordAudio"
+          @regenerate-audio="regenerateAnswerWordAudio"
+        />
+        <SentenceDetailPanel
+          v-else-if="answerSentenceEntry"
+          :sentence="answerSentenceEntry"
+          :loading="false"
+          :hide-note="true"
+          :hide-chat="true"
+          :hide-delete="true"
+          @play-audio="playAnswerSentenceAudio"
+          @regenerate-audio="regenerateAnswerSentenceAudio"
+        />
+        <section v-else-if="displayQuestion.type === 'listening'" class="card quiz-sentence-card">
+          <p class="eyebrow">Sentence</p>
+          <p class="quiz-sentence-text">{{ answerSentenceText }}</p>
+        </section>
         <label v-if="noteTarget" class="card quiz-note-card field">
           <span class="eyebrow">Note</span>
           <textarea
@@ -38,25 +65,6 @@
           <span v-if="noteSaving" class="subtle-copy quiz-note-status">Saving...</span>
           <span v-else-if="noteError" class="error-text quiz-note-status">{{ noteError }}</span>
         </label>
-        <SearchResultCard
-          v-if="answerWordResult"
-          :result="answerWordResult"
-          :show-chinese="showChinese"
-          :saving="false"
-          :allow-save="false"
-          :show-header-label="false"
-          :has-common-audio="!!answerCommonUrl"
-          @toggle-translation="showChinese = !showChinese"
-          @play-audio="playAnswerWordAudio"
-          @regenerate-audio="regenerateAnswerWordAudio"
-        />
-        <section v-else-if="displayQuestion.type === 'listening'" class="card quiz-sentence-card">
-          <p class="eyebrow">Sentence</p>
-          <p class="quiz-sentence-text">{{ answerSentenceText }}</p>
-          <p v-if="answerSentenceEntry" class="subtle-copy">
-            familiarity {{ answerSentenceEntry.familiarity }}{{ answerSentenceEntry.known ? ' · known' : '' }}
-          </p>
-        </section>
       </div>
       <QuizChatBox
         v-if="awaitingNext && displayQuestion"
@@ -78,15 +86,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
-import type { ListeningEntry, QuizQuestion, QuizSession, SearchResult } from '@/types/models';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import type { ListeningEntry, QuizQuestion, QuizSession } from '@/types/models';
 import { RouterLink, useRoute } from 'vue-router';
 import QuizCard from '@/components/QuizCard.vue';
 import QuizChatBox from '@/components/QuizChatBox.vue';
-import SearchResultCard from '@/components/SearchResultCard.vue';
+import SentenceDetailPanel from '@/components/SentenceDetailPanel.vue';
+import WordDetailPanel from '@/components/WordDetailPanel.vue';
 import { api } from '@/services/api';
 import { useVocabularyStore } from '@/stores/vocabulary';
-import { clearCachedAudioUrl, getAudioUrl } from '@/utils/audioCache';
+import { buildMediaUrl, clearCachedMediaUrl, getStoredMediaAudioUrl } from '@/utils/audioCache';
 
 const route = useRoute();
 const store = useVocabularyStore();
@@ -108,6 +117,7 @@ const noteDraft = ref('');
 const noteSaving = ref(false);
 const noteError = ref('');
 const regeneratingImage = ref(false);
+const audioVersions = reactive<Record<string, number>>({});
 
 onMounted(async () => {
   try {
@@ -170,22 +180,6 @@ const answerWordEntry = computed(() => {
 
   return store.items.find((item) => item.text.trim().toLowerCase() === target) ?? null;
 });
-const answerWordResult = computed<SearchResult | null>(() => {
-  const entry = answerWordEntry.value;
-  if (!entry) {
-    return null;
-  }
-
-  return {
-    text: entry.text,
-    type: entry.type,
-    found: true,
-    pronunciation: entry.pronunciation,
-    meanings: entry.meanings,
-    derivatives: entry.derivatives,
-    ttsText: entry.ttsText,
-  };
-});
 const answerSentenceEntry = computed(() => {
   const question = displayQuestion.value;
   if (!awaitingNext.value || question?.type !== 'listening') {
@@ -198,8 +192,8 @@ const answerSentenceEntry = computed(() => {
   }
 
   const candidates = [
-    ...listeningEntries.value,
     ...store.listeningItems,
+    ...listeningEntries.value,
   ];
   return candidates.find((item) => (
     item.sentence.trim().replace(/\s+/g, ' ').toLowerCase() === target
@@ -365,32 +359,94 @@ async function playAudio() {
   }
 }
 
-async function playAnswerWordAudio(input: string) {
+async function playAnswerWordAudio() {
+  const entry = answerWordEntry.value;
+  if (!entry) {
+    return;
+  }
+
   error.value = '';
   try {
-    // Prefer the real dictionary recording when available; fall back to TTS.
-    const audioUrl = answerCommonUrl.value ?? await getAudioUrl(input);
-    const audio = new Audio(audioUrl);
-    await audio.play();
+    if (answerCommonUrl.value) {
+      await new Audio(answerCommonUrl.value).play();
+      return;
+    }
+
+    const version = audioVersions[entry.id];
+    const directUrl = version && entry.audioFile
+      ? buildMediaUrl(entry.audioFile, version)
+      : getStoredMediaAudioUrl(entry.audioFile);
+    const audioUrl = directUrl || await store.ensureWordAudio(entry.id);
+    await new Audio(audioUrl).play();
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Audio playback failed.';
   }
 }
 
-async function regenerateAnswerWordAudio(input: string) {
+async function regenerateAnswerWordAudio() {
+  const entry = answerWordEntry.value;
+  if (!entry) {
+    return;
+  }
+
   error.value = '';
   try {
-    clearCachedAudioUrl(input);
-    const { audioUrl } = await api.regenerateAudio(input);
-    const audio = new Audio(audioUrl);
-    await audio.play();
+    const { audioFile } = await api.regenerateWordAudio(entry.id);
+    if (!audioFile) {
+      return;
+    }
+
+    entry.audioFile = audioFile;
+    clearCachedMediaUrl(audioFile);
+    const version = (audioVersions[entry.id] ?? 0) + 1;
+    audioVersions[entry.id] = version;
+    await new Audio(buildMediaUrl(audioFile, version)).play();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Audio regeneration failed.';
+  }
+}
+
+async function playAnswerSentenceAudio() {
+  const entry = answerSentenceEntry.value;
+  if (!entry) {
+    return;
+  }
+
+  error.value = '';
+  try {
+    const directUrl = getStoredMediaAudioUrl(entry.audioFile);
+    const audioUrl = directUrl || await store.ensureListeningAudio(entry.id);
+    await new Audio(audioUrl).play();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Audio playback failed.';
+  }
+}
+
+async function regenerateAnswerSentenceAudio() {
+  const entry = answerSentenceEntry.value;
+  if (!entry) {
+    return;
+  }
+
+  error.value = '';
+  try {
+    const { audioFile } = await api.regenerateListeningAudio(entry.id);
+    if (!audioFile) {
+      return;
+    }
+
+    entry.audioFile = audioFile;
+    clearCachedMediaUrl(audioFile);
+    const version = (audioVersions[entry.id] ?? 0) + 1;
+    audioVersions[entry.id] = version;
+    await new Audio(buildMediaUrl(audioFile, version)).play();
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Audio regeneration failed.';
   }
 }
 
 watch(
-  () => answerWordResult.value?.text ?? '',
+  () => answerWordEntry.value?.text ?? '',
   async (text) => {
     if (!text) {
       answerCommonUrl.value = null;

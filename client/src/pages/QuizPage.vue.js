@@ -1,11 +1,12 @@
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import QuizCard from '@/components/QuizCard.vue';
 import QuizChatBox from '@/components/QuizChatBox.vue';
-import SearchResultCard from '@/components/SearchResultCard.vue';
+import SentenceDetailPanel from '@/components/SentenceDetailPanel.vue';
+import WordDetailPanel from '@/components/WordDetailPanel.vue';
 import { api } from '@/services/api';
 import { useVocabularyStore } from '@/stores/vocabulary';
-import { clearCachedAudioUrl, getAudioUrl } from '@/utils/audioCache';
+import { buildMediaUrl, clearCachedMediaUrl, getStoredMediaAudioUrl } from '@/utils/audioCache';
 const route = useRoute();
 const store = useVocabularyStore();
 const answer = ref('');
@@ -26,6 +27,7 @@ const noteDraft = ref('');
 const noteSaving = ref(false);
 const noteError = ref('');
 const regeneratingImage = ref(false);
+const audioVersions = reactive({});
 onMounted(async () => {
     try {
         await store.loadQuiz(String(route.params.id));
@@ -81,21 +83,6 @@ const answerWordEntry = computed(() => {
     }
     return store.items.find((item) => item.text.trim().toLowerCase() === target) ?? null;
 });
-const answerWordResult = computed(() => {
-    const entry = answerWordEntry.value;
-    if (!entry) {
-        return null;
-    }
-    return {
-        text: entry.text,
-        type: entry.type,
-        found: true,
-        pronunciation: entry.pronunciation,
-        meanings: entry.meanings,
-        derivatives: entry.derivatives,
-        ttsText: entry.ttsText,
-    };
-});
 const answerSentenceEntry = computed(() => {
     const question = displayQuestion.value;
     if (!awaitingNext.value || question?.type !== 'listening') {
@@ -106,8 +93,8 @@ const answerSentenceEntry = computed(() => {
         return null;
     }
     const candidates = [
-        ...listeningEntries.value,
         ...store.listeningItems,
+        ...listeningEntries.value,
     ];
     return candidates.find((item) => (item.sentence.trim().replace(/\s+/g, ' ').toLowerCase() === target)) ?? null;
 });
@@ -253,31 +240,86 @@ async function playAudio() {
         error.value = err instanceof Error ? err.message : 'Audio playback failed.';
     }
 }
-async function playAnswerWordAudio(input) {
+async function playAnswerWordAudio() {
+    const entry = answerWordEntry.value;
+    if (!entry) {
+        return;
+    }
     error.value = '';
     try {
-        // Prefer the real dictionary recording when available; fall back to TTS.
-        const audioUrl = answerCommonUrl.value ?? await getAudioUrl(input);
-        const audio = new Audio(audioUrl);
-        await audio.play();
+        if (answerCommonUrl.value) {
+            await new Audio(answerCommonUrl.value).play();
+            return;
+        }
+        const version = audioVersions[entry.id];
+        const directUrl = version && entry.audioFile
+            ? buildMediaUrl(entry.audioFile, version)
+            : getStoredMediaAudioUrl(entry.audioFile);
+        const audioUrl = directUrl || await store.ensureWordAudio(entry.id);
+        await new Audio(audioUrl).play();
     }
     catch (err) {
         error.value = err instanceof Error ? err.message : 'Audio playback failed.';
     }
 }
-async function regenerateAnswerWordAudio(input) {
+async function regenerateAnswerWordAudio() {
+    const entry = answerWordEntry.value;
+    if (!entry) {
+        return;
+    }
     error.value = '';
     try {
-        clearCachedAudioUrl(input);
-        const { audioUrl } = await api.regenerateAudio(input);
-        const audio = new Audio(audioUrl);
-        await audio.play();
+        const { audioFile } = await api.regenerateWordAudio(entry.id);
+        if (!audioFile) {
+            return;
+        }
+        entry.audioFile = audioFile;
+        clearCachedMediaUrl(audioFile);
+        const version = (audioVersions[entry.id] ?? 0) + 1;
+        audioVersions[entry.id] = version;
+        await new Audio(buildMediaUrl(audioFile, version)).play();
     }
     catch (err) {
         error.value = err instanceof Error ? err.message : 'Audio regeneration failed.';
     }
 }
-watch(() => answerWordResult.value?.text ?? '', async (text) => {
+async function playAnswerSentenceAudio() {
+    const entry = answerSentenceEntry.value;
+    if (!entry) {
+        return;
+    }
+    error.value = '';
+    try {
+        const directUrl = getStoredMediaAudioUrl(entry.audioFile);
+        const audioUrl = directUrl || await store.ensureListeningAudio(entry.id);
+        await new Audio(audioUrl).play();
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Audio playback failed.';
+    }
+}
+async function regenerateAnswerSentenceAudio() {
+    const entry = answerSentenceEntry.value;
+    if (!entry) {
+        return;
+    }
+    error.value = '';
+    try {
+        const { audioFile } = await api.regenerateListeningAudio(entry.id);
+        if (!audioFile) {
+            return;
+        }
+        entry.audioFile = audioFile;
+        clearCachedMediaUrl(audioFile);
+        const version = (audioVersions[entry.id] ?? 0) + 1;
+        audioVersions[entry.id] = version;
+        await new Audio(buildMediaUrl(audioFile, version)).play();
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Audio regeneration failed.';
+    }
+}
+watch(() => answerWordEntry.value?.text ?? '', async (text) => {
     if (!text) {
         answerCommonUrl.value = null;
         return;
@@ -396,6 +438,99 @@ else {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "quiz-answer-stack" },
         });
+        if (__VLS_ctx.answerWordEntry) {
+            /** @type {[typeof WordDetailPanel, ]} */ ;
+            // @ts-ignore
+            const __VLS_13 = __VLS_asFunctionalComponent(WordDetailPanel, new WordDetailPanel({
+                ...{ 'onToggleTranslation': {} },
+                ...{ 'onPlayAudio': {} },
+                ...{ 'onRegenerateAudio': {} },
+                word: (__VLS_ctx.answerWordEntry),
+                showChinese: (__VLS_ctx.showChinese),
+                loading: (false),
+                hasCommonAudio: (!!__VLS_ctx.answerCommonUrl),
+                hideNote: (true),
+                hideChat: (true),
+                hideDelete: (true),
+            }));
+            const __VLS_14 = __VLS_13({
+                ...{ 'onToggleTranslation': {} },
+                ...{ 'onPlayAudio': {} },
+                ...{ 'onRegenerateAudio': {} },
+                word: (__VLS_ctx.answerWordEntry),
+                showChinese: (__VLS_ctx.showChinese),
+                loading: (false),
+                hasCommonAudio: (!!__VLS_ctx.answerCommonUrl),
+                hideNote: (true),
+                hideChat: (true),
+                hideDelete: (true),
+            }, ...__VLS_functionalComponentArgsRest(__VLS_13));
+            let __VLS_16;
+            let __VLS_17;
+            let __VLS_18;
+            const __VLS_19 = {
+                onToggleTranslation: (...[$event]) => {
+                    if (!!(__VLS_ctx.showSummary))
+                        return;
+                    if (!(__VLS_ctx.awaitingNext && __VLS_ctx.displayQuestion))
+                        return;
+                    if (!(__VLS_ctx.answerWordEntry))
+                        return;
+                    __VLS_ctx.showChinese = !__VLS_ctx.showChinese;
+                }
+            };
+            const __VLS_20 = {
+                onPlayAudio: (__VLS_ctx.playAnswerWordAudio)
+            };
+            const __VLS_21 = {
+                onRegenerateAudio: (__VLS_ctx.regenerateAnswerWordAudio)
+            };
+            var __VLS_15;
+        }
+        else if (__VLS_ctx.answerSentenceEntry) {
+            /** @type {[typeof SentenceDetailPanel, ]} */ ;
+            // @ts-ignore
+            const __VLS_22 = __VLS_asFunctionalComponent(SentenceDetailPanel, new SentenceDetailPanel({
+                ...{ 'onPlayAudio': {} },
+                ...{ 'onRegenerateAudio': {} },
+                sentence: (__VLS_ctx.answerSentenceEntry),
+                loading: (false),
+                hideNote: (true),
+                hideChat: (true),
+                hideDelete: (true),
+            }));
+            const __VLS_23 = __VLS_22({
+                ...{ 'onPlayAudio': {} },
+                ...{ 'onRegenerateAudio': {} },
+                sentence: (__VLS_ctx.answerSentenceEntry),
+                loading: (false),
+                hideNote: (true),
+                hideChat: (true),
+                hideDelete: (true),
+            }, ...__VLS_functionalComponentArgsRest(__VLS_22));
+            let __VLS_25;
+            let __VLS_26;
+            let __VLS_27;
+            const __VLS_28 = {
+                onPlayAudio: (__VLS_ctx.playAnswerSentenceAudio)
+            };
+            const __VLS_29 = {
+                onRegenerateAudio: (__VLS_ctx.regenerateAnswerSentenceAudio)
+            };
+            var __VLS_24;
+        }
+        else if (__VLS_ctx.displayQuestion.type === 'listening') {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.section, __VLS_intrinsicElements.section)({
+                ...{ class: "card quiz-sentence-card" },
+            });
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+                ...{ class: "eyebrow" },
+            });
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+                ...{ class: "quiz-sentence-text" },
+            });
+            (__VLS_ctx.answerSentenceText);
+        }
         if (__VLS_ctx.noteTarget) {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
                 ...{ class: "card quiz-note-card field" },
@@ -422,77 +557,11 @@ else {
                 (__VLS_ctx.noteError);
             }
         }
-        if (__VLS_ctx.answerWordResult) {
-            /** @type {[typeof SearchResultCard, ]} */ ;
-            // @ts-ignore
-            const __VLS_13 = __VLS_asFunctionalComponent(SearchResultCard, new SearchResultCard({
-                ...{ 'onToggleTranslation': {} },
-                ...{ 'onPlayAudio': {} },
-                ...{ 'onRegenerateAudio': {} },
-                result: (__VLS_ctx.answerWordResult),
-                showChinese: (__VLS_ctx.showChinese),
-                saving: (false),
-                allowSave: (false),
-                showHeaderLabel: (false),
-                hasCommonAudio: (!!__VLS_ctx.answerCommonUrl),
-            }));
-            const __VLS_14 = __VLS_13({
-                ...{ 'onToggleTranslation': {} },
-                ...{ 'onPlayAudio': {} },
-                ...{ 'onRegenerateAudio': {} },
-                result: (__VLS_ctx.answerWordResult),
-                showChinese: (__VLS_ctx.showChinese),
-                saving: (false),
-                allowSave: (false),
-                showHeaderLabel: (false),
-                hasCommonAudio: (!!__VLS_ctx.answerCommonUrl),
-            }, ...__VLS_functionalComponentArgsRest(__VLS_13));
-            let __VLS_16;
-            let __VLS_17;
-            let __VLS_18;
-            const __VLS_19 = {
-                onToggleTranslation: (...[$event]) => {
-                    if (!!(__VLS_ctx.showSummary))
-                        return;
-                    if (!(__VLS_ctx.awaitingNext && __VLS_ctx.displayQuestion))
-                        return;
-                    if (!(__VLS_ctx.answerWordResult))
-                        return;
-                    __VLS_ctx.showChinese = !__VLS_ctx.showChinese;
-                }
-            };
-            const __VLS_20 = {
-                onPlayAudio: (__VLS_ctx.playAnswerWordAudio)
-            };
-            const __VLS_21 = {
-                onRegenerateAudio: (__VLS_ctx.regenerateAnswerWordAudio)
-            };
-            var __VLS_15;
-        }
-        else if (__VLS_ctx.displayQuestion.type === 'listening') {
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.section, __VLS_intrinsicElements.section)({
-                ...{ class: "card quiz-sentence-card" },
-            });
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-                ...{ class: "eyebrow" },
-            });
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-                ...{ class: "quiz-sentence-text" },
-            });
-            (__VLS_ctx.answerSentenceText);
-            if (__VLS_ctx.answerSentenceEntry) {
-                __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-                    ...{ class: "subtle-copy" },
-                });
-                (__VLS_ctx.answerSentenceEntry.familiarity);
-                (__VLS_ctx.answerSentenceEntry.known ? ' · known' : '');
-            }
-        }
     }
     if (__VLS_ctx.awaitingNext && __VLS_ctx.displayQuestion) {
         /** @type {[typeof QuizChatBox, ]} */ ;
         // @ts-ignore
-        const __VLS_22 = __VLS_asFunctionalComponent(QuizChatBox, new QuizChatBox({
+        const __VLS_30 = __VLS_asFunctionalComponent(QuizChatBox, new QuizChatBox({
             ...{ 'onAppealResolved': {} },
             sessionId: (__VLS_ctx.store.quizSession?.id ?? ''),
             questionId: (__VLS_ctx.displayQuestion.id),
@@ -504,9 +573,8 @@ else {
             isCorrect: (__VLS_ctx.feedbackIsCorrect),
             canAppeal: (__VLS_ctx.canAppeal),
             questionIndex: (__VLS_ctx.displayIndex),
-            questionTotal: (__VLS_ctx.total),
         }));
-        const __VLS_23 = __VLS_22({
+        const __VLS_31 = __VLS_30({
             ...{ 'onAppealResolved': {} },
             sessionId: (__VLS_ctx.store.quizSession?.id ?? ''),
             questionId: (__VLS_ctx.displayQuestion.id),
@@ -518,15 +586,14 @@ else {
             isCorrect: (__VLS_ctx.feedbackIsCorrect),
             canAppeal: (__VLS_ctx.canAppeal),
             questionIndex: (__VLS_ctx.displayIndex),
-            questionTotal: (__VLS_ctx.total),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_22));
-        let __VLS_25;
-        let __VLS_26;
-        let __VLS_27;
-        const __VLS_28 = {
+        }, ...__VLS_functionalComponentArgsRest(__VLS_30));
+        let __VLS_33;
+        let __VLS_34;
+        let __VLS_35;
+        const __VLS_36 = {
             onAppealResolved: (__VLS_ctx.handleAppealResolved)
         };
-        var __VLS_24;
+        var __VLS_32;
     }
     if (__VLS_ctx.error) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
@@ -544,6 +611,10 @@ else {
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-answer-stack']} */ ;
 /** @type {__VLS_StyleScopedClasses['card']} */ ;
+/** @type {__VLS_StyleScopedClasses['quiz-sentence-card']} */ ;
+/** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
+/** @type {__VLS_StyleScopedClasses['quiz-sentence-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['card']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-note-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['field']} */ ;
 /** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
@@ -551,11 +622,6 @@ else {
 /** @type {__VLS_StyleScopedClasses['quiz-note-status']} */ ;
 /** @type {__VLS_StyleScopedClasses['error-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-note-status']} */ ;
-/** @type {__VLS_StyleScopedClasses['card']} */ ;
-/** @type {__VLS_StyleScopedClasses['quiz-sentence-card']} */ ;
-/** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
-/** @type {__VLS_StyleScopedClasses['quiz-sentence-text']} */ ;
-/** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['error-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-error']} */ ;
 var __VLS_dollars;
@@ -565,7 +631,8 @@ const __VLS_self = (await import('vue')).defineComponent({
             RouterLink: RouterLink,
             QuizCard: QuizCard,
             QuizChatBox: QuizChatBox,
-            SearchResultCard: SearchResultCard,
+            SentenceDetailPanel: SentenceDetailPanel,
+            WordDetailPanel: WordDetailPanel,
             store: store,
             answer: answer,
             error: error,
@@ -588,7 +655,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             summaryBackTo: summaryBackTo,
             summaryLabel: summaryLabel,
             displayIndex: displayIndex,
-            answerWordResult: answerWordResult,
+            answerWordEntry: answerWordEntry,
             answerSentenceEntry: answerSentenceEntry,
             answerSentenceText: answerSentenceText,
             noteTarget: noteTarget,
@@ -600,6 +667,8 @@ const __VLS_self = (await import('vue')).defineComponent({
             playAudio: playAudio,
             playAnswerWordAudio: playAnswerWordAudio,
             regenerateAnswerWordAudio: regenerateAnswerWordAudio,
+            playAnswerSentenceAudio: playAnswerSentenceAudio,
+            regenerateAnswerSentenceAudio: regenerateAnswerSentenceAudio,
         };
     },
 });

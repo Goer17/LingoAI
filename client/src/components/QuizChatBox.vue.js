@@ -1,5 +1,5 @@
 import { nextTick, ref, watch } from 'vue';
-import { Check, Scale, X } from 'lucide-vue-next';
+import { Scale } from 'lucide-vue-next';
 import { api } from '@/services/api';
 const props = defineProps();
 const emit = defineEmits();
@@ -223,54 +223,6 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
     ...{ class: "detail-content" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "quiz-chat-context" },
-});
-__VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-    ...{ class: "eyebrow" },
-});
-(__VLS_ctx.questionIndex + 1);
-(__VLS_ctx.questionTotal);
-__VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-    ...{ class: "quiz-chat-word" },
-});
-__VLS_asFunctionalElement(__VLS_intrinsicElements.strong, __VLS_intrinsicElements.strong)({});
-(__VLS_ctx.word);
-__VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-    ...{ class: "muted-text quiz-chat-sentence" },
-});
-(__VLS_ctx.sentence);
-__VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-    ...{ class: "quiz-chat-outcome" },
-    ...{ class: (__VLS_ctx.isCorrect ? 'success-text' : 'error-text') },
-});
-if (__VLS_ctx.isCorrect) {
-    const __VLS_4 = {}.Check;
-    /** @type {[typeof __VLS_components.Check, ]} */ ;
-    // @ts-ignore
-    const __VLS_5 = __VLS_asFunctionalComponent(__VLS_4, new __VLS_4({
-        size: (14),
-        ...{ class: "feedback-icon" },
-    }));
-    const __VLS_6 = __VLS_5({
-        size: (14),
-        ...{ class: "feedback-icon" },
-    }, ...__VLS_functionalComponentArgsRest(__VLS_5));
-}
-else {
-    const __VLS_8 = {}.X;
-    /** @type {[typeof __VLS_components.X, ]} */ ;
-    // @ts-ignore
-    const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
-        size: (14),
-        ...{ class: "feedback-icon" },
-    }));
-    const __VLS_10 = __VLS_9({
-        size: (14),
-        ...{ class: "feedback-icon" },
-    }, ...__VLS_functionalComponentArgsRest(__VLS_9));
-}
-(__VLS_ctx.isCorrect ? 'Correct!' : `Your answer: "${__VLS_ctx.userResponse}" → Correct: "${__VLS_ctx.answer}"`);
-__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ref: "chatHistoryRef",
     ...{ class: "chat-history quiz-chat-history" },
 });
@@ -328,14 +280,6 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElement
 /** @type {__VLS_StyleScopedClasses['quiz-chat-appeal']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-chat-float-title']} */ ;
 /** @type {__VLS_StyleScopedClasses['detail-content']} */ ;
-/** @type {__VLS_StyleScopedClasses['quiz-chat-context']} */ ;
-/** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
-/** @type {__VLS_StyleScopedClasses['quiz-chat-word']} */ ;
-/** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
-/** @type {__VLS_StyleScopedClasses['quiz-chat-sentence']} */ ;
-/** @type {__VLS_StyleScopedClasses['quiz-chat-outcome']} */ ;
-/** @type {__VLS_StyleScopedClasses['feedback-icon']} */ ;
-/** @type {__VLS_StyleScopedClasses['feedback-icon']} */ ;
 /** @type {__VLS_StyleScopedClasses['chat-history']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-chat-history']} */ ;
 /** @type {__VLS_StyleScopedClasses['chat-bubble']} */ ;
@@ -351,9 +295,7 @@ var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
-            Check: Check,
             Scale: Scale,
-            X: X,
             draft: draft,
             loading: loading,
             appealing: appealing,

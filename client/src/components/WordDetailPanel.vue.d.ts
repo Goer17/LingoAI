@@ -4,6 +4,9 @@ type __VLS_Props = {
     showChinese: boolean;
     loading: boolean;
     hasCommonAudio?: boolean;
+    hideNote?: boolean;
+    hideChat?: boolean;
+    hideDelete?: boolean;
 };
 declare const _default: import("vue").DefineComponent<__VLS_Props, {}, {}, {}, {}, import("vue").ComponentOptionsMixin, import("vue").ComponentOptionsMixin, {
     "toggle-translation": () => any;

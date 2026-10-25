@@ -2,6 +2,9 @@ import type { ListeningEntry } from '@/types/models';
 type __VLS_Props = {
     sentence: ListeningEntry | null;
     loading: boolean;
+    hideNote?: boolean;
+    hideChat?: boolean;
+    hideDelete?: boolean;
 };
 declare const _default: import("vue").DefineComponent<__VLS_Props, {}, {}, {}, {}, import("vue").ComponentOptionsMixin, import("vue").ComponentOptionsMixin, {
     "play-audio": () => any;
