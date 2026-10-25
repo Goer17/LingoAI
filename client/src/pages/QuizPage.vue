@@ -70,7 +70,6 @@
         :is-correct="feedbackIsCorrect"
         :can-appeal="canAppeal"
         :question-index="displayIndex"
-        :question-total="total"
         @appeal-resolved="handleAppealResolved"
       />
       <p v-if="error" class="error-text quiz-error">{{ error }}</p>

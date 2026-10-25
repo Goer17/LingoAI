@@ -15,17 +15,6 @@
       <span class="quiz-chat-float-title">Tutor</span>
     </div>
     <div class="detail-content">
-      <div class="quiz-chat-context">
-        <p class="eyebrow">Question {{ questionIndex + 1 }} / {{ questionTotal }}</p>
-        <p class="quiz-chat-word"><strong>{{ word }}</strong></p>
-        <p class="muted-text quiz-chat-sentence">"{{ sentence }}"</p>
-        <p class="quiz-chat-outcome" :class="isCorrect ? 'success-text' : 'error-text'">
-          <Check v-if="isCorrect" :size="14" class="feedback-icon" />
-          <X v-else :size="14" class="feedback-icon" />
-          {{ isCorrect ? 'Correct!' : `Your answer: "${userResponse}" → Correct: "${answer}"` }}
-        </p>
-      </div>
-
       <div ref="chatHistoryRef" class="chat-history quiz-chat-history">
         <div
           v-for="(msg, index) in chatMessages"
@@ -60,7 +49,7 @@
 
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue';
-import { Check, Scale, X } from 'lucide-vue-next';
+import { Scale } from 'lucide-vue-next';
 import { api } from '@/services/api';
 import type { QuizSession } from '@/types/models';
 
@@ -80,7 +69,6 @@ const props = defineProps<{
   isCorrect: boolean;
   canAppeal: boolean;
   questionIndex: number;
-  questionTotal: number;
 }>();
 
 const emit = defineEmits<{
