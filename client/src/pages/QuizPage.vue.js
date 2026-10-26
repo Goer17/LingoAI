@@ -7,6 +7,9 @@ import WordDetailPanel from '@/components/WordDetailPanel.vue';
 import { api } from '@/services/api';
 import { useVocabularyStore } from '@/stores/vocabulary';
 import { buildMediaUrl, clearCachedMediaUrl, getStoredMediaAudioUrl } from '@/utils/audioCache';
+function normalizeWord(value) {
+    return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
 const route = useRoute();
 const store = useVocabularyStore();
 const answer = ref('');
@@ -74,14 +77,21 @@ const displayIndex = computed(() => {
     return Math.max(currentIndex.value - 1, 0);
 });
 const answerWordEntry = computed(() => {
-    if (!awaitingNext.value || displayQuestion.value?.type !== 'fill_blank' || !displayQuestion.value.word) {
+    const question = displayQuestion.value;
+    if (!awaitingNext.value || !question?.word) {
         return null;
     }
-    const target = displayQuestion.value.word.trim().toLowerCase();
+    // Vocabulary quizzes mix fill_blank and listening questions, and both reveal
+    // the target word card. listening_task questions store the whole sentence in
+    // `word`, so they fall through to the sentence card instead.
+    if (question.type === 'listening' && store.quizSession?.sourceType === 'listening_task') {
+        return null;
+    }
+    const target = normalizeWord(question.word);
     if (!target) {
         return null;
     }
-    return store.items.find((item) => item.text.trim().toLowerCase() === target) ?? null;
+    return store.items.find((item) => normalizeWord(item.text) === target) ?? null;
 });
 const answerSentenceEntry = computed(() => {
     const question = displayQuestion.value;
@@ -519,7 +529,7 @@ else {
             };
             var __VLS_24;
         }
-        else if (__VLS_ctx.displayQuestion.type === 'listening') {
+        else if (__VLS_ctx.displayQuestion.type === 'listening' && __VLS_ctx.store.quizSession?.sourceType !== 'vocabulary_task') {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.section, __VLS_intrinsicElements.section)({
                 ...{ class: "card quiz-sentence-card" },
             });

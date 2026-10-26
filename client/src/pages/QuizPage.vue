@@ -49,7 +49,10 @@
           @play-audio="playAnswerSentenceAudio"
           @regenerate-audio="regenerateAnswerSentenceAudio"
         />
-        <section v-else-if="displayQuestion.type === 'listening'" class="card quiz-sentence-card">
+        <section
+          v-else-if="displayQuestion.type === 'listening' && store.quizSession?.sourceType !== 'vocabulary_task'"
+          class="card quiz-sentence-card"
+        >
           <p class="eyebrow">Sentence</p>
           <p class="quiz-sentence-text">{{ answerSentenceText }}</p>
         </section>
@@ -96,6 +99,10 @@ import WordDetailPanel from '@/components/WordDetailPanel.vue';
 import { api } from '@/services/api';
 import { useVocabularyStore } from '@/stores/vocabulary';
 import { buildMediaUrl, clearCachedMediaUrl, getStoredMediaAudioUrl } from '@/utils/audioCache';
+
+function normalizeWord(value: string) {
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
 
 const route = useRoute();
 const store = useVocabularyStore();
@@ -169,16 +176,24 @@ const displayIndex = computed(() => {
   return Math.max(currentIndex.value - 1, 0);
 });
 const answerWordEntry = computed(() => {
-  if (!awaitingNext.value || displayQuestion.value?.type !== 'fill_blank' || !displayQuestion.value.word) {
+  const question = displayQuestion.value;
+  if (!awaitingNext.value || !question?.word) {
     return null;
   }
 
-  const target = displayQuestion.value.word.trim().toLowerCase();
+  // Vocabulary quizzes mix fill_blank and listening questions, and both reveal
+  // the target word card. listening_task questions store the whole sentence in
+  // `word`, so they fall through to the sentence card instead.
+  if (question.type === 'listening' && store.quizSession?.sourceType === 'listening_task') {
+    return null;
+  }
+
+  const target = normalizeWord(question.word);
   if (!target) {
     return null;
   }
 
-  return store.items.find((item) => item.text.trim().toLowerCase() === target) ?? null;
+  return store.items.find((item) => normalizeWord(item.text) === target) ?? null;
 });
 const answerSentenceEntry = computed(() => {
   const question = displayQuestion.value;

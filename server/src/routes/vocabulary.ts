@@ -307,7 +307,12 @@ async function generateVocabularyQuizSession(limit = 10, onProgress?: (progress:
     }
 
     for (let index = 0; index < drafts.length; index += 1) {
-      const draft = rebuilt.get(index) ?? drafts[index];
+      const existing = rebuilt.get(index) ?? drafts[index];
+      // The AI occasionally rewrites `word` (or drops it for listening
+      // questions); pin it to the vocabulary item so the answer reveal can
+      // always resolve the matching word card.
+      const entry = chunk[index];
+      const draft = entry ? { ...existing, word: entry.text } : existing;
       const kind = draft.type === 'listening' ? 'audio' : 'image';
       const questionNumber = base + index + 1;
       report(
