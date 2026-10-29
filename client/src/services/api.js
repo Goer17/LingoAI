@@ -464,7 +464,17 @@ export const api = {
             body: JSON.stringify({ message }),
         });
         if (!response.ok || !response.body) {
-            throw new Error('Tutor chat failed.');
+            // Surface the backend reason (validation, auth, model failure) instead of
+            // a generic message, otherwise long inputs look like a random glitch.
+            let detail = '';
+            try {
+                const payload = await response.json();
+                detail = typeof payload?.error === 'string' ? payload.error : '';
+            }
+            catch {
+                detail = '';
+            }
+            throw new Error(detail || `Tutor chat failed. (HTTP ${response.status})`);
         }
         const reader = response.body.getReader();
         const decoder = new TextDecoder();

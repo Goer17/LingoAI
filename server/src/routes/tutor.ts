@@ -22,7 +22,7 @@ const renameSessionSchema = z.object({
 });
 
 const chatSchema = z.object({
-  message: z.string().trim().min(1).max(4000),
+  message: z.string().trim().min(1),
 });
 
 const memorySchema = z.object({
@@ -80,13 +80,14 @@ tutorRouter.post('/sessions/:id/chat', async (req, res) => {
   if (!parsed.success) {
     return fail(res, 400, 'Message is required.');
   }
+  const message = parsed.data.message;
 
   if (!getTutorSessionDetail(req.params.id)) {
     return fail(res, 404, 'Tutor session not found.');
   }
 
   try {
-    const result = await streamTutorReply(req.params.id, parsed.data.message, () => {});
+    const result = await streamTutorReply(req.params.id, message, () => {});
     return ok(res, { reply: result.message.content, message: result.message, session: result.session });
   } catch (error) {
     return fail(res, 500, error instanceof Error ? error.message : 'Tutor chat failed.');
@@ -98,6 +99,7 @@ tutorRouter.post('/sessions/:id/chat/stream', async (req, res) => {
   if (!parsed.success) {
     return fail(res, 400, 'Message is required.');
   }
+  const message = parsed.data.message;
 
   if (!getTutorSessionDetail(req.params.id)) {
     return fail(res, 404, 'Tutor session not found.');
@@ -116,7 +118,7 @@ tutorRouter.post('/sessions/:id/chat/stream', async (req, res) => {
   };
 
   try {
-    const result = await streamTutorReply(req.params.id, parsed.data.message, send);
+    const result = await streamTutorReply(req.params.id, message, send);
     send({ type: 'done', message: result.message, session: result.session });
   } catch (error) {
     send({ type: 'error', error: error instanceof Error ? error.message : 'Tutor chat failed.' });
