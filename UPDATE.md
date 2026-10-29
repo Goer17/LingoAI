@@ -5,7 +5,7 @@ Use this flow to merge the latest `main` changes into the `deploy` branch, then 
 ## 1. Enter the project directory
 
 ```bash
-cd /root/.openclaw/workspace/repo/LingoAI
+cd /root/workspace/LingoAI
 ```
 
 ## 2. Confirm you are on the deploy branch
@@ -44,16 +44,18 @@ Check the current process:
 ps -ef | grep "server/dist/index.js" | grep -v grep
 ```
 
-Stop the old service:
+Stop the old service. Match the absolute path of **this** app only: a bare
+`pkill -f "server/dist/index.js"` also kills other Node apps on this box (and the
+shell running the command, since its command line contains that string):
 
 ```bash
-pkill -f "server/dist/index.js"
+for pid in $(pgrep -f "^node /root/workspace/LingoAI/server/dist/index.js"); do kill -TERM "$pid"; done
 ```
 
 ## 6. Start the new service with nohup
 
 ```bash
-setsid nohup env HOST=0.0.0.0 PORT=3000 CLIENT_ORIGIN=http://101.132.124.46:3000 node /root/.openclaw/workspace/repo/LingoAI/server/dist/index.js > /tmp/lingoai-prod.log 2>&1 < /dev/null &
+setsid nohup env HOST=0.0.0.0 PORT=3000 CLIENT_ORIGIN=http://101.132.124.46:3000 node /root/workspace/LingoAI/server/dist/index.js > /tmp/lingoai-prod.log 2>&1 < /dev/null &
 ```
 
 ## 7. Verify
