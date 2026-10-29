@@ -6,6 +6,7 @@ import {
 } from '../config/familiarity.js';
 import type { ChatMessage, ListeningEntry, ListeningGroup, QuizDraftQuestion } from '../types/models.js';
 import { createId } from '../utils/id.js';
+import { pickByFamiliarity } from '../utils/quizSelection.js';
 import { deleteAudioFile } from './audioService.js';
 
 const DEFAULT_GROUP_NAME = 'Default';
@@ -175,11 +176,12 @@ export function removeListeningSentence(id: string) {
 }
 
 export function pickListeningEntries(entries: ListeningEntry[], limit = 10) {
-  return entries
-    .filter((entry) => !entry.known)
-    .slice()
-    .sort((a, b) => a.familiarity - b.familiarity || b.createdAt.localeCompare(a.createdAt))
-    .slice(0, limit);
+  // Same mix as the vocabulary quiz: two thirds ranked by familiarity, one
+  // third sampled from the sentences that ranking did not reach.
+  return pickByFamiliarity(
+    entries.filter((entry) => !entry.known),
+    limit,
+  );
 }
 
 export function pickListeningEntriesByGroup(groupId: string, limit = 10) {

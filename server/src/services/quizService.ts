@@ -1,13 +1,15 @@
 import { quizRepository } from '../db/repositories.js';
 import { createId } from '../utils/id.js';
+import { pickByFamiliarity } from '../utils/quizSelection.js';
 import type { QuizQuestion, QuizSession, QuizSourceType, VocabularyEntry } from '../types/models.js';
 
+/** Two thirds of the quiz follows familiarity (weakest first), the rest is a
+ *  random draw over the remaining notebook — see `pickByFamiliarity`. */
 export function pickQuizEntries(entries: VocabularyEntry[], limit = 10) {
-  return entries
-    .filter((entry) => !entry.known)
-    .slice()
-    .sort((a, b) => a.familiarity - b.familiarity || b.createdAt.localeCompare(a.createdAt))
-    .slice(0, limit);
+  return pickByFamiliarity(
+    entries.filter((entry) => !entry.known),
+    limit,
+  );
 }
 
 export function createQuizSession(questions: QuizQuestion[], sourceType: QuizSourceType = 'vocabulary_task') {
