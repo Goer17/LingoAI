@@ -195,6 +195,10 @@ export declare const api: {
     }>;
     streamTutorChat(sessionId: string, message: string, handlers: {
         onDelta: (chunk: string) => void;
+        onThinking?: (event: {
+            status: "start" | "done" | "delta";
+            content?: string;
+        }) => void;
         onTool?: (event: {
             status: "start" | "done";
             name: string;

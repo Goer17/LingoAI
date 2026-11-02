@@ -128,13 +128,20 @@
                 </span>
               </div>
 
+              <div v-if="message.thinking" class="tutor-thinking" role="status">
+                <span class="tutor-thinking-dots" aria-hidden="true"><i /><i /><i /></span>
+                <span class="tutor-thinking-label">Thinking…</span>
+                <span v-if="thinkingPreview(message)" class="tutor-thinking-preview">
+                  {{ thinkingPreview(message) }}
+                </span>
+              </div>
+
               <div v-if="message.content" class="chat-content" v-html="renderMarkdown(message.content)" />
-              <span v-if="message.id === streamingId" class="tutor-caret" />
+              <span v-if="message.id === streamingId && !message.thinking" class="tutor-caret" />
             </div>
           </div>
         </div>
 
-        <p v-if="showThinking" class="muted-text tutor-thinking">Tutor is thinking...</p>
         <p v-if="error" class="error-text">{{ error }}</p>
       </div>
 
@@ -165,7 +172,13 @@ import { renderMarkdown } from '@/utils/markdown';
 import type { TutorMemory, TutorMemoryKind, TutorMessage, TutorSession, TutorToolTrace } from '@/types/models';
 
 type DisplayTrace = TutorToolTrace & { pending?: boolean };
-type DisplayMessage = Omit<TutorMessage, 'toolCalls'> & { toolCalls?: DisplayTrace[] };
+type DisplayMessage = Omit<TutorMessage, 'toolCalls'> & {
+  toolCalls?: DisplayTrace[];
+  /** Live "model is working" state driven by `thinking` SSE frames. */
+  thinking?: boolean;
+  /** Latest reasoning text, shown as a dimmed activity hint. */
+  thinkingTrail?: string;
+};
 
 interface ToolEvent {
   status: 'start' | 'done';
@@ -197,14 +210,15 @@ const streamingId = ref<string | null>(null);
 const scrollRef = ref<HTMLElement | null>(null);
 
 const activeSession = computed(() => sessions.value.find((session) => session.id === activeId.value) ?? null);
-const showThinking = computed(() => {
-  if (!sending.value) {
-    return false;
-  }
 
-  const last = messages.value[messages.value.length - 1];
-  return Boolean(last && last.role === 'assistant' && !last.content && !(last.toolCalls?.length));
-});
+/** Last slice of the model's reasoning, used as a subtle "still working" hint. */
+function thinkingPreview(message: DisplayMessage) {
+  const text = (message.thinkingTrail ?? '').replace(/\s+/g, ' ').trim();
+  if (!text) {
+    return '';
+  }
+  return text.length > 160 ? `…${text.slice(-160)}` : text;
+}
 
 function formatDate(iso: string) {
   const date = new Date(iso);
@@ -382,6 +396,7 @@ async function handleSend() {
     role: 'assistant',
     content: '',
     createdAt: now,
+    thinking: true,
     toolCalls: [],
   };
 
@@ -400,10 +415,23 @@ async function handleSend() {
 
     const result = await api.streamTutorChat(sessionId, text, {
       onDelta: (chunk) => {
+        assistantMessage.thinking = false;
         assistantMessage.content += chunk;
         void scrollToBottom();
       },
+      onThinking: (event) => {
+        if (event.status === 'start') {
+          assistantMessage.thinking = true;
+          assistantMessage.thinkingTrail = '';
+        } else if (event.status === 'delta') {
+          assistantMessage.thinkingTrail = `${assistantMessage.thinkingTrail ?? ''}${event.content ?? ''}`;
+        } else {
+          assistantMessage.thinking = false;
+        }
+        void scrollToBottom();
+      },
       onTool: (event) => {
+        assistantMessage.thinking = false;
         applyToolEvent(assistantMessage, event);
         void scrollToBottom();
       },

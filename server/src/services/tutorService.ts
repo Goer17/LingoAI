@@ -28,6 +28,8 @@ const MAX_MEMORY_CHARS = 1000;
 
 export type TutorStreamEvent =
   | { type: 'delta'; content: string }
+  | { type: 'thinking'; status: 'start' | 'done' }
+  | { type: 'thinking'; status: 'delta'; content: string }
   | {
       type: 'tool';
       status: 'start' | 'done';
@@ -263,9 +265,37 @@ export async function streamTutorReply(
 
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round += 1) {
     const tools = round < MAX_TOOL_ROUNDS ? tutorToolDefinitions : [];
-    const result = await streamAgentCompletion(working, tools, (chunk) => {
-      emit({ type: 'delta', content: chunk });
-    });
+
+    // Announce the round before the request goes out. Reasoning models stay
+    // silent for seconds (sometimes much longer) before the first answer
+    // token, and every tool round adds another silent wait, so the UI needs
+    // an explicit "working" signal to distinguish thinking from a hang.
+    let thinking = true;
+    emit({ type: 'thinking', status: 'start' });
+    const stopThinking = () => {
+      if (!thinking) {
+        return;
+      }
+      thinking = false;
+      emit({ type: 'thinking', status: 'done' });
+    };
+
+    let result: Awaited<ReturnType<typeof streamAgentCompletion>>;
+    try {
+      result = await streamAgentCompletion(
+        working,
+        tools,
+        (chunk) => {
+          stopThinking();
+          emit({ type: 'delta', content: chunk });
+        },
+        (chunk) => {
+          emit({ type: 'thinking', status: 'delta', content: chunk });
+        },
+      );
+    } finally {
+      stopThinking();
+    }
 
     if (result.content) {
       fullContent = fullContent ? `${fullContent}\n\n${result.content}` : result.content;

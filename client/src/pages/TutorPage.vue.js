@@ -22,13 +22,14 @@ const error = ref('');
 const streamingId = ref(null);
 const scrollRef = ref(null);
 const activeSession = computed(() => sessions.value.find((session) => session.id === activeId.value) ?? null);
-const showThinking = computed(() => {
-    if (!sending.value) {
-        return false;
+/** Last slice of the model's reasoning, used as a subtle "still working" hint. */
+function thinkingPreview(message) {
+    const text = (message.thinkingTrail ?? '').replace(/\s+/g, ' ').trim();
+    if (!text) {
+        return '';
     }
-    const last = messages.value[messages.value.length - 1];
-    return Boolean(last && last.role === 'assistant' && !last.content && !(last.toolCalls?.length));
-});
+    return text.length > 160 ? `…${text.slice(-160)}` : text;
+}
 function formatDate(iso) {
     const date = new Date(iso);
     if (Number.isNaN(date.getTime())) {
@@ -191,6 +192,7 @@ async function handleSend() {
         role: 'assistant',
         content: '',
         createdAt: now,
+        thinking: true,
         toolCalls: [],
     };
     messages.value.push(userMessage, assistantMessage);
@@ -206,10 +208,25 @@ async function handleSend() {
         }
         const result = await api.streamTutorChat(sessionId, text, {
             onDelta: (chunk) => {
+                assistantMessage.thinking = false;
                 assistantMessage.content += chunk;
                 void scrollToBottom();
             },
+            onThinking: (event) => {
+                if (event.status === 'start') {
+                    assistantMessage.thinking = true;
+                    assistantMessage.thinkingTrail = '';
+                }
+                else if (event.status === 'delta') {
+                    assistantMessage.thinkingTrail = `${assistantMessage.thinkingTrail ?? ''}${event.content ?? ''}`;
+                }
+                else {
+                    assistantMessage.thinking = false;
+                }
+                void scrollToBottom();
+            },
             onTool: (event) => {
+                assistantMessage.thinking = false;
                 applyToolEvent(assistantMessage, event);
                 void scrollToBottom();
             },
@@ -515,22 +532,39 @@ for (const [message] of __VLS_getVForSourceType((__VLS_ctx.messages))) {
             }
         }
     }
+    if (message.thinking) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "tutor-thinking" },
+            role: "status",
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+            ...{ class: "tutor-thinking-dots" },
+            'aria-hidden': "true",
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.i)({});
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.i)({});
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.i)({});
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+            ...{ class: "tutor-thinking-label" },
+        });
+        if (__VLS_ctx.thinkingPreview(message)) {
+            __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+                ...{ class: "tutor-thinking-preview" },
+            });
+            (__VLS_ctx.thinkingPreview(message));
+        }
+    }
     if (message.content) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div)({
             ...{ class: "chat-content" },
         });
         __VLS_asFunctionalDirective(__VLS_directives.vHtml)(null, { ...__VLS_directiveBindingRestFields, value: (__VLS_ctx.renderMarkdown(message.content)) }, null, null);
     }
-    if (message.id === __VLS_ctx.streamingId) {
+    if (message.id === __VLS_ctx.streamingId && !message.thinking) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.span)({
             ...{ class: "tutor-caret" },
         });
     }
-}
-if (__VLS_ctx.showThinking) {
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-        ...{ class: "muted-text tutor-thinking" },
-    });
 }
 if (__VLS_ctx.error) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
@@ -611,10 +645,12 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElement
 /** @type {__VLS_StyleScopedClasses['tutor-tool-chip']} */ ;
 /** @type {__VLS_StyleScopedClasses['tutor-tool-label']} */ ;
 /** @type {__VLS_StyleScopedClasses['tutor-tool-summary']} */ ;
+/** @type {__VLS_StyleScopedClasses['tutor-thinking']} */ ;
+/** @type {__VLS_StyleScopedClasses['tutor-thinking-dots']} */ ;
+/** @type {__VLS_StyleScopedClasses['tutor-thinking-label']} */ ;
+/** @type {__VLS_StyleScopedClasses['tutor-thinking-preview']} */ ;
 /** @type {__VLS_StyleScopedClasses['chat-content']} */ ;
 /** @type {__VLS_StyleScopedClasses['tutor-caret']} */ ;
-/** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
-/** @type {__VLS_StyleScopedClasses['tutor-thinking']} */ ;
 /** @type {__VLS_StyleScopedClasses['error-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['tutor-composer']} */ ;
 /** @type {__VLS_StyleScopedClasses['tutor-composer-actions']} */ ;
@@ -644,7 +680,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             streamingId: streamingId,
             scrollRef: scrollRef,
             activeSession: activeSession,
-            showThinking: showThinking,
+            thinkingPreview: thinkingPreview,
             formatDate: formatDate,
             selectSession: selectSession,
             startNewChat: startNewChat,

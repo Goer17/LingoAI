@@ -500,7 +500,16 @@ export const api = {
                 if (payload.type === 'delta' && payload.content) {
                     handlers.onDelta(payload.content);
                 }
-                if (payload.type === 'tool' && payload.status && payload.name && payload.label) {
+                if (payload.type === 'thinking' && payload.status) {
+                    handlers.onThinking?.({
+                        status: payload.status,
+                        ...(payload.content ? { content: payload.content } : {}),
+                    });
+                }
+                if (payload.type === 'tool'
+                    && (payload.status === 'start' || payload.status === 'done')
+                    && payload.name
+                    && payload.label) {
                     handlers.onTool?.({
                         status: payload.status,
                         name: payload.name,

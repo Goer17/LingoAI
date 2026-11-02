@@ -610,6 +610,7 @@ export const api = {
     message: string,
     handlers: {
       onDelta: (chunk: string) => void;
+      onThinking?: (event: { status: 'start' | 'done' | 'delta'; content?: string }) => void;
       onTool?: (event: {
         status: 'start' | 'done';
         name: string;
@@ -669,10 +670,10 @@ export const api = {
         }
 
         const payload = JSON.parse(dataLine.slice(5).trim()) as {
-          type: 'delta' | 'tool' | 'done' | 'error';
+          type: 'delta' | 'thinking' | 'tool' | 'done' | 'error';
           content?: string;
           error?: string;
-          status?: 'start' | 'done';
+          status?: 'start' | 'done' | 'delta';
           name?: string;
           label?: string;
           ok?: boolean;
@@ -685,7 +686,19 @@ export const api = {
           handlers.onDelta(payload.content);
         }
 
-        if (payload.type === 'tool' && payload.status && payload.name && payload.label) {
+        if (payload.type === 'thinking' && payload.status) {
+          handlers.onThinking?.({
+            status: payload.status,
+            ...(payload.content ? { content: payload.content } : {}),
+          });
+        }
+
+        if (
+          payload.type === 'tool'
+          && (payload.status === 'start' || payload.status === 'done')
+          && payload.name
+          && payload.label
+        ) {
           handlers.onTool?.({
             status: payload.status,
             name: payload.name,

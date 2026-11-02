@@ -531,10 +531,27 @@ function toOpenAITools(tools: AgentToolDefinition[]) {
 }
 
 /**
+ * Reasoning models (DeepSeek, Qwen, …) stream their chain of thought on a
+ * separate field instead of `content`. OpenAI-compatible providers disagree
+ * on the name, so read both known spellings.
+ */
+function readReasoningDelta(delta: unknown): string {
+  if (!delta || typeof delta !== 'object') {
+    return '';
+  }
+
+  const record = delta as Record<string, unknown>;
+  const value = record.reasoning_content ?? record.reasoning;
+  return typeof value === 'string' ? value : '';
+}
+
+/**
  * One streamed agent turn. Text deltas go straight to `onDelta`; tool calls
  * are accumulated from the streamed fragments (OpenAI-compatible providers
  * split both the arguments and, occasionally, the function name across
- * chunks) and returned once the stream finishes.
+ * chunks) and returned once the stream finishes. Reasoning deltas go to
+ * `onThinking` so the caller can show that the model is working during the
+ * (otherwise silent) thinking phase.
  */
 async function runAgentStream(
   client: OpenAI,
@@ -543,6 +560,7 @@ async function runAgentStream(
   messages: AgentMessage[],
   tools: AgentToolDefinition[],
   onDelta: (chunk: string) => void,
+  onThinking: (chunk: string) => void,
   markEmitted: () => void,
 ): Promise<AgentStreamResult> {
   const stream = await client.chat.completions.create({
@@ -561,6 +579,14 @@ async function runAgentStream(
     const delta = chunk.choices[0]?.delta;
     if (!delta) {
       continue;
+    }
+
+    // Reasoning is not the answer and does not count as emitted output: the
+    // model chain may still fall back to the next provider, and the UI treats
+    // thinking as transient activity rather than a completed reply.
+    const reasoning = readReasoningDelta(delta);
+    if (reasoning) {
+      onThinking(reasoning);
     }
 
     if (delta.content) {
@@ -616,6 +642,7 @@ export async function streamAgentCompletion(
   messages: AgentMessage[],
   tools: AgentToolDefinition[],
   onDelta: (chunk: string) => void,
+  onThinking: (chunk: string) => void = () => {},
 ): Promise<AgentStreamResult> {
   const clients = getLanguageClients();
   let lastError: unknown;
@@ -627,7 +654,7 @@ export async function streamAgentCompletion(
     };
 
     try {
-      return await runAgentStream(client, model, extraBody, messages, tools, onDelta, markEmitted);
+      return await runAgentStream(client, model, extraBody, messages, tools, onDelta, onThinking, markEmitted);
     } catch (error) {
       lastError = error;
       if (emitted) {
@@ -636,7 +663,7 @@ export async function streamAgentCompletion(
 
       if (tools.length > 0) {
         try {
-          return await runAgentStream(client, model, extraBody, messages, [], onDelta, markEmitted);
+          return await runAgentStream(client, model, extraBody, messages, [], onDelta, onThinking, markEmitted);
         } catch (retryError) {
           lastError = retryError;
           if (emitted) {
