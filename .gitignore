@@ -41,3 +41,6 @@ Thumbs.db
 # Local planning docs
 plan.md
 server/src/data/pronunciations-failures.txt
+
+# Agent Hive session credentials
+.agent-hive/
