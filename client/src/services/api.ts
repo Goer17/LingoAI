@@ -6,6 +6,13 @@ import type {
   MistakeEntry,
   PolishResult,
   QuizSession,
+  ReadingArticle,
+  ReadingArticleBundle,
+  ReadingArticleSummary,
+  ReadingCategory,
+  ReadingChatMessage,
+  ReadingMark,
+  ReadingMarkKind,
   ScenarioData,
   ScenarioSummary,
   SearchResult,
@@ -604,6 +611,131 @@ export const api = {
   },
   deleteTutorMemory(id: string) {
     return unwrap<{ removed: boolean }>(http.post(`/tutor/memories/${id}/delete`));
+  },
+  listReadingCategories() {
+    return unwrap<ReadingCategory[]>(http.get('/reading/categories'));
+  },
+  createReadingCategory(name: string) {
+    return unwrap<ReadingCategory>(http.post('/reading/categories', { name }));
+  },
+  deleteReadingCategory(id: string) {
+    return unwrap<{ removed: boolean }>(http.post(`/reading/categories/${id}/delete`));
+  },
+  listReadingArticles(categoryId?: string) {
+    return unwrap<ReadingArticleSummary[]>(
+      http.get('/reading/articles', { params: categoryId ? { categoryId } : undefined }),
+    );
+  },
+  createReadingArticle(payload: { categoryId?: string; title: string; content: string }) {
+    const body = { ...payload, categoryId: payload.categoryId || undefined };
+    return unwrap<ReadingArticle>(http.post('/reading/articles', body));
+  },
+  getReadingArticle(id: string) {
+    return unwrap<ReadingArticleBundle>(http.get(`/reading/articles/${id}`));
+  },
+  resegmentReadingArticle(id: string) {
+    return unwrap<ReadingArticle>(http.post(`/reading/articles/${id}/resegment`));
+  },
+  deleteReadingArticle(id: string) {
+    return unwrap<{ removed: boolean }>(http.post(`/reading/articles/${id}/delete`));
+  },
+  addReadingMark(
+    articleId: string,
+    payload: { kind: ReadingMarkKind; paragraphIndex: number; startOffset: number; endOffset: number },
+  ) {
+    return unwrap<ReadingMark>(http.post(`/reading/articles/${articleId}/marks`, payload));
+  },
+  updateReadingMarkNote(id: string, note: string) {
+    return unwrap<ReadingMark>(http.post(`/reading/marks/${id}/note`, { note }));
+  },
+  deleteReadingMark(id: string) {
+    return unwrap<{ removed: boolean }>(http.post(`/reading/marks/${id}/delete`));
+  },
+  clearReadingChat(articleId: string) {
+    return unwrap<{ id: string; updatedAt: string; chatHistory: ReadingChatMessage[] }>(
+      http.post(`/reading/articles/${articleId}/chat/clear`),
+    );
+  },
+  async streamReadingChat(
+    articleId: string,
+    message: string,
+    citations: string[],
+    handlers: {
+      onDelta: (chunk: string) => void;
+      onDone?: (payload: { chatHistory: ReadingChatMessage[]; updatedAt: string }) => void;
+    },
+  ) {
+    const token = getStoredAccessToken();
+    const response = await fetch(`/api/reading/articles/${articleId}/chat/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'x-access-token': token } : {}),
+      },
+      body: JSON.stringify({
+        message,
+        citations: citations.map((markId) => ({ markId })),
+      }),
+    });
+
+    if (!response.ok || !response.body) {
+      let detail = '';
+      try {
+        const payload = (await response.json()) as { error?: { message?: string } | string };
+        detail = typeof payload?.error === 'string' ? payload.error : payload?.error?.message ?? '';
+      } catch {
+        detail = '';
+      }
+      throw new Error(detail || `Reading chat failed. (HTTP ${response.status})`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop() ?? '';
+
+      for (const event of events) {
+        const dataLine = event
+          .split('\n')
+          .map((line) => line.trim())
+          .find((line) => line.startsWith('data:'));
+
+        if (!dataLine) {
+          continue;
+        }
+
+        const payload = JSON.parse(dataLine.slice(5).trim()) as {
+          type: 'delta' | 'citations' | 'done' | 'error';
+          content?: string;
+          error?: string;
+          article?: { id: string; updatedAt: string; chatHistory: ReadingChatMessage[] } | null;
+        };
+
+        if (payload.type === 'delta' && payload.content) {
+          handlers.onDelta(payload.content);
+        }
+
+        if (payload.type === 'error') {
+          throw new Error(payload.error || 'Reading chat failed.');
+        }
+
+        if (payload.type === 'done' && payload.article) {
+          handlers.onDone?.({
+            chatHistory: payload.article.chatHistory,
+            updatedAt: payload.article.updatedAt,
+          });
+        }
+      }
+    }
   },
   async streamTutorChat(
     sessionId: string,

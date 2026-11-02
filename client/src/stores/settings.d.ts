@@ -44,7 +44,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
     saving: import("vue").Ref<boolean, boolean>;
     fetchSettings: () => Promise<void>;
     saveSettings: () => Promise<void>;
-}, "form" | "loading" | "saving">, Pick<{
+}, "loading" | "saving" | "form">, Pick<{
     form: {
         models: {
             language: {

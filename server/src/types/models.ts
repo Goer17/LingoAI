@@ -280,3 +280,70 @@ export interface PolishResult {
   isPerfect: boolean;
   explanation: string;
 }
+
+export interface ReadingCategory {
+  id: string;
+  name: string;
+  /** Display order; newly created categories append to the end. */
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+  articleCount?: number;
+}
+
+/** One AI-segmented block of an article. `index` is the 1-based paragraph
+ *  number the reader shows in the gutter and that marks refer to. */
+export interface ReadingParagraph {
+  index: number;
+  text: string;
+}
+
+export type ReadingMarkKind = 'highlight' | 'underline';
+
+export interface ReadingMark {
+  id: string;
+  articleId: string;
+  kind: ReadingMarkKind;
+  paragraphIndex: number;
+  /** Character offsets inside `ReadingParagraph.text`. */
+  startOffset: number;
+  endOffset: number;
+  /** Exact marked text, kept so the notes rail does not need the article. */
+  text: string;
+  /** Free-form sticky note attached to the mark. */
+  note: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A mark quoted into the chat composer; the model sees these as evidence. */
+export interface ReadingCitation {
+  markId: string;
+  paragraphIndex: number;
+  text: string;
+  note?: string;
+}
+
+export interface ReadingChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
+  citations?: ReadingCitation[];
+}
+
+export interface ReadingArticle {
+  id: string;
+  categoryId: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  /** Original text the user pasted; kept so paragraphs can be re-segmented. */
+  sourceText: string;
+  paragraphs: ReadingParagraph[];
+  chatHistory: ReadingChatMessage[];
+  /** `ai` when the language model segmented the text, `fallback` otherwise. */
+  segmentedBy: 'ai' | 'fallback';
+  /** One-line English summary the model produced while segmenting. */
+  summary?: string;
+}

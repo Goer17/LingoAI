@@ -9,6 +9,7 @@ import { settingsRouter } from './routes/settings.js';
 import { vocabularyRouter } from './routes/vocabulary.js';
 import { writingRouter } from './routes/writing.js';
 import { tutorRouter } from './routes/tutor.js';
+import { readingRouter } from './routes/reading.js';
 import { scanAndEnqueueMissing } from './services/autoImageService.js';
 import { startDailyQuizScheduler } from './services/dailyQuizService.js';
 import { validateAccessToken } from './services/tokenService.js';
@@ -43,6 +44,7 @@ app.use('/api/settings', settingsRouter);
 app.use('/api/vocabulary', vocabularyRouter);
 app.use('/api/writing', writingRouter);
 app.use('/api/tutor', tutorRouter);
+app.use('/api/reading', readingRouter);
 
 if (hasClientDist) {
   app.use(express.static(env.clientDistPath));

@@ -160,6 +160,42 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_tutor_memories_created
     ON tutor_memories (created_at ASC);
+
+  CREATE TABLE IF NOT EXISTS reading_categories (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    position INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    payload_json TEXT NOT NULL DEFAULT '{}'
+  );
+
+  CREATE TABLE IF NOT EXISTS reading_articles (
+    id TEXT PRIMARY KEY,
+    category_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    payload_json TEXT NOT NULL DEFAULT '{}'
+  );
+
+  CREATE TABLE IF NOT EXISTS reading_marks (
+    id TEXT PRIMARY KEY,
+    article_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    paragraph_index INTEGER NOT NULL,
+    start_offset INTEGER NOT NULL,
+    end_offset INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    payload_json TEXT NOT NULL DEFAULT '{}'
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_reading_articles_category
+    ON reading_articles (category_id, updated_at DESC);
+
+  CREATE INDEX IF NOT EXISTS idx_reading_marks_article
+    ON reading_marks (article_id, paragraph_index ASC, start_offset ASC);
 `);
 
 try {
@@ -169,6 +205,15 @@ try {
   `);
 } catch {
   // Column already exists.
+}
+
+try {
+  db.exec(`
+    ALTER TABLE reading_categories
+    ADD COLUMN payload_json TEXT NOT NULL DEFAULT '{}';
+  `);
+} catch {
+  // Column already exists (or the table predates the reading feature).
 }
 
 try {

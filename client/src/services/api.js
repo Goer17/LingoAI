@@ -453,6 +453,102 @@ export const api = {
     deleteTutorMemory(id) {
         return unwrap(http.post(`/tutor/memories/${id}/delete`));
     },
+    listReadingCategories() {
+        return unwrap(http.get('/reading/categories'));
+    },
+    createReadingCategory(name) {
+        return unwrap(http.post('/reading/categories', { name }));
+    },
+    deleteReadingCategory(id) {
+        return unwrap(http.post(`/reading/categories/${id}/delete`));
+    },
+    listReadingArticles(categoryId) {
+        return unwrap(http.get('/reading/articles', { params: categoryId ? { categoryId } : undefined }));
+    },
+    createReadingArticle(payload) {
+        const body = { ...payload, categoryId: payload.categoryId || undefined };
+        return unwrap(http.post('/reading/articles', body));
+    },
+    getReadingArticle(id) {
+        return unwrap(http.get(`/reading/articles/${id}`));
+    },
+    resegmentReadingArticle(id) {
+        return unwrap(http.post(`/reading/articles/${id}/resegment`));
+    },
+    deleteReadingArticle(id) {
+        return unwrap(http.post(`/reading/articles/${id}/delete`));
+    },
+    addReadingMark(articleId, payload) {
+        return unwrap(http.post(`/reading/articles/${articleId}/marks`, payload));
+    },
+    updateReadingMarkNote(id, note) {
+        return unwrap(http.post(`/reading/marks/${id}/note`, { note }));
+    },
+    deleteReadingMark(id) {
+        return unwrap(http.post(`/reading/marks/${id}/delete`));
+    },
+    clearReadingChat(articleId) {
+        return unwrap(http.post(`/reading/articles/${articleId}/chat/clear`));
+    },
+    async streamReadingChat(articleId, message, citations, handlers) {
+        const token = getStoredAccessToken();
+        const response = await fetch(`/api/reading/articles/${articleId}/chat/stream`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'x-access-token': token } : {}),
+            },
+            body: JSON.stringify({
+                message,
+                citations: citations.map((markId) => ({ markId })),
+            }),
+        });
+        if (!response.ok || !response.body) {
+            let detail = '';
+            try {
+                const payload = (await response.json());
+                detail = typeof payload?.error === 'string' ? payload.error : payload?.error?.message ?? '';
+            }
+            catch {
+                detail = '';
+            }
+            throw new Error(detail || `Reading chat failed. (HTTP ${response.status})`);
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            buffer += decoder.decode(value, { stream: true });
+            const events = buffer.split('\n\n');
+            buffer = events.pop() ?? '';
+            for (const event of events) {
+                const dataLine = event
+                    .split('\n')
+                    .map((line) => line.trim())
+                    .find((line) => line.startsWith('data:'));
+                if (!dataLine) {
+                    continue;
+                }
+                const payload = JSON.parse(dataLine.slice(5).trim());
+                if (payload.type === 'delta' && payload.content) {
+                    handlers.onDelta(payload.content);
+                }
+                if (payload.type === 'error') {
+                    throw new Error(payload.error || 'Reading chat failed.');
+                }
+                if (payload.type === 'done' && payload.article) {
+                    handlers.onDone?.({
+                        chatHistory: payload.article.chatHistory,
+                        updatedAt: payload.article.updatedAt,
+                    });
+                }
+            }
+        }
+    },
     async streamTutorChat(sessionId, message, handlers) {
         const token = getStoredAccessToken();
         const response = await fetch(`/api/tutor/sessions/${sessionId}/chat/stream`, {

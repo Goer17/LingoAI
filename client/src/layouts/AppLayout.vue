@@ -10,6 +10,7 @@
         <RouterLink to="/tasks" class="nav-link">Tasks</RouterLink>
         <RouterLink to="/vocabulary" class="nav-link">Vocabulary</RouterLink>
         <RouterLink to="/listening" class="nav-link">Listening</RouterLink>
+        <RouterLink to="/reading" class="nav-link">Reading</RouterLink>
         <RouterLink to="/writing" class="nav-link">Expression</RouterLink>
         <RouterLink to="/setting" class="nav-link">Setting</RouterLink>
       </nav>

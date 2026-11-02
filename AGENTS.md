@@ -69,6 +69,7 @@ Both `POST /api/vocabulary/:id/audio` and `GET /api/vocabulary/common-audio` fol
 |---|---|---|---|
 | Vocabulary | `vocabularyService` | `vocabulary_entries` | `/api/vocabulary` |
 | Listening | `listeningService` | `listening_entries` | `/api/vocabulary/listening` |
+| Reading | `readingService` | `reading_categories`, `reading_articles`, `reading_marks` | `/api/reading` |
 | Writing/Expression | `writingService` | `writing_topics` | `/api/writing` |
 | Quizzes | `quizService` | `quiz_sessions` | `/api/vocabulary/quiz` |
 | Learning Tasks | `taskService` | `learning_tasks` | `/api/vocabulary/tasks` |

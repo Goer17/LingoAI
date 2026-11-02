@@ -3177,3 +3177,631 @@ select:focus {
     justify-content: flex-end;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Reading workspace
+   Four panes: library (categories + articles), reader, marks rail, AI chat.
+   The reader is the flex anchor; the rails keep fixed widths so paragraph
+   numbering and sticky notes stay aligned while the text column breathes.
+--------------------------------------------------------------------------- */
+
+.reading-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.reading-grid {
+  display: grid;
+  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) minmax(210px, 260px) minmax(280px, 340px);
+  gap: 0.9rem;
+  align-items: stretch;
+  min-height: calc(100vh - 190px);
+}
+
+.reading-library,
+.reading-document,
+.reading-rail,
+.reading-chat {
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-height: 0;
+}
+
+.reading-document {
+  overflow: hidden;
+}
+
+.reading-pane-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.reading-pane-head h2 {
+  margin: 0.1rem 0 0;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.reading-mini {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.72rem;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.eyebrow {
+  margin: 0;
+}
+
+.reading-inline-form,
+.reading-article-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.6rem;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.reading-article-form textarea,
+.reading-composer-input,
+.reading-mark-note {
+  width: 100%;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text);
+}
+
+.reading-article-form input,
+.reading-inline-form input {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+  font-family: inherit;
+  font-size: 0.76rem;
+}
+
+.reading-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.reading-form-actions .muted-text {
+  margin-right: auto;
+  font-size: 0.68rem;
+}
+
+.reading-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow: auto;
+  min-height: 0;
+}
+
+.reading-category-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.reading-category-row:hover {
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.reading-category-row.active {
+  border-color: var(--line-strong);
+  background: #fff;
+  font-weight: 600;
+}
+
+.reading-category-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reading-category-count {
+  font-size: 0.66rem;
+  color: var(--muted);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 0.1rem 0.4rem;
+}
+
+.reading-plus {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.reading-plus:hover {
+  border-color: var(--line-strong);
+  background: var(--accent-soft);
+}
+
+.reading-article-list {
+  list-style: none;
+  margin: 0.15rem 0 0.5rem 0.55rem;
+  padding: 0 0 0 0.6rem;
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.reading-list-hint {
+  font-size: 0.68rem;
+  padding: 0.25rem 0;
+}
+
+.reading-article-row {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.reading-article-row:hover {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: var(--line);
+}
+
+.reading-article-row.active {
+  background: #fff;
+  border-color: var(--line-strong);
+}
+
+.reading-article-title {
+  font-size: 0.74rem;
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.reading-article-meta {
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
+/* Reader -------------------------------------------------------------- */
+
+.reading-doc-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.reading-doc-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+
+.reading-doc-meta {
+  font-size: 0.68rem;
+  margin: 0;
+}
+
+.reading-warn {
+  color: var(--error);
+}
+
+.reading-doc-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+
+.reading-body {
+  overflow: auto;
+  min-height: 0;
+  padding: 0.5rem 0.25rem 2rem;
+  scroll-behavior: smooth;
+}
+
+.reading-paragraph {
+  display: grid;
+  grid-template-columns: 1.9rem minmax(0, 1fr);
+  gap: 0.55rem;
+  padding: 0.28rem 0.15rem;
+  border-radius: 12px;
+  transition: background 220ms ease;
+}
+
+.reading-paragraph.reading-flash-paragraph {
+  background: rgba(31, 31, 27, 0.07);
+}
+
+.reading-gutter {
+  font-size: 0.66rem;
+  color: var(--muted);
+  padding-top: 0.28rem;
+  text-align: right;
+  user-select: none;
+}
+
+.reading-text {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.72;
+  letter-spacing: 0.002em;
+  overflow-wrap: anywhere;
+}
+
+.reading-seg[data-mark] {
+  cursor: pointer;
+}
+
+.mark-highlight {
+  background: rgba(255, 224, 138, 0.55);
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 rgba(255, 224, 138, 0.9);
+}
+
+.mark-underline {
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+  text-decoration-color: rgba(31, 31, 27, 0.55);
+}
+
+.mark-highlight.mark-underline {
+  background: rgba(255, 224, 138, 0.55);
+  text-decoration-color: rgba(31, 31, 27, 0.6);
+}
+
+.reading-empty {
+  margin: auto;
+  text-align: center;
+  max-width: 260px;
+}
+
+/* Selection toolbar --------------------------------------------------- */
+
+.reading-selection-bar {
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.reading-selection-bar button {
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.68rem;
+  padding: 0.32rem 0.55rem;
+  border-radius: 9px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.reading-selection-bar button:hover {
+  background: var(--accent-soft);
+}
+
+.reading-selection-bar .reading-selection-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Marks rail --------------------------------------------------------- */
+
+.reading-rail {
+  overflow: hidden;
+}
+
+.reading-rail-empty {
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.reading-mark-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: auto;
+  min-height: 0;
+  padding-right: 0.15rem;
+}
+
+.reading-mark-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 0.5rem 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  cursor: grab;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.reading-mark-card.active,
+.reading-mark-card:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.reading-mark-card.dragging {
+  opacity: 0.55;
+  cursor: grabbing;
+}
+
+.reading-mark-head {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.reading-mark-jump {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.66rem;
+  padding: 0.1rem 0.35rem;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.reading-mark-kind {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.reading-mark-spacer {
+  flex: 1;
+}
+
+.reading-mark-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.reading-mark-icon:hover {
+  border-color: var(--line);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.reading-mark-quote {
+  margin: 0;
+  padding: 0.3rem 0.45rem;
+  border-left: 2px solid var(--line-strong);
+  font-size: 0.7rem;
+  line-height: 1.45;
+  color: var(--muted);
+  max-height: 4.6rem;
+  overflow: auto;
+}
+
+.reading-mark-note {
+  font-size: 0.7rem;
+  min-height: 2.4rem;
+}
+
+.reading-mark-foot {
+  font-size: 0.6rem;
+  color: var(--muted);
+  text-align: right;
+  min-height: 0.8rem;
+}
+
+/* Chat --------------------------------------------------------------- */
+
+.reading-chat {
+  position: relative;
+  overflow: hidden;
+}
+
+.reading-chat.drop-active {
+  border-color: var(--line-strong);
+  box-shadow: inset 0 0 0 2px rgba(31, 31, 27, 0.12);
+}
+
+.reading-chat-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  overflow: auto;
+  min-height: 0;
+  flex: 1;
+  padding-right: 0.15rem;
+}
+
+.reading-chat-body .chat-bubble {
+  max-width: 100%;
+}
+
+.reading-chat-user-text {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 0.76rem;
+}
+
+.reading-chat-citations,
+.reading-citation-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.reading-cite-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.16rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--accent-soft);
+  font-size: 0.64rem;
+}
+
+.reading-cite-chip button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.reading-cite-quote {
+  color: var(--muted);
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reading-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.6rem;
+}
+
+.reading-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.reading-composer-actions .muted-text {
+  font-size: 0.64rem;
+}
+
+.reading-flash {
+  margin: 0;
+}
+
+@media (max-width: 1320px) {
+  .reading-grid {
+    grid-template-columns: minmax(180px, 210px) minmax(0, 1fr) minmax(200px, 240px);
+    grid-template-areas:
+      'library document rail'
+      'library document chat';
+    grid-template-rows: minmax(240px, 1fr) minmax(240px, 1fr);
+  }
+
+  .reading-library { grid-area: library; }
+  .reading-document { grid-area: document; }
+  .reading-rail { grid-area: rail; }
+  .reading-chat { grid-area: chat; }
+}
+
+@media (max-width: 980px) {
+  .reading-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'library document'
+      'rail chat';
+    grid-template-rows: minmax(320px, auto) minmax(320px, auto);
+    min-height: 0;
+  }
+
+  .reading-document,
+  .reading-chat {
+    min-height: 340px;
+  }
+}
+
+@media (max-width: 640px) {
+  .reading-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'library'
+      'document'
+      'rail'
+      'chat';
+    grid-template-rows: none;
+  }
+
+  .reading-document,
+  .reading-chat {
+    min-height: 420px;
+  }
+}
+
+.reading-minus {
+  color: var(--muted);
+}
+
+.reading-minus:hover {
+  color: var(--error);
+  border-color: rgba(139, 45, 45, 0.4);
+}
+
+.reading-seg[data-mark] {
+  cursor: grab;
+}
+
+.reading-seg[data-mark]:active {
+  cursor: grabbing;
+}

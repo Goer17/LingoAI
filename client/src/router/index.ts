@@ -8,6 +8,7 @@ import QuizPage from '@/pages/QuizPage.vue';
 import TasksPage from '@/pages/TasksPage.vue';
 import TutorPage from '@/pages/TutorPage.vue';
 import ListeningPage from '@/pages/ListeningPage.vue';
+import ReadingPage from '@/pages/ReadingPage.vue';
 import WritingPage from '@/pages/WritingPage.vue';
 import ExpressionPracticePage from '@/pages/ExpressionPracticePage.vue';
 
@@ -36,6 +37,11 @@ const router = createRouter({
           path: 'listening',
           name: 'listening',
           component: ListeningPage,
+        },
+        {
+          path: 'reading',
+          name: 'reading',
+          component: ReadingPage,
         },
         {
           path: 'writing',

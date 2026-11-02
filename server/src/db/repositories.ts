@@ -1,5 +1,5 @@
 import { db } from './database.js';
-import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, QuizSession, SentenceImage, Settings, SettingsModelCategory, TutorMemory, TutorMessage, TutorSession, VocabularyEntry, WritingTopic } from '../types/models.js';
+import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, QuizSession, ReadingArticle, ReadingCategory, ReadingMark, SentenceImage, Settings, SettingsModelCategory, TutorMemory, TutorMessage, TutorSession, VocabularyEntry, WritingTopic } from '../types/models.js';
 
 function parseJson<T>(value: string): T {
   return JSON.parse(value) as T;
@@ -720,5 +720,169 @@ export const tutorMemoryRepository = {
 
   remove(id: string) {
     db.prepare('DELETE FROM tutor_memories WHERE id = ?').run(id);
+  },
+};
+
+export const readingCategoryRepository = {
+  list(): ReadingCategory[] {
+    const rows = db.prepare(`
+      SELECT payload_json
+      FROM reading_categories
+      ORDER BY position ASC, created_at ASC
+    `).all() as Array<{ payload_json: string }>;
+
+    return rows.map((row) => parseJson<ReadingCategory>(row.payload_json));
+  },
+
+  getById(id: string): ReadingCategory | null {
+    const row = db.prepare(`
+      SELECT payload_json FROM reading_categories WHERE id = ?
+    `).get(id) as { payload_json: string } | undefined;
+
+    return row ? parseJson<ReadingCategory>(row.payload_json) : null;
+  },
+
+  getByName(name: string): ReadingCategory | null {
+    const row = db.prepare(`
+      SELECT payload_json FROM reading_categories WHERE lower(name) = lower(?)
+    `).get(name.trim()) as { payload_json: string } | undefined;
+
+    return row ? parseJson<ReadingCategory>(row.payload_json) : null;
+  },
+
+  save(category: ReadingCategory) {
+    db.prepare(`
+      INSERT INTO reading_categories (id, name, position, created_at, updated_at, payload_json)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        position = excluded.position,
+        created_at = excluded.created_at,
+        updated_at = excluded.updated_at,
+        payload_json = excluded.payload_json
+    `).run(
+      category.id,
+      category.name,
+      category.position,
+      category.createdAt,
+      category.updatedAt,
+      JSON.stringify(category),
+    );
+  },
+
+  remove(id: string) {
+    db.prepare('DELETE FROM reading_categories WHERE id = ?').run(id);
+  },
+};
+
+export const readingArticleRepository = {
+  list(): ReadingArticle[] {
+    const rows = db.prepare(`
+      SELECT payload_json FROM reading_articles ORDER BY updated_at DESC
+    `).all() as Array<{ payload_json: string }>;
+
+    return rows.map((row) => parseJson<ReadingArticle>(row.payload_json));
+  },
+
+  listByCategory(categoryId: string): ReadingArticle[] {
+    return readingArticleRepository.list().filter((article) => article.categoryId === categoryId);
+  },
+
+  getById(id: string): ReadingArticle | null {
+    const row = db.prepare(`
+      SELECT payload_json FROM reading_articles WHERE id = ?
+    `).get(id) as { payload_json: string } | undefined;
+
+    return row ? parseJson<ReadingArticle>(row.payload_json) : null;
+  },
+
+  save(article: ReadingArticle) {
+    db.prepare(`
+      INSERT INTO reading_articles (
+        id, category_id, title, created_at, updated_at, payload_json
+      ) VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        category_id = excluded.category_id,
+        title = excluded.title,
+        created_at = excluded.created_at,
+        updated_at = excluded.updated_at,
+        payload_json = excluded.payload_json
+    `).run(
+      article.id,
+      article.categoryId,
+      article.title,
+      article.createdAt,
+      article.updatedAt,
+      JSON.stringify(article),
+    );
+  },
+
+  remove(id: string) {
+    db.prepare('DELETE FROM reading_articles WHERE id = ?').run(id);
+  },
+};
+
+export const readingMarkRepository = {
+  listByArticle(articleId: string): ReadingMark[] {
+    const rows = db.prepare(`
+      SELECT payload_json
+      FROM reading_marks
+      WHERE article_id = ?
+      ORDER BY paragraph_index ASC, start_offset ASC, created_at ASC
+    `).all(articleId) as Array<{ payload_json: string }>;
+
+    return rows.map((row) => parseJson<ReadingMark>(row.payload_json));
+  },
+
+  countByArticle(articleId: string): number {
+    const row = db.prepare(`
+      SELECT COUNT(*) AS count FROM reading_marks WHERE article_id = ?
+    `).get(articleId) as { count: number } | undefined;
+
+    return row?.count ?? 0;
+  },
+
+  getById(id: string): ReadingMark | null {
+    const row = db.prepare(`
+      SELECT payload_json FROM reading_marks WHERE id = ?
+    `).get(id) as { payload_json: string } | undefined;
+
+    return row ? parseJson<ReadingMark>(row.payload_json) : null;
+  },
+
+  save(mark: ReadingMark) {
+    db.prepare(`
+      INSERT INTO reading_marks (
+        id, article_id, kind, paragraph_index, start_offset, end_offset,
+        created_at, updated_at, payload_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        article_id = excluded.article_id,
+        kind = excluded.kind,
+        paragraph_index = excluded.paragraph_index,
+        start_offset = excluded.start_offset,
+        end_offset = excluded.end_offset,
+        created_at = excluded.created_at,
+        updated_at = excluded.updated_at,
+        payload_json = excluded.payload_json
+    `).run(
+      mark.id,
+      mark.articleId,
+      mark.kind,
+      mark.paragraphIndex,
+      mark.startOffset,
+      mark.endOffset,
+      mark.createdAt,
+      mark.updatedAt,
+      JSON.stringify(mark),
+    );
+  },
+
+  remove(id: string) {
+    db.prepare('DELETE FROM reading_marks WHERE id = ?').run(id);
+  },
+
+  removeByArticle(articleId: string) {
+    db.prepare('DELETE FROM reading_marks WHERE article_id = ?').run(articleId);
   },
 };

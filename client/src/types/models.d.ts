@@ -241,3 +241,68 @@ export interface TutorSessionDetail {
     session: TutorSession;
     messages: TutorMessage[];
 }
+export interface ReadingCategory {
+    id: string;
+    name: string;
+    position: number;
+    createdAt: string;
+    updatedAt: string;
+    articleCount?: number;
+}
+export interface ReadingParagraph {
+    index: number;
+    text: string;
+}
+export type ReadingMarkKind = 'highlight' | 'underline';
+export interface ReadingMark {
+    id: string;
+    articleId: string;
+    kind: ReadingMarkKind;
+    paragraphIndex: number;
+    startOffset: number;
+    endOffset: number;
+    text: string;
+    note: string;
+    createdAt: string;
+    updatedAt: string;
+}
+export interface ReadingCitation {
+    markId: string;
+    paragraphIndex: number;
+    text: string;
+    note?: string;
+}
+export interface ReadingChatMessage {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    createdAt: string;
+    citations?: ReadingCitation[];
+}
+export interface ReadingArticle {
+    id: string;
+    categoryId: string;
+    title: string;
+    createdAt: string;
+    updatedAt: string;
+    sourceText: string;
+    paragraphs: ReadingParagraph[];
+    chatHistory: ReadingChatMessage[];
+    segmentedBy: 'ai' | 'fallback';
+    summary?: string;
+}
+/** Row shape returned by GET /reading/articles (no paragraph bodies). */
+export interface ReadingArticleSummary {
+    id: string;
+    categoryId: string;
+    title: string;
+    createdAt: string;
+    updatedAt: string;
+    paragraphCount: number;
+    markCount: number;
+    summary?: string;
+}
+export interface ReadingArticleBundle {
+    article: ReadingArticle;
+    marks: ReadingMark[];
+}

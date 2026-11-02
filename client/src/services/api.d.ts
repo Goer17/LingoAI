@@ -1,4 +1,4 @@
-import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, PolishResult, QuizSession, ScenarioData, ScenarioSummary, SearchResult, SettingsForm, TutorMemory, TutorMemoryKind, TutorMessage, TutorSession, TutorSessionDetail, VocabularyEntry, WritingKnowledgePoint, WritingTopic } from '@/types/models';
+import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, PolishResult, QuizSession, ReadingArticle, ReadingArticleBundle, ReadingArticleSummary, ReadingCategory, ReadingChatMessage, ReadingMark, ReadingMarkKind, ScenarioData, ScenarioSummary, SearchResult, SettingsForm, TutorMemory, TutorMemoryKind, TutorMessage, TutorSession, TutorSessionDetail, VocabularyEntry, WritingKnowledgePoint, WritingTopic } from '@/types/models';
 export declare const api: {
     login(token: string): Promise<{
         token: string;
@@ -193,6 +193,44 @@ export declare const api: {
     deleteTutorMemory(id: string): Promise<{
         removed: boolean;
     }>;
+    listReadingCategories(): Promise<ReadingCategory[]>;
+    createReadingCategory(name: string): Promise<ReadingCategory>;
+    deleteReadingCategory(id: string): Promise<{
+        removed: boolean;
+    }>;
+    listReadingArticles(categoryId?: string): Promise<ReadingArticleSummary[]>;
+    createReadingArticle(payload: {
+        categoryId?: string;
+        title: string;
+        content: string;
+    }): Promise<ReadingArticle>;
+    getReadingArticle(id: string): Promise<ReadingArticleBundle>;
+    resegmentReadingArticle(id: string): Promise<ReadingArticle>;
+    deleteReadingArticle(id: string): Promise<{
+        removed: boolean;
+    }>;
+    addReadingMark(articleId: string, payload: {
+        kind: ReadingMarkKind;
+        paragraphIndex: number;
+        startOffset: number;
+        endOffset: number;
+    }): Promise<ReadingMark>;
+    updateReadingMarkNote(id: string, note: string): Promise<ReadingMark>;
+    deleteReadingMark(id: string): Promise<{
+        removed: boolean;
+    }>;
+    clearReadingChat(articleId: string): Promise<{
+        id: string;
+        updatedAt: string;
+        chatHistory: ReadingChatMessage[];
+    }>;
+    streamReadingChat(articleId: string, message: string, citations: string[], handlers: {
+        onDelta: (chunk: string) => void;
+        onDone?: (payload: {
+            chatHistory: ReadingChatMessage[];
+            updatedAt: string;
+        }) => void;
+    }): Promise<void>;
     streamTutorChat(sessionId: string, message: string, handlers: {
         onDelta: (chunk: string) => void;
         onThinking?: (event: {

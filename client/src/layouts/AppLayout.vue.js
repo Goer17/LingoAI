@@ -77,11 +77,11 @@ const __VLS_16 = {}.RouterLink;
 /** @type {[typeof __VLS_components.RouterLink, typeof __VLS_components.RouterLink, ]} */ ;
 // @ts-ignore
 const __VLS_17 = __VLS_asFunctionalComponent(__VLS_16, new __VLS_16({
-    to: "/writing",
+    to: "/reading",
     ...{ class: "nav-link" },
 }));
 const __VLS_18 = __VLS_17({
-    to: "/writing",
+    to: "/reading",
     ...{ class: "nav-link" },
 }, ...__VLS_functionalComponentArgsRest(__VLS_17));
 __VLS_19.slots.default;
@@ -90,29 +90,43 @@ const __VLS_20 = {}.RouterLink;
 /** @type {[typeof __VLS_components.RouterLink, typeof __VLS_components.RouterLink, ]} */ ;
 // @ts-ignore
 const __VLS_21 = __VLS_asFunctionalComponent(__VLS_20, new __VLS_20({
-    to: "/setting",
+    to: "/writing",
     ...{ class: "nav-link" },
 }));
 const __VLS_22 = __VLS_21({
-    to: "/setting",
+    to: "/writing",
     ...{ class: "nav-link" },
 }, ...__VLS_functionalComponentArgsRest(__VLS_21));
 __VLS_23.slots.default;
 var __VLS_23;
+const __VLS_24 = {}.RouterLink;
+/** @type {[typeof __VLS_components.RouterLink, typeof __VLS_components.RouterLink, ]} */ ;
+// @ts-ignore
+const __VLS_25 = __VLS_asFunctionalComponent(__VLS_24, new __VLS_24({
+    to: "/setting",
+    ...{ class: "nav-link" },
+}));
+const __VLS_26 = __VLS_25({
+    to: "/setting",
+    ...{ class: "nav-link" },
+}, ...__VLS_functionalComponentArgsRest(__VLS_25));
+__VLS_27.slots.default;
+var __VLS_27;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.main, __VLS_intrinsicElements.main)({
     ...{ class: "page-shell" },
 });
-const __VLS_24 = {}.RouterView;
+const __VLS_28 = {}.RouterView;
 /** @type {[typeof __VLS_components.RouterView, ]} */ ;
 // @ts-ignore
-const __VLS_25 = __VLS_asFunctionalComponent(__VLS_24, new __VLS_24({}));
-const __VLS_26 = __VLS_25({}, ...__VLS_functionalComponentArgsRest(__VLS_25));
+const __VLS_29 = __VLS_asFunctionalComponent(__VLS_28, new __VLS_28({}));
+const __VLS_30 = __VLS_29({}, ...__VLS_functionalComponentArgsRest(__VLS_29));
 /** @type {__VLS_StyleScopedClasses['shell']} */ ;
 /** @type {__VLS_StyleScopedClasses['topbar']} */ ;
 /** @type {__VLS_StyleScopedClasses['brand']} */ ;
 /** @type {__VLS_StyleScopedClasses['brand-mark']} */ ;
 /** @type {__VLS_StyleScopedClasses['brand-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['nav-links']} */ ;
+/** @type {__VLS_StyleScopedClasses['nav-link']} */ ;
 /** @type {__VLS_StyleScopedClasses['nav-link']} */ ;
 /** @type {__VLS_StyleScopedClasses['nav-link']} */ ;
 /** @type {__VLS_StyleScopedClasses['nav-link']} */ ;

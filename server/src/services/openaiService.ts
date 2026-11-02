@@ -120,6 +120,11 @@ const sentenceMatchSchema = z.object({
   matchedIndices: z.array(z.number()),
 });
 
+const readingSegmentsSchema = z.object({
+  paragraphs: z.array(z.string().min(1)).min(1),
+  summary: optionalString,
+});
+
 interface LangClient {
   model: string;
   client: OpenAI;
@@ -341,6 +346,12 @@ export async function judgeQuizAppeal(prompt: string): Promise<{ acceptable: boo
 
 export async function generateScenario(prompt: string) {
   return requestJson(prompt, scenarioSchema);
+}
+
+export async function segmentReadingArticle(
+  prompt: string,
+): Promise<{ paragraphs: string[]; summary?: string }> {
+  return requestJson(prompt, readingSegmentsSchema);
 }
 
 export async function checkObjectives(prompt: string) {
