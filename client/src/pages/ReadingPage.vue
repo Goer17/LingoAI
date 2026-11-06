@@ -1,6 +1,6 @@
 <template>
   <section class="reading-page">
-    <div class="reading-grid">
+    <div ref="gridRef" class="reading-grid" :style="gridStyle">
       <!-- 1. Library: categories + article titles -->
       <aside class="card reading-library">
         <div class="reading-pane-head">
@@ -284,6 +284,7 @@
 
     <div
       v-if="selection"
+      ref="selectionBarRef"
       class="reading-selection-bar"
       :style="{ top: `${selection.top}px`, left: `${selection.left}px` }"
       @mousedown.prevent
@@ -339,6 +340,9 @@ const dragOverChat = ref(false);
 
 const chatBodyRef = ref<HTMLElement | null>(null);
 const composerRef = ref<HTMLTextAreaElement | null>(null);
+const selectionBarRef = ref<HTMLElement | null>(null);
+const gridRef = ref<HTMLElement | null>(null);
+const gridStyle = ref<Record<string, string> | undefined>(undefined);
 
 const chatMessages = computed(() => store.article?.chatHistory ?? []);
 const activeCategoryName = computed(
@@ -713,10 +717,40 @@ function handleResegment() {
   }
 }
 
+/**
+ * Pin the workspace to the viewport so the reader and the chat pane scroll
+ * their own content instead of stretching the page as the chat log grows.
+ * Measured at runtime because the sticky top bar changes height when the nav
+ * wraps; a hard-coded `calc(100vh - Npx)` is wrong at those widths.
+ */
+function syncGridHeight() {
+  const el = gridRef.value;
+  if (!el || window.innerWidth <= 640) {
+    gridStyle.value = undefined;
+    return;
+  }
+  const top = el.getBoundingClientRect().top + window.scrollY;
+  const available = Math.round(window.innerHeight - top - 20);
+  gridStyle.value = { height: `${Math.max(320, available)}px` };
+}
+
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     selection.value = null;
   }
+}
+
+/** Clicking anywhere outside the floating selection toolbar dismisses it, so a
+ *  stale "Highlight / Underline / Ask AI" bar never stays on screen. */
+function handleDocumentPointerDown(event: PointerEvent) {
+  if (!selection.value) {
+    return;
+  }
+  const target = event.target as Node | null;
+  if (target && selectionBarRef.value?.contains(target)) {
+    return;
+  }
+  selection.value = null;
 }
 
 watch(
@@ -732,15 +766,21 @@ watch(
 
 onMounted(async () => {
   window.addEventListener('keydown', handleKeydown);
+  window.addEventListener('resize', syncGridHeight);
+  document.addEventListener('pointerdown', handleDocumentPointerDown);
   await store.loadCategories();
   await store.loadArticles();
   const first = store.articles[0];
   if (first) {
     await store.selectArticle(first.id);
   }
+  await nextTick();
+  syncGridHeight();
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener('resize', syncGridHeight);
+  document.removeEventListener('pointerdown', handleDocumentPointerDown);
 });
 </script>

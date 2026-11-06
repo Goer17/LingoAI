@@ -16,6 +16,9 @@ const draft = ref('');
 const dragOverChat = ref(false);
 const chatBodyRef = ref(null);
 const composerRef = ref(null);
+const selectionBarRef = ref(null);
+const gridRef = ref(null);
+const gridStyle = ref(undefined);
 const chatMessages = computed(() => store.article?.chatHistory ?? []);
 const activeCategoryName = computed(() => store.categories.find((category) => category.id === store.activeCategoryId)?.name ?? '');
 function shorten(value, max) {
@@ -349,10 +352,38 @@ function handleResegment() {
         void store.resegmentArticle();
     }
 }
+/**
+ * Pin the workspace to the viewport so the reader and the chat pane scroll
+ * their own content instead of stretching the page as the chat log grows.
+ * Measured at runtime because the sticky top bar changes height when the nav
+ * wraps; a hard-coded `calc(100vh - Npx)` is wrong at those widths.
+ */
+function syncGridHeight() {
+    const el = gridRef.value;
+    if (!el || window.innerWidth <= 640) {
+        gridStyle.value = undefined;
+        return;
+    }
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    const available = Math.round(window.innerHeight - top - 20);
+    gridStyle.value = { height: `${Math.max(320, available)}px` };
+}
 function handleKeydown(event) {
     if (event.key === 'Escape') {
         selection.value = null;
     }
+}
+/** Clicking anywhere outside the floating selection toolbar dismisses it, so a
+ *  stale "Highlight / Underline / Ask AI" bar never stays on screen. */
+function handleDocumentPointerDown(event) {
+    if (!selection.value) {
+        return;
+    }
+    const target = event.target;
+    if (target && selectionBarRef.value?.contains(target)) {
+        return;
+    }
+    selection.value = null;
 }
 watch(() => [chatMessages.value.length, store.streamText], async () => {
     await nextTick();
@@ -363,15 +394,21 @@ watch(() => [chatMessages.value.length, store.streamText], async () => {
 });
 onMounted(async () => {
     window.addEventListener('keydown', handleKeydown);
+    window.addEventListener('resize', syncGridHeight);
+    document.addEventListener('pointerdown', handleDocumentPointerDown);
     await store.loadCategories();
     await store.loadArticles();
     const first = store.articles[0];
     if (first) {
         await store.selectArticle(first.id);
     }
+    await nextTick();
+    syncGridHeight();
 });
 onBeforeUnmount(() => {
     window.removeEventListener('keydown', handleKeydown);
+    window.removeEventListener('resize', syncGridHeight);
+    document.removeEventListener('pointerdown', handleDocumentPointerDown);
 });
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
@@ -381,8 +418,11 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.section, __VLS_intrinsicElemen
     ...{ class: "reading-page" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ref: "gridRef",
     ...{ class: "reading-grid" },
+    ...{ style: (__VLS_ctx.gridStyle) },
 });
+/** @type {typeof __VLS_ctx.gridRef} */ ;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.aside, __VLS_intrinsicElements.aside)({
     ...{ class: "card reading-library" },
 });
@@ -854,9 +894,11 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElement
 if (__VLS_ctx.selection) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ onMousedown: () => { } },
+        ref: "selectionBarRef",
         ...{ class: "reading-selection-bar" },
         ...{ style: ({ top: `${__VLS_ctx.selection.top}px`, left: `${__VLS_ctx.selection.left}px` }) },
     });
+    /** @type {typeof __VLS_ctx.selectionBarRef} */ ;
     __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
         ...{ onClick: (...[$event]) => {
                 if (!(__VLS_ctx.selection))
@@ -1018,6 +1060,9 @@ const __VLS_self = (await import('vue')).defineComponent({
             dragOverChat: dragOverChat,
             chatBodyRef: chatBodyRef,
             composerRef: composerRef,
+            selectionBarRef: selectionBarRef,
+            gridRef: gridRef,
+            gridStyle: gridStyle,
             chatMessages: chatMessages,
             activeCategoryName: activeCategoryName,
             shorten: shorten,

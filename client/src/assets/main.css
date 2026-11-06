@@ -3194,9 +3194,14 @@ select:focus {
 .reading-grid {
   display: grid;
   grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) minmax(210px, 260px) minmax(280px, 340px);
+  /* One definite row pinned to the viewport: each pane owns its own scroll area
+     instead of letting a long chat log stretch the whole page. */
+  grid-template-rows: minmax(0, 1fr);
   gap: 0.9rem;
   align-items: stretch;
-  min-height: calc(100vh - 190px);
+  height: calc(100vh - 150px);
+  height: calc(100dvh - 150px);
+  min-height: 420px;
 }
 
 .reading-library,
@@ -3443,6 +3448,7 @@ select:focus {
   min-height: 0;
   padding: 0.5rem 0.25rem 2rem;
   scroll-behavior: smooth;
+  overscroll-behavior: contain;
 }
 
 .reading-paragraph {
@@ -3554,6 +3560,7 @@ select:focus {
   overflow: auto;
   min-height: 0;
   padding-right: 0.15rem;
+  overscroll-behavior: contain;
 }
 
 .reading-mark-card {
@@ -3670,6 +3677,7 @@ select:focus {
   min-height: 0;
   flex: 1;
   padding-right: 0.15rem;
+  overscroll-behavior: contain;
 }
 
 .reading-chat-body .chat-bubble {
@@ -3747,7 +3755,7 @@ select:focus {
     grid-template-areas:
       'library document rail'
       'library document chat';
-    grid-template-rows: minmax(240px, 1fr) minmax(240px, 1fr);
+    grid-template-rows: minmax(0, 0.8fr) minmax(0, 1.2fr);
   }
 
   .reading-library { grid-area: library; }
@@ -3762,13 +3770,15 @@ select:focus {
     grid-template-areas:
       'library document'
       'rail chat';
-    grid-template-rows: minmax(320px, auto) minmax(320px, auto);
-    min-height: 0;
+    grid-template-rows: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    height: calc(100vh - 110px);
+    height: calc(100dvh - 110px);
+    min-height: 560px;
   }
 
   .reading-document,
   .reading-chat {
-    min-height: 340px;
+    min-height: 0;
   }
 }
 
@@ -3781,11 +3791,19 @@ select:focus {
       'rail'
       'chat';
     grid-template-rows: none;
+    height: auto;
+    min-height: 0;
+  }
+
+  .reading-library {
+    max-height: 60vh;
+    overflow: auto;
   }
 
   .reading-document,
   .reading-chat {
-    min-height: 420px;
+    height: 70vh;
+    min-height: 340px;
   }
 }
 
