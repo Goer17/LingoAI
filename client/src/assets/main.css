@@ -3439,8 +3439,73 @@ select:focus {
 
 .reading-doc-actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.4rem;
   margin-top: 0.35rem;
+}
+
+/* Inline confirmations (article delete / re-segment / category delete) ----- */
+
+.reading-confirm-label {
+  font-size: 0.66rem;
+  color: var(--muted);
+}
+
+.reading-danger {
+  color: var(--error);
+  border-color: rgba(139, 45, 45, 0.35);
+}
+
+.reading-danger:hover {
+  background: rgba(139, 45, 45, 0.08);
+  border-color: rgba(139, 45, 45, 0.5);
+}
+
+.button-primary.reading-danger {
+  background: var(--error);
+  border-color: transparent;
+  color: #fff;
+}
+
+.reading-category-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.1rem 0 0.2rem 0.15rem;
+  padding: 0.28rem 0.45rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 0.64rem;
+  color: var(--muted);
+}
+
+.reading-category-confirm button {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.14rem 0.5rem;
+  font-size: 0.64rem;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.reading-category-confirm button:hover {
+  border-color: var(--line-strong);
+  background: var(--accent-soft);
+}
+
+.reading-category-confirm button.reading-confirm-yes {
+  background: var(--error);
+  border-color: transparent;
+  color: #fff;
+}
+
+.reading-category-confirm button.reading-confirm-yes:hover {
+  background: #7a2626;
 }
 
 .reading-body {

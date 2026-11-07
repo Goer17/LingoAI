@@ -19,6 +19,11 @@ const composerRef = ref(null);
 const selectionBarRef = ref(null);
 const gridRef = ref(null);
 const gridStyle = ref(undefined);
+/** Inline confirmations replace `window.confirm`, so the decision happens at
+ *  the button that triggered it instead of in a modal browser dialog. */
+const confirmingArticleDelete = ref(false);
+const confirmingResegment = ref(false);
+const confirmingCategoryDeleteId = ref('');
 const chatMessages = computed(() => store.article?.chatHistory ?? []);
 const activeCategoryName = computed(() => store.categories.find((category) => category.id === store.activeCategoryId)?.name ?? '');
 function shorten(value, max) {
@@ -294,15 +299,24 @@ async function handleDeleteCategory(category) {
         store.setError(`"${category.name}" still has articles. Delete or move them first.`);
         return;
     }
-    if (!window.confirm(`Delete the category "${category.name}"?`)) {
-        return;
-    }
     try {
         await store.deleteCategory(category.id);
     }
     catch (error) {
         store.setError(error instanceof Error ? error.message : 'Unable to delete category.');
     }
+}
+function requestDeleteCategory(category) {
+    if ((category.articleCount ?? 0) > 0) {
+        store.setError(`"${category.name}" still has articles. Delete or move them first.`);
+        confirmingCategoryDeleteId.value = '';
+        return;
+    }
+    confirmingCategoryDeleteId.value = category.id;
+}
+async function confirmDeleteCategory(category) {
+    confirmingCategoryDeleteId.value = '';
+    await handleDeleteCategory(category);
 }
 async function handleSelectCategory(categoryId) {
     await store.selectCategory(categoryId);
@@ -336,21 +350,27 @@ async function handleCreateArticle() {
         store.setError(error instanceof Error ? error.message : 'Unable to create article.');
     }
 }
-function handleDeleteArticle() {
-    if (!store.article) {
-        return;
-    }
-    if (window.confirm(`Delete "${store.article.title}" and its marks?`)) {
-        void store.deleteArticle(store.article.id);
-    }
+function requestDeleteArticle() {
+    confirmingResegment.value = false;
+    confirmingArticleDelete.value = true;
 }
-function handleResegment() {
+function confirmDeleteArticle() {
+    confirmingArticleDelete.value = false;
     if (!store.article) {
         return;
     }
-    if (window.confirm('Re-segment this article? Existing marks are cleared because paragraph numbering changes.')) {
-        void store.resegmentArticle();
+    void store.deleteArticle(store.article.id);
+}
+function requestResegment() {
+    confirmingArticleDelete.value = false;
+    confirmingResegment.value = true;
+}
+function confirmResegment() {
+    confirmingResegment.value = false;
+    if (!store.article) {
+        return;
     }
+    void store.resegmentArticle();
 }
 /**
  * Pin the workspace to the viewport so the reader and the chat pane scroll
@@ -385,6 +405,11 @@ function handleDocumentPointerDown(event) {
     }
     selection.value = null;
 }
+watch(() => store.article?.id, () => {
+    // Never leave a destructive confirmation armed when the reader changes.
+    confirmingArticleDelete.value = false;
+    confirmingResegment.value = false;
+});
 watch(() => [chatMessages.value.length, store.streamText], async () => {
     await nextTick();
     const body = chatBodyRef.value;
@@ -511,11 +536,34 @@ for (const [category] of __VLS_getVForSourceType((__VLS_ctx.store.categories))) 
             ...{ onClick: (...[$event]) => {
                     if (!(category.name !== 'General'))
                         return;
-                    __VLS_ctx.handleDeleteCategory(category);
+                    __VLS_ctx.requestDeleteCategory(category);
                 } },
             ...{ class: "reading-plus reading-minus" },
             type: "button",
             title: "Delete category",
+        });
+    }
+    if (__VLS_ctx.confirmingCategoryDeleteId === category.id) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "reading-category-confirm" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (...[$event]) => {
+                    if (!(__VLS_ctx.confirmingCategoryDeleteId === category.id))
+                        return;
+                    __VLS_ctx.confirmDeleteCategory(category);
+                } },
+            ...{ class: "reading-confirm-yes" },
+            type: "button",
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (...[$event]) => {
+                    if (!(__VLS_ctx.confirmingCategoryDeleteId === category.id))
+                        return;
+                    __VLS_ctx.confirmingCategoryDeleteId = '';
+                } },
+            type: "button",
         });
     }
     if (__VLS_ctx.articleFormCategoryId === category.id) {
@@ -623,18 +671,64 @@ if (__VLS_ctx.store.article) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "reading-doc-actions" },
     });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
-        ...{ onClick: (__VLS_ctx.handleResegment) },
-        ...{ class: "button button-secondary reading-mini" },
-        type: "button",
-        disabled: (__VLS_ctx.store.resegmenting),
-    });
-    (__VLS_ctx.store.resegmenting ? 'Re-segmenting…' : 'Re-segment');
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
-        ...{ onClick: (__VLS_ctx.handleDeleteArticle) },
-        ...{ class: "button button-secondary reading-mini" },
-        type: "button",
-    });
+    if (__VLS_ctx.confirmingResegment) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+            ...{ class: "reading-confirm-label" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (__VLS_ctx.confirmResegment) },
+            ...{ class: "button button-primary reading-mini" },
+            type: "button",
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (...[$event]) => {
+                    if (!(__VLS_ctx.store.article))
+                        return;
+                    if (!(__VLS_ctx.confirmingResegment))
+                        return;
+                    __VLS_ctx.confirmingResegment = false;
+                } },
+            ...{ class: "button button-secondary reading-mini" },
+            type: "button",
+        });
+    }
+    else if (__VLS_ctx.confirmingArticleDelete) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+            ...{ class: "reading-confirm-label" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (__VLS_ctx.confirmDeleteArticle) },
+            ...{ class: "button button-primary reading-mini reading-danger" },
+            type: "button",
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (...[$event]) => {
+                    if (!(__VLS_ctx.store.article))
+                        return;
+                    if (!!(__VLS_ctx.confirmingResegment))
+                        return;
+                    if (!(__VLS_ctx.confirmingArticleDelete))
+                        return;
+                    __VLS_ctx.confirmingArticleDelete = false;
+                } },
+            ...{ class: "button button-secondary reading-mini" },
+            type: "button",
+        });
+    }
+    else {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (__VLS_ctx.requestResegment) },
+            ...{ class: "button button-secondary reading-mini" },
+            type: "button",
+            disabled: (__VLS_ctx.store.resegmenting),
+        });
+        (__VLS_ctx.store.resegmenting ? 'Re-segmenting…' : 'Re-segment');
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (__VLS_ctx.requestDeleteArticle) },
+            ...{ class: "button button-secondary reading-mini" },
+            type: "button",
+        });
+    }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "reading-body" },
     });
@@ -958,6 +1052,8 @@ if (__VLS_ctx.store.error) {
 /** @type {__VLS_StyleScopedClasses['reading-plus']} */ ;
 /** @type {__VLS_StyleScopedClasses['reading-plus']} */ ;
 /** @type {__VLS_StyleScopedClasses['reading-minus']} */ ;
+/** @type {__VLS_StyleScopedClasses['reading-category-confirm']} */ ;
+/** @type {__VLS_StyleScopedClasses['reading-confirm-yes']} */ ;
 /** @type {__VLS_StyleScopedClasses['reading-article-form']} */ ;
 /** @type {__VLS_StyleScopedClasses['reading-form-actions']} */ ;
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
@@ -983,6 +1079,21 @@ if (__VLS_ctx.store.error) {
 /** @type {__VLS_StyleScopedClasses['reading-doc-meta']} */ ;
 /** @type {__VLS_StyleScopedClasses['reading-warn']} */ ;
 /** @type {__VLS_StyleScopedClasses['reading-doc-actions']} */ ;
+/** @type {__VLS_StyleScopedClasses['reading-confirm-label']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
+/** @type {__VLS_StyleScopedClasses['reading-mini']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
+/** @type {__VLS_StyleScopedClasses['reading-mini']} */ ;
+/** @type {__VLS_StyleScopedClasses['reading-confirm-label']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
+/** @type {__VLS_StyleScopedClasses['reading-mini']} */ ;
+/** @type {__VLS_StyleScopedClasses['reading-danger']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
+/** @type {__VLS_StyleScopedClasses['reading-mini']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
 /** @type {__VLS_StyleScopedClasses['reading-mini']} */ ;
@@ -1063,6 +1174,9 @@ const __VLS_self = (await import('vue')).defineComponent({
             selectionBarRef: selectionBarRef,
             gridRef: gridRef,
             gridStyle: gridStyle,
+            confirmingArticleDelete: confirmingArticleDelete,
+            confirmingResegment: confirmingResegment,
+            confirmingCategoryDeleteId: confirmingCategoryDeleteId,
             chatMessages: chatMessages,
             activeCategoryName: activeCategoryName,
             shorten: shorten,
@@ -1083,13 +1197,16 @@ const __VLS_self = (await import('vue')).defineComponent({
             handleSend: handleSend,
             handleCreateCategory: handleCreateCategory,
             handleClearChat: handleClearChat,
-            handleDeleteCategory: handleDeleteCategory,
+            requestDeleteCategory: requestDeleteCategory,
+            confirmDeleteCategory: confirmDeleteCategory,
             handleSelectCategory: handleSelectCategory,
             openArticleForm: openArticleForm,
             closeArticleForm: closeArticleForm,
             handleCreateArticle: handleCreateArticle,
-            handleDeleteArticle: handleDeleteArticle,
-            handleResegment: handleResegment,
+            requestDeleteArticle: requestDeleteArticle,
+            confirmDeleteArticle: confirmDeleteArticle,
+            requestResegment: requestResegment,
+            confirmResegment: confirmResegment,
         };
     },
 });

@@ -56,10 +56,16 @@
                 class="reading-plus reading-minus"
                 type="button"
                 title="Delete category"
-                @click.stop="handleDeleteCategory(category)"
+                @click.stop="requestDeleteCategory(category)"
               >
                 ×
               </button>
+            </div>
+
+            <div v-if="confirmingCategoryDeleteId === category.id" class="reading-category-confirm">
+              <span>Delete this category?</span>
+              <button class="reading-confirm-yes" type="button" @click.stop="confirmDeleteCategory(category)">Yes</button>
+              <button type="button" @click.stop="confirmingCategoryDeleteId = ''">No</button>
             </div>
 
             <form
@@ -124,17 +130,41 @@
               <span v-if="store.article.segmentedBy === 'fallback'" class="reading-warn"> · local split</span>
             </p>
             <div class="reading-doc-actions">
-              <button
-                class="button button-secondary reading-mini"
-                type="button"
-                :disabled="store.resegmenting"
-                @click="handleResegment"
-              >
-                {{ store.resegmenting ? 'Re-segmenting…' : 'Re-segment' }}
-              </button>
-              <button class="button button-secondary reading-mini" type="button" @click="handleDeleteArticle">
-                Delete
-              </button>
+              <template v-if="confirmingResegment">
+                <span class="reading-confirm-label">Re-segment? Existing marks are cleared.</span>
+                <button class="button button-primary reading-mini" type="button" @click="confirmResegment">
+                  Re-segment
+                </button>
+                <button class="button button-secondary reading-mini" type="button" @click="confirmingResegment = false">
+                  Cancel
+                </button>
+              </template>
+              <template v-else-if="confirmingArticleDelete">
+                <span class="reading-confirm-label">Delete this article and its marks?</span>
+                <button
+                  class="button button-primary reading-mini reading-danger"
+                  type="button"
+                  @click="confirmDeleteArticle"
+                >
+                  Delete
+                </button>
+                <button class="button button-secondary reading-mini" type="button" @click="confirmingArticleDelete = false">
+                  Cancel
+                </button>
+              </template>
+              <template v-else>
+                <button
+                  class="button button-secondary reading-mini"
+                  type="button"
+                  :disabled="store.resegmenting"
+                  @click="requestResegment"
+                >
+                  {{ store.resegmenting ? 'Re-segmenting…' : 'Re-segment' }}
+                </button>
+                <button class="button button-secondary reading-mini" type="button" @click="requestDeleteArticle">
+                  Delete
+                </button>
+              </template>
             </div>
           </header>
 
@@ -343,6 +373,11 @@ const composerRef = ref<HTMLTextAreaElement | null>(null);
 const selectionBarRef = ref<HTMLElement | null>(null);
 const gridRef = ref<HTMLElement | null>(null);
 const gridStyle = ref<Record<string, string> | undefined>(undefined);
+/** Inline confirmations replace `window.confirm`, so the decision happens at
+ *  the button that triggered it instead of in a modal browser dialog. */
+const confirmingArticleDelete = ref(false);
+const confirmingResegment = ref(false);
+const confirmingCategoryDeleteId = ref('');
 
 const chatMessages = computed(() => store.article?.chatHistory ?? []);
 const activeCategoryName = computed(
@@ -654,14 +689,25 @@ async function handleDeleteCategory(category: { id: string; name: string; articl
     store.setError(`"${category.name}" still has articles. Delete or move them first.`);
     return;
   }
-  if (!window.confirm(`Delete the category "${category.name}"?`)) {
-    return;
-  }
   try {
     await store.deleteCategory(category.id);
   } catch (error) {
     store.setError(error instanceof Error ? error.message : 'Unable to delete category.');
   }
+}
+
+function requestDeleteCategory(category: { id: string; name: string; articleCount?: number }) {
+  if ((category.articleCount ?? 0) > 0) {
+    store.setError(`"${category.name}" still has articles. Delete or move them first.`);
+    confirmingCategoryDeleteId.value = '';
+    return;
+  }
+  confirmingCategoryDeleteId.value = category.id;
+}
+
+async function confirmDeleteCategory(category: { id: string; name: string; articleCount?: number }) {
+  confirmingCategoryDeleteId.value = '';
+  await handleDeleteCategory(category);
 }
 
 async function handleSelectCategory(categoryId: string) {
@@ -699,22 +745,30 @@ async function handleCreateArticle() {
   }
 }
 
-function handleDeleteArticle() {
-  if (!store.article) {
-    return;
-  }
-  if (window.confirm(`Delete "${store.article.title}" and its marks?`)) {
-    void store.deleteArticle(store.article.id);
-  }
+function requestDeleteArticle() {
+  confirmingResegment.value = false;
+  confirmingArticleDelete.value = true;
 }
 
-function handleResegment() {
+function confirmDeleteArticle() {
+  confirmingArticleDelete.value = false;
   if (!store.article) {
     return;
   }
-  if (window.confirm('Re-segment this article? Existing marks are cleared because paragraph numbering changes.')) {
-    void store.resegmentArticle();
+  void store.deleteArticle(store.article.id);
+}
+
+function requestResegment() {
+  confirmingArticleDelete.value = false;
+  confirmingResegment.value = true;
+}
+
+function confirmResegment() {
+  confirmingResegment.value = false;
+  if (!store.article) {
+    return;
   }
+  void store.resegmentArticle();
 }
 
 /**
@@ -752,6 +806,15 @@ function handleDocumentPointerDown(event: PointerEvent) {
   }
   selection.value = null;
 }
+
+watch(
+  () => store.article?.id,
+  () => {
+    // Never leave a destructive confirmation armed when the reader changes.
+    confirmingArticleDelete.value = false;
+    confirmingResegment.value = false;
+  },
+);
 
 watch(
   () => [chatMessages.value.length, store.streamText] as const,
