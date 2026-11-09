@@ -11,6 +11,7 @@ function emptyForm() {
         autoImageGeneration: false,
         quizMaxQuestions: { vocabulary: 10, listening: 10 },
         autoDailyQuiz: false,
+        quizFeedbackSound: true,
         updatedAt: null,
     };
 }
@@ -46,6 +47,7 @@ export const useSettingsStore = defineStore('settings', () => {
         form.autoImageGeneration = data.autoImageGeneration ?? false;
         form.quizMaxQuestions = data.quizMaxQuestions ?? { vocabulary: 10, listening: 10 };
         form.autoDailyQuiz = data.autoDailyQuiz ?? false;
+        form.quizFeedbackSound = data.quizFeedbackSound ?? true;
         form.updatedAt = data.updatedAt;
     }
     async function fetchSettings() {
@@ -66,6 +68,7 @@ export const useSettingsStore = defineStore('settings', () => {
                 autoImageGeneration: form.autoImageGeneration,
                 quizMaxQuestions: form.quizMaxQuestions,
                 autoDailyQuiz: form.autoDailyQuiz,
+                quizFeedbackSound: form.quizFeedbackSound,
             });
             applyData(data);
         }

@@ -4,7 +4,7 @@ export declare const api: {
         token: string;
     }>;
     getSettings(): Promise<SettingsForm>;
-    saveSettings(payload: Pick<SettingsForm, "models" | "autoImageGeneration" | "quizMaxQuestions" | "autoDailyQuiz">): Promise<SettingsForm>;
+    saveSettings(payload: Pick<SettingsForm, "models" | "autoImageGeneration" | "quizMaxQuestions" | "autoDailyQuiz" | "quizFeedbackSound">): Promise<SettingsForm>;
     testModelEntry(category: "language" | "audio" | "image", entryId: string): Promise<{
         ok: boolean;
         latencyMs: number;

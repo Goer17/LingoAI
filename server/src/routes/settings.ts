@@ -52,6 +52,7 @@ const schema = z.object({
     })
     .optional(),
   autoDailyQuiz: z.boolean().optional(),
+  quizFeedbackSound: z.boolean().optional(),
 });
 
 const testSchema = z.object({
@@ -76,6 +77,7 @@ settingsRouter.post('/', (req, res) => {
     autoImageGeneration: parsed.data.autoImageGeneration,
     quizMaxQuestions: parsed.data.quizMaxQuestions,
     autoDailyQuiz: parsed.data.autoDailyQuiz,
+    quizFeedbackSound: parsed.data.quizFeedbackSound,
     updatedAt: null,
   });
 

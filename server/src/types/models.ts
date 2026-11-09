@@ -71,6 +71,8 @@ export interface Settings {
   /** When enabled, a vocabulary quiz + a listening quiz (random topic) are
    *  auto-created every day at 06:00 local time. Expression is not covered yet. */
   autoDailyQuiz?: boolean;
+  /** Play a short correct/incorrect cue when a quiz answer is submitted. */
+  quizFeedbackSound?: boolean;
   updatedAt: string | null;
 }
 

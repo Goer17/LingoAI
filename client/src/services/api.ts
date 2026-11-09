@@ -34,7 +34,7 @@ export const api = {
   getSettings() {
     return unwrap<SettingsForm>(http.get('/settings'));
   },
-  saveSettings(payload: Pick<SettingsForm, 'models' | 'autoImageGeneration' | 'quizMaxQuestions' | 'autoDailyQuiz'>) {
+  saveSettings(payload: Pick<SettingsForm, 'models' | 'autoImageGeneration' | 'quizMaxQuestions' | 'autoDailyQuiz' | 'quizFeedbackSound'>) {
     return unwrap<SettingsForm>(http.post('/settings', payload));
   },
   testModelEntry(category: 'language' | 'audio' | 'image', entryId: string) {

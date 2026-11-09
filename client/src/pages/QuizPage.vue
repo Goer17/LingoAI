@@ -98,6 +98,7 @@ import QuizChatBox from '@/components/QuizChatBox.vue';
 import SentenceDetailPanel from '@/components/SentenceDetailPanel.vue';
 import WordDetailPanel from '@/components/WordDetailPanel.vue';
 import { api } from '@/services/api';
+import { useSettingsStore } from '@/stores/settings';
 import { useVocabularyStore } from '@/stores/vocabulary';
 import { buildMediaUrl, clearCachedMediaUrl, getStoredMediaAudioUrl } from '@/utils/audioCache';
 import { playFeedbackSound, unlockFeedbackSound } from '@/utils/feedbackSound';
@@ -108,6 +109,15 @@ function normalizeWord(value: string) {
 
 const route = useRoute();
 const store = useVocabularyStore();
+const settingsStore = useSettingsStore();
+/** Answer cues can be switched off on the Settings page (default on). */
+const soundEnabled = computed(() => settingsStore.form.quizFeedbackSound !== false);
+
+function playCue(cue: 'correct' | 'incorrect') {
+  if (soundEnabled.value) {
+    playFeedbackSound(cue);
+  }
+}
 const answer = ref('');
 const error = ref('');
 const submitting = ref(false);
@@ -132,10 +142,18 @@ const tutorChatRef = ref<{ focusInput: () => void } | null>(null);
 onMounted(async () => {
   // Unlock the feedback AudioContext on the first real gesture so the cue can
   // play from the async submit handler (see utils/feedbackSound.ts).
-  const unlock = () => unlockFeedbackSound();
+  const unlock = () => {
+    if (soundEnabled.value) {
+      unlockFeedbackSound();
+    }
+  };
   window.addEventListener('pointerdown', unlock, { once: true, passive: true });
   window.addEventListener('keydown', unlock, { once: true });
   window.addEventListener('keydown', handleQuizKeydown);
+
+  // The cue setting lives in the server settings payload; load it so a quiz
+  // opened directly (e.g. from a bookmark) honours it.
+  void settingsStore.fetchSettings().catch(() => undefined);
 
   try {
     await store.loadQuiz(String(route.params.id));
@@ -288,11 +306,11 @@ async function submit(payload?: { response: string; blankAnswers: string[] }) {
     if (answerRecord?.isCorrect) {
       feedbackIsCorrect.value = true;
       feedback.value = nextHint;
-      playFeedbackSound('correct');
+      playCue('correct');
     } else {
       feedbackIsCorrect.value = false;
       feedback.value = nextHint;
-      playFeedbackSound('incorrect');
+      playCue('incorrect');
     }
   } catch (err) {
     frozenQuestion.value = null;
@@ -361,7 +379,7 @@ function handleAppealResolved(payload: { session: QuizSession; accepted: boolean
     feedback.value = payload.session.completed
       ? 'Press Enter again to finish.'
       : 'Press Enter again for next question.';
-    playFeedbackSound('correct');
+    playCue('correct');
   }
 }
 

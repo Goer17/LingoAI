@@ -70,6 +70,7 @@ export interface SettingsForm {
         listening: number;
     };
     autoDailyQuiz?: boolean;
+    quizFeedbackSound?: boolean;
     updatedAt: string | null;
 }
 export interface QuizQuestion {

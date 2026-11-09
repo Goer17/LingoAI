@@ -205,6 +205,23 @@
 
         <div class="more-setting-row">
           <div class="more-setting-text">
+            <strong>Quiz Answer Sounds</strong>
+            <p class="subtle-copy">
+              Play a short sound when a quiz answer is submitted: a rising cue for correct answers and a low cue for wrong ones.
+            </p>
+          </div>
+          <label class="toggle">
+            <input
+              type="checkbox"
+              v-model="settings.form.quizFeedbackSound"
+            />
+            <span class="toggle-track" aria-hidden="true"></span>
+            <span class="toggle-label">{{ settings.form.quizFeedbackSound ? 'On' : 'Off' }}</span>
+          </label>
+        </div>
+
+        <div class="more-setting-row">
+          <div class="more-setting-text">
             <strong>Daily Auto Quiz</strong>
             <p class="subtle-copy">
               When enabled, three quizzes are generated automatically every day at 06:00: one vocabulary quiz and two listening quizzes (first from the Default topic, then from the topic with the lowest average familiarity).

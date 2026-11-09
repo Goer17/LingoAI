@@ -21,6 +21,7 @@ export function getSettings(): Settings {
       listening: normalizeQuestionLimit(stored?.quizMaxQuestions?.listening),
     },
     autoDailyQuiz: stored?.autoDailyQuiz ?? false,
+    quizFeedbackSound: stored?.quizFeedbackSound ?? true,
     updatedAt: stored?.updatedAt ?? null,
   };
 }
@@ -79,6 +80,7 @@ interface IncomingSettings {
     listening?: number;
   };
   autoDailyQuiz?: boolean;
+  quizFeedbackSound?: boolean;
   updatedAt?: string | null;
 }
 
@@ -125,6 +127,7 @@ export function saveSettings(incoming: IncomingSettings) {
       listening: normalizeQuestionLimit(incoming.quizMaxQuestions?.listening),
     },
     autoDailyQuiz: incoming.autoDailyQuiz ?? current.autoDailyQuiz ?? false,
+    quizFeedbackSound: incoming.quizFeedbackSound ?? current.quizFeedbackSound ?? true,
     updatedAt: new Date().toISOString(),
   };
 

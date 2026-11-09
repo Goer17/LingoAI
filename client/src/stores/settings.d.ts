@@ -38,6 +38,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
             listening: number;
         } | undefined;
         autoDailyQuiz?: boolean | undefined;
+        quizFeedbackSound?: boolean | undefined;
         updatedAt: string | null;
     };
     loading: import("vue").Ref<boolean, boolean>;
@@ -84,6 +85,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
             listening: number;
         } | undefined;
         autoDailyQuiz?: boolean | undefined;
+        quizFeedbackSound?: boolean | undefined;
         updatedAt: string | null;
     };
     loading: import("vue").Ref<boolean, boolean>;
@@ -130,6 +132,7 @@ export declare const useSettingsStore: import("pinia").StoreDefinition<"settings
             listening: number;
         } | undefined;
         autoDailyQuiz?: boolean | undefined;
+        quizFeedbackSound?: boolean | undefined;
         updatedAt: string | null;
     };
     loading: import("vue").Ref<boolean, boolean>;
