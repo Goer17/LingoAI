@@ -15,6 +15,14 @@ const error = ref('');
 function focusInput() {
     inputRef.value?.focus();
 }
+/**
+ * Esc leaves the composer: blur it and let the quiz page put focus back on its
+ * own control, so the next Enter advances to the next question.
+ */
+function handleEscape() {
+    inputRef.value?.blur();
+    emit('dismiss');
+}
 const __VLS_exposed = { focusInput };
 defineExpose(__VLS_exposed);
 watch(() => props.questionIndex, () => {
@@ -266,6 +274,7 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.form, __VLS_intrinsicElements.
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.textarea)({
     ...{ onKeydown: (__VLS_ctx.handleSend) },
+    ...{ onKeydown: (__VLS_ctx.handleEscape) },
     ref: "inputRef",
     value: (__VLS_ctx.draft),
     rows: "2",
@@ -313,6 +322,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             chatHistoryRef: chatHistoryRef,
             inputRef: inputRef,
             error: error,
+            handleEscape: handleEscape,
             handleAppeal: handleAppeal,
             handleSend: handleSend,
             renderMarkdown: renderMarkdown,

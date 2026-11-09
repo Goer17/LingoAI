@@ -39,6 +39,7 @@
           placeholder="Why is this the answer? Explain the grammar... (Tab from the quiz)"
           :disabled="loading"
           @keydown.enter.exact.prevent="handleSend"
+          @keydown.esc.prevent="handleEscape"
         />
         <button class="button button-primary" type="submit" :disabled="loading || !draft.trim()">
           {{ loading ? 'Thinking...' : 'Ask' }}
@@ -74,6 +75,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'appeal-resolved': [payload: { session: QuizSession; accepted: boolean }];
+  /** Esc leaves the composer so the quiz regains keyboard focus. */
+  dismiss: [];
 }>();
 
 const draft = ref('');
@@ -88,6 +91,15 @@ const error = ref('');
 /** Focus the composer, used by the quiz page's Tab shortcut. */
 function focusInput() {
   inputRef.value?.focus();
+}
+
+/**
+ * Esc leaves the composer: blur it and let the quiz page put focus back on its
+ * own control, so the next Enter advances to the next question.
+ */
+function handleEscape() {
+  inputRef.value?.blur();
+  emit('dismiss');
 }
 
 defineExpose({ focusInput });

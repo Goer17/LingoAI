@@ -42,6 +42,7 @@ const noteError = ref('');
 const regeneratingImage = ref(false);
 const audioVersions = reactive({});
 const tutorChatRef = ref(null);
+const quizCardRef = ref(null);
 onMounted(async () => {
     // Unlock the feedback AudioContext on the first real gesture so the cue can
     // play from the async submit handler (see utils/feedbackSound.ts).
@@ -450,6 +451,7 @@ else {
         ...{ 'onSubmit': {} },
         ...{ 'onPlayAudio': {} },
         ...{ 'onRegenerateImage': {} },
+        ref: "quizCardRef",
         modelValue: (__VLS_ctx.answer),
         submittedAnswer: (__VLS_ctx.submittedAnswer),
         submittedListeningAnswers: (__VLS_ctx.submittedListeningAnswers),
@@ -467,6 +469,7 @@ else {
         ...{ 'onSubmit': {} },
         ...{ 'onPlayAudio': {} },
         ...{ 'onRegenerateImage': {} },
+        ref: "quizCardRef",
         modelValue: (__VLS_ctx.answer),
         submittedAnswer: (__VLS_ctx.submittedAnswer),
         submittedListeningAnswers: (__VLS_ctx.submittedListeningAnswers),
@@ -492,6 +495,8 @@ else {
     const __VLS_12 = {
         onRegenerateImage: (__VLS_ctx.regenerateQuestionImage)
     };
+    /** @type {typeof __VLS_ctx.quizCardRef} */ ;
+    var __VLS_13 = {};
     var __VLS_6;
     if (__VLS_ctx.awaitingNext && __VLS_ctx.displayQuestion) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -500,7 +505,7 @@ else {
         if (__VLS_ctx.answerWordEntry) {
             /** @type {[typeof WordDetailPanel, ]} */ ;
             // @ts-ignore
-            const __VLS_13 = __VLS_asFunctionalComponent(WordDetailPanel, new WordDetailPanel({
+            const __VLS_15 = __VLS_asFunctionalComponent(WordDetailPanel, new WordDetailPanel({
                 ...{ 'onToggleTranslation': {} },
                 ...{ 'onPlayAudio': {} },
                 ...{ 'onRegenerateAudio': {} },
@@ -512,7 +517,7 @@ else {
                 hideChat: (true),
                 hideDelete: (true),
             }));
-            const __VLS_14 = __VLS_13({
+            const __VLS_16 = __VLS_15({
                 ...{ 'onToggleTranslation': {} },
                 ...{ 'onPlayAudio': {} },
                 ...{ 'onRegenerateAudio': {} },
@@ -523,11 +528,11 @@ else {
                 hideNote: (true),
                 hideChat: (true),
                 hideDelete: (true),
-            }, ...__VLS_functionalComponentArgsRest(__VLS_13));
-            let __VLS_16;
-            let __VLS_17;
+            }, ...__VLS_functionalComponentArgsRest(__VLS_15));
             let __VLS_18;
-            const __VLS_19 = {
+            let __VLS_19;
+            let __VLS_20;
+            const __VLS_21 = {
                 onToggleTranslation: (...[$event]) => {
                     if (!!(__VLS_ctx.showSummary))
                         return;
@@ -538,18 +543,18 @@ else {
                     __VLS_ctx.showChinese = !__VLS_ctx.showChinese;
                 }
             };
-            const __VLS_20 = {
+            const __VLS_22 = {
                 onPlayAudio: (__VLS_ctx.playAnswerWordAudio)
             };
-            const __VLS_21 = {
+            const __VLS_23 = {
                 onRegenerateAudio: (__VLS_ctx.regenerateAnswerWordAudio)
             };
-            var __VLS_15;
+            var __VLS_17;
         }
         else if (__VLS_ctx.answerSentenceEntry) {
             /** @type {[typeof SentenceDetailPanel, ]} */ ;
             // @ts-ignore
-            const __VLS_22 = __VLS_asFunctionalComponent(SentenceDetailPanel, new SentenceDetailPanel({
+            const __VLS_24 = __VLS_asFunctionalComponent(SentenceDetailPanel, new SentenceDetailPanel({
                 ...{ 'onPlayAudio': {} },
                 ...{ 'onRegenerateAudio': {} },
                 sentence: (__VLS_ctx.answerSentenceEntry),
@@ -558,7 +563,7 @@ else {
                 hideChat: (true),
                 hideDelete: (true),
             }));
-            const __VLS_23 = __VLS_22({
+            const __VLS_25 = __VLS_24({
                 ...{ 'onPlayAudio': {} },
                 ...{ 'onRegenerateAudio': {} },
                 sentence: (__VLS_ctx.answerSentenceEntry),
@@ -566,17 +571,17 @@ else {
                 hideNote: (true),
                 hideChat: (true),
                 hideDelete: (true),
-            }, ...__VLS_functionalComponentArgsRest(__VLS_22));
-            let __VLS_25;
-            let __VLS_26;
+            }, ...__VLS_functionalComponentArgsRest(__VLS_24));
             let __VLS_27;
-            const __VLS_28 = {
+            let __VLS_28;
+            let __VLS_29;
+            const __VLS_30 = {
                 onPlayAudio: (__VLS_ctx.playAnswerSentenceAudio)
             };
-            const __VLS_29 = {
+            const __VLS_31 = {
                 onRegenerateAudio: (__VLS_ctx.regenerateAnswerSentenceAudio)
             };
-            var __VLS_24;
+            var __VLS_26;
         }
         else if (__VLS_ctx.displayQuestion.type === 'listening' && __VLS_ctx.store.quizSession?.sourceType !== 'vocabulary_task') {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.section, __VLS_intrinsicElements.section)({
@@ -620,8 +625,9 @@ else {
     if (__VLS_ctx.awaitingNext && __VLS_ctx.displayQuestion) {
         /** @type {[typeof QuizChatBox, ]} */ ;
         // @ts-ignore
-        const __VLS_30 = __VLS_asFunctionalComponent(QuizChatBox, new QuizChatBox({
+        const __VLS_32 = __VLS_asFunctionalComponent(QuizChatBox, new QuizChatBox({
             ...{ 'onAppealResolved': {} },
+            ...{ 'onDismiss': {} },
             ref: "tutorChatRef",
             sessionId: (__VLS_ctx.store.quizSession?.id ?? ''),
             questionId: (__VLS_ctx.displayQuestion.id),
@@ -634,8 +640,9 @@ else {
             canAppeal: (__VLS_ctx.canAppeal),
             questionIndex: (__VLS_ctx.displayIndex),
         }));
-        const __VLS_31 = __VLS_30({
+        const __VLS_33 = __VLS_32({
             ...{ 'onAppealResolved': {} },
+            ...{ 'onDismiss': {} },
             ref: "tutorChatRef",
             sessionId: (__VLS_ctx.store.quizSession?.id ?? ''),
             questionId: (__VLS_ctx.displayQuestion.id),
@@ -647,16 +654,25 @@ else {
             isCorrect: (__VLS_ctx.feedbackIsCorrect),
             canAppeal: (__VLS_ctx.canAppeal),
             questionIndex: (__VLS_ctx.displayIndex),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_30));
-        let __VLS_33;
-        let __VLS_34;
+        }, ...__VLS_functionalComponentArgsRest(__VLS_32));
         let __VLS_35;
-        const __VLS_36 = {
+        let __VLS_36;
+        let __VLS_37;
+        const __VLS_38 = {
             onAppealResolved: (__VLS_ctx.handleAppealResolved)
         };
+        const __VLS_39 = {
+            onDismiss: (...[$event]) => {
+                if (!!(__VLS_ctx.showSummary))
+                    return;
+                if (!(__VLS_ctx.awaitingNext && __VLS_ctx.displayQuestion))
+                    return;
+                __VLS_ctx.quizCardRef?.focusNextControl();
+            }
+        };
         /** @type {typeof __VLS_ctx.tutorChatRef} */ ;
-        var __VLS_37 = {};
-        var __VLS_32;
+        var __VLS_40 = {};
+        var __VLS_34;
     }
     if (__VLS_ctx.error) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
@@ -688,7 +704,7 @@ else {
 /** @type {__VLS_StyleScopedClasses['error-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-error']} */ ;
 // @ts-ignore
-var __VLS_38 = __VLS_37;
+var __VLS_14 = __VLS_13, __VLS_41 = __VLS_40;
 var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
@@ -714,6 +730,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             noteError: noteError,
             regeneratingImage: regeneratingImage,
             tutorChatRef: tutorChatRef,
+            quizCardRef: quizCardRef,
             total: total,
             showSummary: showSummary,
             score: score,

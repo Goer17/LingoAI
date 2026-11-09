@@ -309,6 +309,26 @@ const editableInput = ref<HTMLInputElement | null>(null);
 const readonlyInput = ref<HTMLInputElement | null>(null);
 const submitButton = ref<HTMLButtonElement | null>(null);
 
+/**
+ * Put focus back where Enter advances the quiz (mirrors the awaitingNext
+ * watcher). Used after Esc dismisses the floating tutor composer.
+ */
+function focusNextControl() {
+  if (!props.awaitingNext) {
+    editableInput.value?.focus();
+    return;
+  }
+
+  if (showInlineListeningBlanks.value) {
+    submitButton.value?.focus();
+    return;
+  }
+
+  readonlyInput.value?.focus();
+}
+
+defineExpose({ focusNextControl });
+
 watch(
   () => props.awaitingNext,
   async (value) => {

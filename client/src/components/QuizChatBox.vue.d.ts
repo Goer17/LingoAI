@@ -20,10 +20,12 @@ declare const _default: import("vue").DefineComponent<__VLS_Props, {
         session: QuizSession;
         accepted: boolean;
     }) => any;
+    dismiss: () => any;
 }, string, import("vue").PublicProps, Readonly<__VLS_Props> & Readonly<{
     "onAppeal-resolved"?: ((payload: {
         session: QuizSession;
         accepted: boolean;
     }) => any) | undefined;
+    onDismiss?: (() => any) | undefined;
 }>, {}, {}, {}, {}, string, import("vue").ComponentProvideOptions, false, {}, any>;
 export default _default;

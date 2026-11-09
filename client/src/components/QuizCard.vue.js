@@ -116,6 +116,23 @@ const submitDisabled = computed(() => {
 const editableInput = ref(null);
 const readonlyInput = ref(null);
 const submitButton = ref(null);
+/**
+ * Put focus back where Enter advances the quiz (mirrors the awaitingNext
+ * watcher). Used after Esc dismisses the floating tutor composer.
+ */
+function focusNextControl() {
+    if (!props.awaitingNext) {
+        editableInput.value?.focus();
+        return;
+    }
+    if (showInlineListeningBlanks.value) {
+        submitButton.value?.focus();
+        return;
+    }
+    readonlyInput.value?.focus();
+}
+const __VLS_exposed = { focusNextControl };
+defineExpose(__VLS_exposed);
 watch(() => props.awaitingNext, async (value) => {
     await nextTick();
     if (showInlineListeningBlanks.value) {
@@ -525,7 +542,9 @@ const __VLS_self = (await import('vue')).defineComponent({
 });
 export default (await import('vue')).defineComponent({
     setup() {
-        return {};
+        return {
+            ...__VLS_exposed,
+        };
     },
     __typeEmits: {},
     __typeProps: {},

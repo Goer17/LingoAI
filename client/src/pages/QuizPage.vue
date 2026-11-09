@@ -9,6 +9,7 @@
 
     <template v-else>
       <QuizCard
+        ref="quizCardRef"
         v-model="answer"
         :submitted-answer="submittedAnswer"
         :submitted-listening-answers="submittedListeningAnswers"
@@ -83,6 +84,7 @@
         :can-appeal="canAppeal"
         :question-index="displayIndex"
         @appeal-resolved="handleAppealResolved"
+        @dismiss="quizCardRef?.focusNextControl()"
       />
       <p v-if="error" class="error-text quiz-error">{{ error }}</p>
     </template>
@@ -138,6 +140,7 @@ const noteError = ref('');
 const regeneratingImage = ref(false);
 const audioVersions = reactive<Record<string, number>>({});
 const tutorChatRef = ref<{ focusInput: () => void } | null>(null);
+const quizCardRef = ref<{ focusNextControl: () => void } | null>(null);
 
 onMounted(async () => {
   // Unlock the feedback AudioContext on the first real gesture so the cue can
