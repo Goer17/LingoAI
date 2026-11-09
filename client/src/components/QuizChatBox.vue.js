@@ -9,7 +9,14 @@ const appealing = ref(false);
 const appealAccepted = ref(false);
 const chatMessages = ref([]);
 const chatHistoryRef = ref(null);
+const inputRef = ref(null);
 const error = ref('');
+/** Focus the composer, used by the quiz page's Tab shortcut. */
+function focusInput() {
+    inputRef.value?.focus();
+}
+const __VLS_exposed = { focusInput };
+defineExpose(__VLS_exposed);
 watch(() => props.questionIndex, () => {
     chatMessages.value = [];
     draft.value = '';
@@ -259,11 +266,13 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.form, __VLS_intrinsicElements.
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.textarea)({
     ...{ onKeydown: (__VLS_ctx.handleSend) },
+    ref: "inputRef",
     value: (__VLS_ctx.draft),
     rows: "2",
-    placeholder: "Why is this the answer? Explain the grammar...",
+    placeholder: "Why is this the answer? Explain the grammar... (Tab from the quiz)",
     disabled: (__VLS_ctx.loading),
 });
+/** @type {typeof __VLS_ctx.inputRef} */ ;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
     ...{ class: "button button-primary" },
     type: "submit",
@@ -302,6 +311,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             appealAccepted: appealAccepted,
             chatMessages: chatMessages,
             chatHistoryRef: chatHistoryRef,
+            inputRef: inputRef,
             error: error,
             handleAppeal: handleAppeal,
             handleSend: handleSend,
@@ -313,7 +323,9 @@ const __VLS_self = (await import('vue')).defineComponent({
 });
 export default (await import('vue')).defineComponent({
     setup() {
-        return {};
+        return {
+            ...__VLS_exposed,
+        };
     },
     __typeEmits: {},
     __typeProps: {},

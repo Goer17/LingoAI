@@ -71,6 +71,7 @@
       </div>
       <QuizChatBox
         v-if="awaitingNext && displayQuestion"
+        ref="tutorChatRef"
         :session-id="store.quizSession?.id ?? ''"
         :question-id="displayQuestion.id"
         :word="displayQuestion.word"
@@ -89,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import type { ListeningEntry, QuizQuestion, QuizSession } from '@/types/models';
 import { RouterLink, useRoute } from 'vue-router';
 import QuizCard from '@/components/QuizCard.vue';
@@ -99,6 +100,7 @@ import WordDetailPanel from '@/components/WordDetailPanel.vue';
 import { api } from '@/services/api';
 import { useVocabularyStore } from '@/stores/vocabulary';
 import { buildMediaUrl, clearCachedMediaUrl, getStoredMediaAudioUrl } from '@/utils/audioCache';
+import { playFeedbackSound, unlockFeedbackSound } from '@/utils/feedbackSound';
 
 function normalizeWord(value: string) {
   return value.trim().replace(/\s+/g, ' ').toLowerCase();
@@ -125,8 +127,16 @@ const noteSaving = ref(false);
 const noteError = ref('');
 const regeneratingImage = ref(false);
 const audioVersions = reactive<Record<string, number>>({});
+const tutorChatRef = ref<{ focusInput: () => void } | null>(null);
 
 onMounted(async () => {
+  // Unlock the feedback AudioContext on the first real gesture so the cue can
+  // play from the async submit handler (see utils/feedbackSound.ts).
+  const unlock = () => unlockFeedbackSound();
+  window.addEventListener('pointerdown', unlock, { once: true, passive: true });
+  window.addEventListener('keydown', unlock, { once: true });
+  window.addEventListener('keydown', handleQuizKeydown);
+
   try {
     await store.loadQuiz(String(route.params.id));
     if (store.items.length === 0) {
@@ -278,9 +288,11 @@ async function submit(payload?: { response: string; blankAnswers: string[] }) {
     if (answerRecord?.isCorrect) {
       feedbackIsCorrect.value = true;
       feedback.value = nextHint;
+      playFeedbackSound('correct');
     } else {
       feedbackIsCorrect.value = false;
       feedback.value = nextHint;
+      playFeedbackSound('incorrect');
     }
   } catch (err) {
     frozenQuestion.value = null;
@@ -349,8 +361,36 @@ function handleAppealResolved(payload: { session: QuizSession; accepted: boolean
     feedback.value = payload.session.completed
       ? 'Press Enter again to finish.'
       : 'Press Enter again for next question.';
+    playFeedbackSound('correct');
   }
 }
+
+/**
+ * Tab jumps to the tutor composer. Only while the tutor panel is mounted and
+ * the press did not start inside it, so Tab still moves through the page (and
+ * out of the composer) normally everywhere else.
+ */
+function handleQuizKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Tab' || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) {
+    return;
+  }
+
+  if (!tutorChatRef.value) {
+    return;
+  }
+
+  const target = event.target as Element | null;
+  if (target?.closest?.('.quiz-chat-float')) {
+    return;
+  }
+
+  event.preventDefault();
+  tutorChatRef.value.focusInput();
+}
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleQuizKeydown);
+});
 
 watch(
   () => `${noteTarget.value?.kind ?? ''}:${noteTarget.value?.id ?? ''}`,

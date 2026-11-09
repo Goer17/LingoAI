@@ -33,9 +33,10 @@
 
       <form class="chat-form" @submit.prevent="handleSend">
         <textarea
+          ref="inputRef"
           v-model="draft"
           rows="2"
-          placeholder="Why is this the answer? Explain the grammar..."
+          placeholder="Why is this the answer? Explain the grammar... (Tab from the quiz)"
           :disabled="loading"
           @keydown.enter.exact.prevent="handleSend"
         />
@@ -81,7 +82,15 @@ const appealing = ref(false);
 const appealAccepted = ref(false);
 const chatMessages = ref<ChatMsg[]>([]);
 const chatHistoryRef = ref<HTMLElement | null>(null);
+const inputRef = ref<HTMLTextAreaElement | null>(null);
 const error = ref('');
+
+/** Focus the composer, used by the quiz page's Tab shortcut. */
+function focusInput() {
+  inputRef.value?.focus();
+}
+
+defineExpose({ focusInput });
 
 watch(
   () => props.questionIndex,

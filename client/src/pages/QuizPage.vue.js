@@ -1,4 +1,4 @@
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import QuizCard from '@/components/QuizCard.vue';
 import QuizChatBox from '@/components/QuizChatBox.vue';
@@ -7,6 +7,7 @@ import WordDetailPanel from '@/components/WordDetailPanel.vue';
 import { api } from '@/services/api';
 import { useVocabularyStore } from '@/stores/vocabulary';
 import { buildMediaUrl, clearCachedMediaUrl, getStoredMediaAudioUrl } from '@/utils/audioCache';
+import { playFeedbackSound, unlockFeedbackSound } from '@/utils/feedbackSound';
 function normalizeWord(value) {
     return value.trim().replace(/\s+/g, ' ').toLowerCase();
 }
@@ -31,7 +32,14 @@ const noteSaving = ref(false);
 const noteError = ref('');
 const regeneratingImage = ref(false);
 const audioVersions = reactive({});
+const tutorChatRef = ref(null);
 onMounted(async () => {
+    // Unlock the feedback AudioContext on the first real gesture so the cue can
+    // play from the async submit handler (see utils/feedbackSound.ts).
+    const unlock = () => unlockFeedbackSound();
+    window.addEventListener('pointerdown', unlock, { once: true, passive: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    window.addEventListener('keydown', handleQuizKeydown);
     try {
         await store.loadQuiz(String(route.params.id));
         if (store.items.length === 0) {
@@ -161,10 +169,12 @@ async function submit(payload) {
         if (answerRecord?.isCorrect) {
             feedbackIsCorrect.value = true;
             feedback.value = nextHint;
+            playFeedbackSound('correct');
         }
         else {
             feedbackIsCorrect.value = false;
             feedback.value = nextHint;
+            playFeedbackSound('incorrect');
         }
     }
     catch (err) {
@@ -232,8 +242,31 @@ function handleAppealResolved(payload) {
         feedback.value = payload.session.completed
             ? 'Press Enter again to finish.'
             : 'Press Enter again for next question.';
+        playFeedbackSound('correct');
     }
 }
+/**
+ * Tab jumps to the tutor composer. Only while the tutor panel is mounted and
+ * the press did not start inside it, so Tab still moves through the page (and
+ * out of the composer) normally everywhere else.
+ */
+function handleQuizKeydown(event) {
+    if (event.key !== 'Tab' || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+    }
+    if (!tutorChatRef.value) {
+        return;
+    }
+    const target = event.target;
+    if (target?.closest?.('.quiz-chat-float')) {
+        return;
+    }
+    event.preventDefault();
+    tutorChatRef.value.focusInput();
+}
+onBeforeUnmount(() => {
+    window.removeEventListener('keydown', handleQuizKeydown);
+});
 watch(() => `${noteTarget.value?.kind ?? ''}:${noteTarget.value?.id ?? ''}`, () => {
     noteDraft.value = noteTarget.value?.note ?? '';
     noteError.value = '';
@@ -573,6 +606,7 @@ else {
         // @ts-ignore
         const __VLS_30 = __VLS_asFunctionalComponent(QuizChatBox, new QuizChatBox({
             ...{ 'onAppealResolved': {} },
+            ref: "tutorChatRef",
             sessionId: (__VLS_ctx.store.quizSession?.id ?? ''),
             questionId: (__VLS_ctx.displayQuestion.id),
             word: (__VLS_ctx.displayQuestion.word),
@@ -586,6 +620,7 @@ else {
         }));
         const __VLS_31 = __VLS_30({
             ...{ 'onAppealResolved': {} },
+            ref: "tutorChatRef",
             sessionId: (__VLS_ctx.store.quizSession?.id ?? ''),
             questionId: (__VLS_ctx.displayQuestion.id),
             word: (__VLS_ctx.displayQuestion.word),
@@ -603,6 +638,8 @@ else {
         const __VLS_36 = {
             onAppealResolved: (__VLS_ctx.handleAppealResolved)
         };
+        /** @type {typeof __VLS_ctx.tutorChatRef} */ ;
+        var __VLS_37 = {};
         var __VLS_32;
     }
     if (__VLS_ctx.error) {
@@ -634,6 +671,8 @@ else {
 /** @type {__VLS_StyleScopedClasses['quiz-note-status']} */ ;
 /** @type {__VLS_StyleScopedClasses['error-text']} */ ;
 /** @type {__VLS_StyleScopedClasses['quiz-error']} */ ;
+// @ts-ignore
+var __VLS_38 = __VLS_37;
 var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
@@ -658,6 +697,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             noteSaving: noteSaving,
             noteError: noteError,
             regeneratingImage: regeneratingImage,
+            tutorChatRef: tutorChatRef,
             total: total,
             showSummary: showSummary,
             score: score,

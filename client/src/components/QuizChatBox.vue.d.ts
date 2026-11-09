@@ -11,7 +11,11 @@ type __VLS_Props = {
     canAppeal: boolean;
     questionIndex: number;
 };
-declare const _default: import("vue").DefineComponent<__VLS_Props, {}, {}, {}, {}, import("vue").ComponentOptionsMixin, import("vue").ComponentOptionsMixin, {
+/** Focus the composer, used by the quiz page's Tab shortcut. */
+declare function focusInput(): void;
+declare const _default: import("vue").DefineComponent<__VLS_Props, {
+    focusInput: typeof focusInput;
+}, {}, {}, {}, import("vue").ComponentOptionsMixin, import("vue").ComponentOptionsMixin, {
     "appeal-resolved": (payload: {
         session: QuizSession;
         accepted: boolean;
