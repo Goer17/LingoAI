@@ -106,6 +106,9 @@ export const api = {
   updateListeningNote(id: string, note: string) {
     return unwrap<ListeningEntry>(http.post(`/vocabulary/listening/${id}/note`, { note }));
   },
+  updateListeningSentence(id: string, sentence: string) {
+    return unwrap<ListeningEntry>(http.post(`/vocabulary/listening/${id}/sentence`, { sentence }));
+  },
   chatListening(id: string, message: string) {
     return unwrap<{ reply: string; entry: ListeningEntry | null }>(http.post(`/vocabulary/listening/${id}/chat-word`, { message }));
   },

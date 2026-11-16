@@ -12,7 +12,7 @@ import { audioFileExists, createAudioDataUrl, createOrUpdateAudioFile, createQui
 import { getCommonAudioUrl, hasCommonAudio } from '../services/commonAudioService.js';
 import { askWordChat, generateExampleFillBlank, generateQuiz, generateQuizStreamed, judgeQuizAppeal, searchWord, streamWordChat } from '../services/openaiService.js';
 import { ensureFillBlankMaskedSentence, ensureListeningMaskedSentence } from '../services/fillBlankService.js';
-import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningGroup, createListeningQuizDraft, deleteListeningGroup, getListeningEntryById, getListeningGroupById, listListeningEntries, listListeningGroups, pickListeningEntries, pickListeningEntriesByGroup, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote } from '../services/listeningService.js';
+import { addListeningSentence, appendListeningChatHistory, applyListeningQuizResults, clearListeningChatHistory, createListeningGroup, createListeningQuizDraft, deleteListeningGroup, getListeningEntryById, getListeningGroupById, listListeningEntries, listListeningGroups, pickListeningEntries, pickListeningEntriesByGroup, removeListeningSentence, rewardListeningFamiliarity, setListeningAudioFile, updateListeningNote, updateListeningSentenceText } from '../services/listeningService.js';
 import { addWord, applyQuizResults, appendChatHistory, clearChatHistory, getWordById, listVocabulary, removeWord, rewardVocabularyFamiliarity, setWordAudioFile, updateWordNote } from '../services/vocabularyService.js';
 import { checkSentenceImage, formatMeaningText, getOrCreateSentenceImage } from '../services/imageService.js';
 import { resolvePronunciation } from '../services/commonPronunciationService.js';
@@ -65,6 +65,10 @@ const saveSchema = z.object({
 
 const noteSchema = z.object({
   note: z.string(),
+});
+
+const updateListeningSentenceSchema = z.object({
+  sentence: z.string().trim().min(1).max(2000),
 });
 
 const chatSchema = z.object({
@@ -599,6 +603,24 @@ vocabularyRouter.post('/listening/:id/note', (req, res) => {
   }
 
   return ok(res, updated);
+});
+
+vocabularyRouter.post('/listening/:id/sentence', (req, res) => {
+  const parsed = updateListeningSentenceSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return fail(res, 400, 'Sentence must be between 1 and 2000 characters.');
+  }
+
+  try {
+    const updated = updateListeningSentenceText(req.params.id, parsed.data.sentence);
+    if (!updated) {
+      return fail(res, 404, 'Listening sentence not found.');
+    }
+
+    return ok(res, updated);
+  } catch (error) {
+    return fail(res, 400, error instanceof Error ? error.message : 'Unable to update the sentence.');
+  }
 });
 
 vocabularyRouter.post('/listening/:id/chat-word', async (req, res) => {

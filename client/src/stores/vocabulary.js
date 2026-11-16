@@ -685,6 +685,16 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
         listeningItems.value = listeningItems.value.map((item) => (item.id === entry.id ? entry : item));
         return entry;
     }
+    /** Rewrite the selected sentence; the server drops its stale audio file. */
+    async function updateListeningSentenceText(text) {
+        const current = selectedListening.value;
+        if (!current) {
+            throw new Error('No sentence selected.');
+        }
+        const entry = await api.updateListeningSentence(current.id, text);
+        listeningItems.value = listeningItems.value.map((item) => (item.id === entry.id ? entry : item));
+        return entry;
+    }
     async function submitQuizAnswer(questionId, response) {
         if (!quizSession.value) {
             throw new Error('No quiz session loaded.');
@@ -770,6 +780,7 @@ export const useVocabularyStore = defineStore('vocabulary', () => {
         setQuizQuestionImage,
         saveWordNoteById,
         saveListeningNoteById,
+        updateListeningSentenceText,
         submitQuizAnswer,
         exampleImageState,
         exampleImageUrl,

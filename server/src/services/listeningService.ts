@@ -263,6 +263,45 @@ export function updateListeningNote(id: string, note: string) {
   return updated;
 }
 
+/**
+ * Rewrite a practice sentence. Audio is tied to the old wording, so it is
+ * dropped (regenerated on demand); familiarity, note and chat history are kept
+ * so a typo fix does not reset progress.
+ */
+export function updateListeningSentenceText(id: string, sentence: string) {
+  const current = getListeningEntryById(id);
+  if (!current) {
+    return null;
+  }
+
+  const text = sentence.trim().replace(/\s+/g, ' ');
+  if (!text) {
+    throw new Error('Sentence cannot be empty.');
+  }
+
+  if (text === current.sentence) {
+    return current;
+  }
+
+  const normalized = normalizeSentence(text);
+  if (normalized !== normalizeSentence(current.sentence)) {
+    const existing = listeningRepository.getByNormalizedSentence(normalized);
+    if (existing && existing.id !== id) {
+      throw new Error('This sentence already exists.');
+    }
+  }
+
+  const updated: ListeningEntry = {
+    ...current,
+    sentence: text,
+    audioFile: undefined,
+    updatedAt: new Date().toISOString(),
+  };
+  listeningRepository.save(updated);
+  deleteAudioFile(current.audioFile);
+  return updated;
+}
+
 export function appendListeningChatHistory(id: string, role: ChatMessage['role'], content: string) {
   const current = getListeningEntryById(id);
   if (!current) {

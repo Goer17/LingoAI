@@ -64,6 +64,7 @@ export declare const api: {
         audioFile: string;
     }>;
     updateListeningNote(id: string, note: string): Promise<ListeningEntry>;
+    updateListeningSentence(id: string, sentence: string): Promise<ListeningEntry>;
     chatListening(id: string, message: string): Promise<{
         reply: string;
         entry: ListeningEntry | null;

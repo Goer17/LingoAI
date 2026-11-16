@@ -169,6 +169,17 @@ async function handleClearChat() {
         error.value = err instanceof Error ? err.message : 'Failed to clear chat.';
     }
 }
+async function handleUpdateSentence(sentence) {
+    error.value = '';
+    message.value = '';
+    try {
+        await store.updateListeningSentenceText(sentence);
+        message.value = 'Sentence updated.';
+    }
+    catch (err) {
+        error.value = err instanceof Error ? err.message : 'Failed to update sentence.';
+    }
+}
 async function handleDeleteSentence(id) {
     error.value = '';
     message.value = '';
@@ -367,8 +378,10 @@ const __VLS_0 = __VLS_asFunctionalComponent(SentenceDetailPanel, new SentenceDet
     ...{ 'onSendChat': {} },
     ...{ 'onClearChat': {} },
     ...{ 'onDelete': {} },
+    ...{ 'onUpdateSentence': {} },
     sentence: (__VLS_ctx.store.selectedListening),
     loading: (__VLS_ctx.chatLoading),
+    editable: true,
 }));
 const __VLS_1 = __VLS_0({
     ...{ 'onPlayAudio': {} },
@@ -377,8 +390,10 @@ const __VLS_1 = __VLS_0({
     ...{ 'onSendChat': {} },
     ...{ 'onClearChat': {} },
     ...{ 'onDelete': {} },
+    ...{ 'onUpdateSentence': {} },
     sentence: (__VLS_ctx.store.selectedListening),
     loading: (__VLS_ctx.chatLoading),
+    editable: true,
 }, ...__VLS_functionalComponentArgsRest(__VLS_0));
 let __VLS_3;
 let __VLS_4;
@@ -400,6 +415,9 @@ const __VLS_10 = {
 };
 const __VLS_11 = {
     onDelete: (__VLS_ctx.handleDeleteSentence)
+};
+const __VLS_12 = {
+    onUpdateSentence: (__VLS_ctx.handleUpdateSentence)
 };
 var __VLS_2;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -502,6 +520,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             handleSaveNote: handleSaveNote,
             handleSendChat: handleSendChat,
             handleClearChat: handleClearChat,
+            handleUpdateSentence: handleUpdateSentence,
             handleDeleteSentence: handleDeleteSentence,
             startLearning: startLearning,
             startLearningInGroup: startLearningInGroup,

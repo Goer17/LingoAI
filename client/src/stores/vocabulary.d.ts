@@ -510,6 +510,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     setQuizQuestionImage: (questionId: string, imageUrl: string) => void;
     saveWordNoteById: (id: string, note: string) => Promise<VocabularyEntry>;
     saveListeningNoteById: (id: string, note: string) => Promise<ListeningEntry>;
+    updateListeningSentenceText: (text: string) => Promise<ListeningEntry>;
     submitQuizAnswer: (questionId: string, response: string) => Promise<{
         session: QuizSession;
         vocabulary?: VocabularyEntry[];
@@ -1031,6 +1032,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     setQuizQuestionImage: (questionId: string, imageUrl: string) => void;
     saveWordNoteById: (id: string, note: string) => Promise<VocabularyEntry>;
     saveListeningNoteById: (id: string, note: string) => Promise<ListeningEntry>;
+    updateListeningSentenceText: (text: string) => Promise<ListeningEntry>;
     submitQuizAnswer: (questionId: string, response: string) => Promise<{
         session: QuizSession;
         vocabulary?: VocabularyEntry[];
@@ -1552,6 +1554,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     setQuizQuestionImage: (questionId: string, imageUrl: string) => void;
     saveWordNoteById: (id: string, note: string) => Promise<VocabularyEntry>;
     saveListeningNoteById: (id: string, note: string) => Promise<ListeningEntry>;
+    updateListeningSentenceText: (text: string) => Promise<ListeningEntry>;
     submitQuizAnswer: (questionId: string, response: string) => Promise<{
         session: QuizSession;
         vocabulary?: VocabularyEntry[];
@@ -1567,5 +1570,5 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     markExampleImagesLoading: (sentences: string[]) => void;
     checkExampleImage: (example: string) => Promise<string | null>;
     startExampleImagePolling: () => void;
-}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "deleteWord" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "createListeningTaskForGroup" | "fetchListeningGroups" | "createListeningGroup" | "deleteListeningGroup" | "selectListeningGroup" | "fetchWritingTopics" | "addWritingTopic" | "updateWritingTopicTitle" | "deleteWritingTopic" | "selectWritingTopic" | "selectWritingPoint" | "addWritingKnowledgePoint" | "updateWritingKnowledgePoint" | "deleteWritingKnowledgePoint" | "sendWritingKnowledgePointChatMessage" | "clearWritingKnowledgePointChat" | "createExpressionTask" | "ensureWordAudio" | "ensureListeningAudio" | "selectListening" | "updateListeningNote" | "sendListeningChatMessage" | "clearListeningChatHistory" | "startTask" | "clearTask" | "retryTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "setQuizSession" | "setQuizQuestionImage" | "saveWordNoteById" | "saveListeningNoteById" | "submitQuizAnswer" | "exampleImageState" | "exampleImageUrl" | "isExampleImageLoading" | "exampleImageError" | "exampleImageLabel" | "exampleImageButtonTitle" | "generateExampleImage" | "markExampleImagesLoading" | "checkExampleImage" | "startExampleImagePolling">>;
+}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "deleteWord" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "createListeningTaskForGroup" | "fetchListeningGroups" | "createListeningGroup" | "deleteListeningGroup" | "selectListeningGroup" | "fetchWritingTopics" | "addWritingTopic" | "updateWritingTopicTitle" | "deleteWritingTopic" | "selectWritingTopic" | "selectWritingPoint" | "addWritingKnowledgePoint" | "updateWritingKnowledgePoint" | "deleteWritingKnowledgePoint" | "sendWritingKnowledgePointChatMessage" | "clearWritingKnowledgePointChat" | "createExpressionTask" | "ensureWordAudio" | "ensureListeningAudio" | "selectListening" | "updateListeningNote" | "sendListeningChatMessage" | "clearListeningChatHistory" | "startTask" | "clearTask" | "retryTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "setQuizSession" | "setQuizQuestionImage" | "saveWordNoteById" | "saveListeningNoteById" | "updateListeningSentenceText" | "submitQuizAnswer" | "exampleImageState" | "exampleImageUrl" | "isExampleImageLoading" | "exampleImageError" | "exampleImageLabel" | "exampleImageButtonTitle" | "generateExampleImage" | "markExampleImagesLoading" | "checkExampleImage" | "startExampleImagePolling">>;
 export {};

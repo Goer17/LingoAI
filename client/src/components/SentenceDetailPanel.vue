@@ -2,13 +2,40 @@
   <section class="card detail-card">
     <div v-if="sentence" class="detail-content">
       <div class="detail-head">
-        <div>
+        <div class="detail-head-main">
           <p class="eyebrow">Details</p>
           <h2>Sentence</h2>
-          <p>{{ sentence.sentence }}</p>
+          <p v-if="!editing">{{ sentence.sentence }}</p>
+          <form v-else class="sentence-edit" @submit.prevent="saveEdit">
+            <input
+              v-model="draftSentence"
+              class="sentence-edit-input"
+              type="text"
+              aria-label="Sentence text"
+              placeholder="Sentence text"
+            />
+            <div class="sentence-edit-actions">
+              <button class="button button-primary button-tight" type="submit" :disabled="!draftSentence.trim()">
+                Save
+              </button>
+              <button class="button button-secondary button-tight" type="button" @click="cancelEdit">
+                Cancel
+              </button>
+            </div>
+          </form>
           <p class="subtle-copy">familiarity {{ sentence.familiarity }}{{ sentence.known ? ' · known' : '' }}</p>
         </div>
         <div class="result-actions">
+          <button
+            v-if="editable && !editing"
+            class="icon-button"
+            type="button"
+            aria-label="Edit sentence"
+            title="Edit sentence"
+            @click="startEdit"
+          >
+            <Pencil :size="18" />
+          </button>
           <button
             class="icon-button"
             type="button"
@@ -86,7 +113,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
-import { Check, RefreshCw, Volume2 } from 'lucide-vue-next';
+import { Check, Pencil, RefreshCw, Volume2 } from 'lucide-vue-next';
 import type { ListeningEntry } from '@/types/models';
 
 const draft = ref('');
@@ -97,6 +124,9 @@ const props = defineProps<{
   hideNote?: boolean;
   hideChat?: boolean;
   hideDelete?: boolean;
+  /** Show the inline sentence editor. Off by default so the quiz reveal card
+   *  (which reuses this panel) stays read-only. */
+  editable?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -106,11 +136,14 @@ const emit = defineEmits<{
   'send-chat': [message: string];
   'clear-chat': [];
   delete: [id: string];
+  'update-sentence': [sentence: string];
 }>();
 
 const chatItems = computed(() => props.sentence?.chatHistory ?? []);
 const deleteConfirm = ref(false);
 const regenerateConfirm = ref(false);
+const editing = ref(false);
+const draftSentence = ref('');
 
 function submit() {
   if (!draft.value.trim() || !props.sentence) {
@@ -128,6 +161,34 @@ function handleNoteChange(event: Event) {
   }
 
   emit('save-note', target.value);
+}
+
+function startEdit() {
+  if (!props.sentence) {
+    return;
+  }
+
+  draftSentence.value = props.sentence.sentence;
+  editing.value = true;
+}
+
+function cancelEdit() {
+  editing.value = false;
+  draftSentence.value = '';
+}
+
+function saveEdit() {
+  const text = draftSentence.value.trim().replace(/\s+/g, ' ');
+  if (!text || !props.sentence) {
+    return;
+  }
+
+  if (text !== props.sentence.sentence) {
+    emit('update-sentence', text);
+  }
+
+  editing.value = false;
+  draftSentence.value = '';
 }
 
 function handleDeleteClick() {
@@ -155,6 +216,8 @@ watch(
   () => {
     deleteConfirm.value = false;
     regenerateConfirm.value = false;
+    editing.value = false;
+    draftSentence.value = '';
   },
 );
 

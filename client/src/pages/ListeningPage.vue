@@ -89,12 +89,14 @@
         <SentenceDetailPanel
           :sentence="store.selectedListening"
           :loading="chatLoading"
+          editable
           @play-audio="playSelectedSentence"
           @regenerate-audio="regenerateListeningAudio"
           @save-note="handleSaveNote"
           @send-chat="handleSendChat"
           @clear-chat="handleClearChat"
           @delete="handleDeleteSentence"
+          @update-sentence="handleUpdateSentence"
         />
       </div>
     </section>
@@ -306,6 +308,17 @@ async function handleClearChat() {
     message.value = 'Tutor chat cleared.';
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to clear chat.';
+  }
+}
+
+async function handleUpdateSentence(sentence: string) {
+  error.value = '';
+  message.value = '';
+  try {
+    await store.updateListeningSentenceText(sentence);
+    message.value = 'Sentence updated.';
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Failed to update sentence.';
   }
 }
 

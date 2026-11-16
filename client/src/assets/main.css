@@ -3810,6 +3810,33 @@ select:focus {
   font-size: 0.64rem;
 }
 
+/* Sentence inline editor (listening details card) -------------------- */
+
+/* The details heading is a two-column flex row; letting the text column grow
+ * keeps the inline sentence editor at full width instead of shrinking to fit. */
+.detail-head-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.sentence-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0.35rem 0 0;
+}
+
+.sentence-edit-input {
+  width: 100%;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.sentence-edit-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
 .reading-flash {
   margin: 0;
 }

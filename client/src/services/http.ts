@@ -27,6 +27,19 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
+/** Surface the server's message for non-2xx responses too, so 400s do not
+ *  degrade into axios' generic "Request failed with status code 400". */
+http.interceptors.response.use(
+  (response) => response,
+  (error: unknown) => {
+    const payload = (error as { response?: { data?: ApiResponse<unknown> } })?.response?.data;
+    if (payload && payload.success === false && payload.error?.message) {
+      return Promise.reject(new Error(payload.error.message));
+    }
+    return Promise.reject(error);
+  },
+);
+
 export async function unwrap<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T> {
   const response = await promise;
   if (!response.data.success) {

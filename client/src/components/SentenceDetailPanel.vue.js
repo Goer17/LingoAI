@@ -1,5 +1,5 @@
 import { computed, nextTick, ref, watch } from 'vue';
-import { Check, RefreshCw, Volume2 } from 'lucide-vue-next';
+import { Check, Pencil, RefreshCw, Volume2 } from 'lucide-vue-next';
 const draft = ref('');
 const chatHistoryRef = ref(null);
 const props = defineProps();
@@ -7,6 +7,8 @@ const emit = defineEmits();
 const chatItems = computed(() => props.sentence?.chatHistory ?? []);
 const deleteConfirm = ref(false);
 const regenerateConfirm = ref(false);
+const editing = ref(false);
+const draftSentence = ref('');
 function submit() {
     if (!draft.value.trim() || !props.sentence) {
         return;
@@ -20,6 +22,28 @@ function handleNoteChange(event) {
         return;
     }
     emit('save-note', target.value);
+}
+function startEdit() {
+    if (!props.sentence) {
+        return;
+    }
+    draftSentence.value = props.sentence.sentence;
+    editing.value = true;
+}
+function cancelEdit() {
+    editing.value = false;
+    draftSentence.value = '';
+}
+function saveEdit() {
+    const text = draftSentence.value.trim().replace(/\s+/g, ' ');
+    if (!text || !props.sentence) {
+        return;
+    }
+    if (text !== props.sentence.sentence) {
+        emit('update-sentence', text);
+    }
+    editing.value = false;
+    draftSentence.value = '';
 }
 function handleDeleteClick() {
     if (deleteConfirm.value) {
@@ -40,6 +64,8 @@ function handleRegenerateClick() {
 watch(() => props.sentence?.id, () => {
     deleteConfirm.value = false;
     regenerateConfirm.value = false;
+    editing.value = false;
+    draftSentence.value = '';
 });
 watch(() => {
     const history = props.sentence?.chatHistory ?? [];
@@ -151,13 +177,43 @@ if (__VLS_ctx.sentence) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "detail-head" },
     });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({});
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "detail-head-main" },
+    });
     __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
         ...{ class: "eyebrow" },
     });
     __VLS_asFunctionalElement(__VLS_intrinsicElements.h2, __VLS_intrinsicElements.h2)({});
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({});
-    (__VLS_ctx.sentence.sentence);
+    if (!__VLS_ctx.editing) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({});
+        (__VLS_ctx.sentence.sentence);
+    }
+    else {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.form, __VLS_intrinsicElements.form)({
+            ...{ onSubmit: (__VLS_ctx.saveEdit) },
+            ...{ class: "sentence-edit" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.input)({
+            value: (__VLS_ctx.draftSentence),
+            ...{ class: "sentence-edit-input" },
+            type: "text",
+            'aria-label': "Sentence text",
+            placeholder: "Sentence text",
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+            ...{ class: "sentence-edit-actions" },
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ class: "button button-primary button-tight" },
+            type: "submit",
+            disabled: (!__VLS_ctx.draftSentence.trim()),
+        });
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (__VLS_ctx.cancelEdit) },
+            ...{ class: "button button-secondary button-tight" },
+            type: "button",
+        });
+    }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
         ...{ class: "subtle-copy" },
     });
@@ -166,6 +222,24 @@ if (__VLS_ctx.sentence) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "result-actions" },
     });
+    if (__VLS_ctx.editable && !__VLS_ctx.editing) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
+            ...{ onClick: (__VLS_ctx.startEdit) },
+            ...{ class: "icon-button" },
+            type: "button",
+            'aria-label': "Edit sentence",
+            title: "Edit sentence",
+        });
+        const __VLS_0 = {}.Pencil;
+        /** @type {[typeof __VLS_components.Pencil, ]} */ ;
+        // @ts-ignore
+        const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
+            size: (18),
+        }));
+        const __VLS_2 = __VLS_1({
+            size: (18),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_1));
+    }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
         ...{ onClick: (__VLS_ctx.handleRegenerateClick) },
         ...{ class: "icon-button" },
@@ -175,19 +249,8 @@ if (__VLS_ctx.sentence) {
         title: (__VLS_ctx.regenerateConfirm ? 'Click again to confirm' : 'Regenerate audio'),
     });
     if (!__VLS_ctx.regenerateConfirm) {
-        const __VLS_0 = {}.RefreshCw;
+        const __VLS_4 = {}.RefreshCw;
         /** @type {[typeof __VLS_components.RefreshCw, ]} */ ;
-        // @ts-ignore
-        const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
-            size: (18),
-        }));
-        const __VLS_2 = __VLS_1({
-            size: (18),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_1));
-    }
-    else {
-        const __VLS_4 = {}.Check;
-        /** @type {[typeof __VLS_components.Check, ]} */ ;
         // @ts-ignore
         const __VLS_5 = __VLS_asFunctionalComponent(__VLS_4, new __VLS_4({
             size: (18),
@@ -195,6 +258,17 @@ if (__VLS_ctx.sentence) {
         const __VLS_6 = __VLS_5({
             size: (18),
         }, ...__VLS_functionalComponentArgsRest(__VLS_5));
+    }
+    else {
+        const __VLS_8 = {}.Check;
+        /** @type {[typeof __VLS_components.Check, ]} */ ;
+        // @ts-ignore
+        const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
+            size: (18),
+        }));
+        const __VLS_10 = __VLS_9({
+            size: (18),
+        }, ...__VLS_functionalComponentArgsRest(__VLS_9));
     }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
         ...{ onClick: (...[$event]) => {
@@ -207,15 +281,15 @@ if (__VLS_ctx.sentence) {
         'aria-label': "Play sentence",
         title: "Play sentence",
     });
-    const __VLS_8 = {}.Volume2;
+    const __VLS_12 = {}.Volume2;
     /** @type {[typeof __VLS_components.Volume2, ]} */ ;
     // @ts-ignore
-    const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
+    const __VLS_13 = __VLS_asFunctionalComponent(__VLS_12, new __VLS_12({
         size: (18),
     }));
-    const __VLS_10 = __VLS_9({
+    const __VLS_14 = __VLS_13({
         size: (18),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_9));
+    }, ...__VLS_functionalComponentArgsRest(__VLS_13));
     if (!__VLS_ctx.hideDelete) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
             ...{ onClick: (__VLS_ctx.handleDeleteClick) },
@@ -320,9 +394,20 @@ else {
 /** @type {__VLS_StyleScopedClasses['detail-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['detail-content']} */ ;
 /** @type {__VLS_StyleScopedClasses['detail-head']} */ ;
+/** @type {__VLS_StyleScopedClasses['detail-head-main']} */ ;
 /** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
+/** @type {__VLS_StyleScopedClasses['sentence-edit']} */ ;
+/** @type {__VLS_StyleScopedClasses['sentence-edit-input']} */ ;
+/** @type {__VLS_StyleScopedClasses['sentence-edit-actions']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-tight']} */ ;
+/** @type {__VLS_StyleScopedClasses['button']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-tight']} */ ;
 /** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['result-actions']} */ ;
+/** @type {__VLS_StyleScopedClasses['icon-button']} */ ;
 /** @type {__VLS_StyleScopedClasses['icon-button']} */ ;
 /** @type {__VLS_StyleScopedClasses['icon-button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
@@ -352,6 +437,7 @@ const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
             Check: Check,
+            Pencil: Pencil,
             RefreshCw: RefreshCw,
             Volume2: Volume2,
             draft: draft,
@@ -359,8 +445,13 @@ const __VLS_self = (await import('vue')).defineComponent({
             chatItems: chatItems,
             deleteConfirm: deleteConfirm,
             regenerateConfirm: regenerateConfirm,
+            editing: editing,
+            draftSentence: draftSentence,
             submit: submit,
             handleNoteChange: handleNoteChange,
+            startEdit: startEdit,
+            cancelEdit: cancelEdit,
+            saveEdit: saveEdit,
             handleDeleteClick: handleDeleteClick,
             handleRegenerateClick: handleRegenerateClick,
             renderMarkdown: renderMarkdown,

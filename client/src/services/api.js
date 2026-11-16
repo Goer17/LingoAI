@@ -70,6 +70,9 @@ export const api = {
     updateListeningNote(id, note) {
         return unwrap(http.post(`/vocabulary/listening/${id}/note`, { note }));
     },
+    updateListeningSentence(id, sentence) {
+        return unwrap(http.post(`/vocabulary/listening/${id}/sentence`, { sentence }));
+    },
     chatListening(id, message) {
         return unwrap(http.post(`/vocabulary/listening/${id}/chat-word`, { message }));
     },
