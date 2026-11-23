@@ -447,15 +447,6 @@ export const api = {
     deleteTutorSession(id) {
         return unwrap(http.post(`/tutor/sessions/${id}/delete`));
     },
-    listTutorMemories() {
-        return unwrap(http.get('/tutor/memories'));
-    },
-    addTutorMemory(content, kind) {
-        return unwrap(http.post('/tutor/memories', { content, kind }));
-    },
-    deleteTutorMemory(id) {
-        return unwrap(http.post(`/tutor/memories/${id}/delete`));
-    },
     listReadingCategories() {
         return unwrap(http.get('/reading/categories'));
     },

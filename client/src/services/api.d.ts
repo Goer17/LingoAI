@@ -1,4 +1,4 @@
-import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, PolishResult, QuizSession, ReadingArticle, ReadingArticleBundle, ReadingArticleSummary, ReadingCategory, ReadingChatMessage, ReadingMark, ReadingMarkKind, ScenarioData, ScenarioSummary, SearchResult, SettingsForm, TutorMemory, TutorMemoryKind, TutorMessage, TutorSession, TutorSessionDetail, VocabularyEntry, WritingKnowledgePoint, WritingTopic } from '@/types/models';
+import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, PolishResult, QuizSession, ReadingArticle, ReadingArticleBundle, ReadingArticleSummary, ReadingCategory, ReadingChatMessage, ReadingMark, ReadingMarkKind, ScenarioData, ScenarioSummary, SearchResult, SettingsForm, TutorMessage, TutorSession, TutorSessionDetail, VocabularyEntry, WritingKnowledgePoint, WritingTopic } from '@/types/models';
 export declare const api: {
     login(token: string): Promise<{
         token: string;
@@ -187,11 +187,6 @@ export declare const api: {
     getTutorSession(id: string): Promise<TutorSessionDetail>;
     renameTutorSession(id: string, title: string): Promise<TutorSession>;
     deleteTutorSession(id: string): Promise<{
-        removed: boolean;
-    }>;
-    listTutorMemories(): Promise<TutorMemory[]>;
-    addTutorMemory(content: string, kind?: TutorMemoryKind): Promise<TutorMemory>;
-    deleteTutorMemory(id: string): Promise<{
         removed: boolean;
     }>;
     listReadingCategories(): Promise<ReadingCategory[]>;

@@ -1,5 +1,5 @@
 import { computed, nextTick, onMounted, ref } from 'vue';
-import { Brain, Plus, Wrench } from 'lucide-vue-next';
+import { Plus, Wrench } from 'lucide-vue-next';
 import { api } from '@/services/api';
 import { useConfirmStore } from '@/stores/confirm';
 import { renderMarkdown } from '@/utils/markdown';
@@ -13,13 +13,9 @@ const suggestions = [
 const sessions = ref([]);
 const activeId = ref(null);
 const messages = ref([]);
-const memories = ref([]);
 const draft = ref('');
-const memoryDraft = ref('');
 const sending = ref(false);
 const loadingSessions = ref(true);
-const savingMemory = ref(false);
-const showMemory = ref(false);
 const error = ref('');
 const streamingId = ref(null);
 const scrollRef = ref(null);
@@ -64,14 +60,6 @@ async function loadSessions() {
     }
     finally {
         loadingSessions.value = false;
-    }
-}
-async function loadMemories() {
-    try {
-        memories.value = await api.listTutorMemories();
-    }
-    catch {
-        // The memory panel is auxiliary; a failed load should not break chat.
     }
 }
 async function selectSession(id) {
@@ -121,33 +109,6 @@ async function deleteSession(id) {
     }
     catch (err) {
         error.value = err instanceof Error ? err.message : 'Failed to delete the session.';
-    }
-}
-async function addMemory() {
-    const content = memoryDraft.value.trim();
-    if (!content || savingMemory.value) {
-        return;
-    }
-    savingMemory.value = true;
-    try {
-        const memory = await api.addTutorMemory(content, 'note');
-        memories.value = [...memories.value, memory];
-        memoryDraft.value = '';
-    }
-    catch (err) {
-        error.value = err instanceof Error ? err.message : 'Failed to save the memory.';
-    }
-    finally {
-        savingMemory.value = false;
-    }
-}
-async function deleteMemory(id) {
-    try {
-        await api.deleteTutorMemory(id);
-        memories.value = memories.value.filter((memory) => memory.id !== id);
-    }
-    catch (err) {
-        error.value = err instanceof Error ? err.message : 'Failed to delete the memory.';
     }
 }
 function applyToolEvent(message, event) {
@@ -246,7 +207,6 @@ async function handleSend() {
             result.session,
             ...sessions.value.filter((session) => session.id !== result.session.id),
         ].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-        void loadMemories();
     }
     catch (err) {
         error.value = err instanceof Error ? err.message : 'Tutor chat failed.';
@@ -261,7 +221,7 @@ async function handleSend() {
     }
 }
 onMounted(async () => {
-    await Promise.all([loadSessions(), loadMemories()]);
+    await loadSessions();
 });
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
@@ -356,91 +316,6 @@ else {
         });
     }
 }
-__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "tutor-memory" },
-});
-__VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
-    ...{ onClick: (...[$event]) => {
-            __VLS_ctx.showMemory = !__VLS_ctx.showMemory;
-        } },
-    ...{ class: "tutor-memory-toggle" },
-    type: "button",
-});
-const __VLS_4 = {}.Brain;
-/** @type {[typeof __VLS_components.Brain, ]} */ ;
-// @ts-ignore
-const __VLS_5 = __VLS_asFunctionalComponent(__VLS_4, new __VLS_4({
-    size: (14),
-}));
-const __VLS_6 = __VLS_5({
-    size: (14),
-}, ...__VLS_functionalComponentArgsRest(__VLS_5));
-__VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-__VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
-    ...{ class: "count-chip" },
-});
-(__VLS_ctx.memories.length);
-if (__VLS_ctx.showMemory) {
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "tutor-memory-body" },
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.form, __VLS_intrinsicElements.form)({
-        ...{ onSubmit: (__VLS_ctx.addMemory) },
-        ...{ class: "tutor-memory-form" },
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.input)({
-        value: (__VLS_ctx.memoryDraft),
-        type: "text",
-        maxlength: "1000",
-        placeholder: "Add a durable note...",
-        disabled: (__VLS_ctx.savingMemory),
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
-        ...{ class: "button button-secondary button-tight" },
-        type: "submit",
-        disabled: (__VLS_ctx.savingMemory || !__VLS_ctx.memoryDraft.trim()),
-    });
-    if (__VLS_ctx.memories.length === 0) {
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-            ...{ class: "empty-copy" },
-        });
-    }
-    else {
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.ul, __VLS_intrinsicElements.ul)({
-            ...{ class: "tutor-memory-list" },
-        });
-        for (const [memory] of __VLS_getVForSourceType((__VLS_ctx.memories))) {
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.li, __VLS_intrinsicElements.li)({
-                key: (memory.id),
-            });
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-                ...{ class: "tutor-memory-head" },
-            });
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
-                ...{ class: "tutor-memory-kind" },
-            });
-            (memory.kind);
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
-                ...{ class: "tutor-memory-date" },
-            });
-            (__VLS_ctx.formatDate(memory.createdAt));
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
-                ...{ onClick: (...[$event]) => {
-                        if (!(__VLS_ctx.showMemory))
-                            return;
-                        if (!!(__VLS_ctx.memories.length === 0))
-                            return;
-                        __VLS_ctx.deleteMemory(memory.id);
-                    } },
-                ...{ class: "tutor-memory-delete" },
-                type: "button",
-                title: "Delete memory",
-            });
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({});
-            (memory.content);
-        }
-    }
-}
 __VLS_asFunctionalElement(__VLS_intrinsicElements.section, __VLS_intrinsicElements.section)({
     ...{ class: "card tutor-chat" },
 });
@@ -519,15 +394,15 @@ for (const [message] of __VLS_getVForSourceType((__VLS_ctx.messages))) {
                 ...{ class: "tutor-tool-chip" },
                 ...{ class: ({ 'is-error': !trace.ok, 'is-pending': trace.pending }) },
             });
-            const __VLS_8 = {}.Wrench;
+            const __VLS_4 = {}.Wrench;
             /** @type {[typeof __VLS_components.Wrench, ]} */ ;
             // @ts-ignore
-            const __VLS_9 = __VLS_asFunctionalComponent(__VLS_8, new __VLS_8({
+            const __VLS_5 = __VLS_asFunctionalComponent(__VLS_4, new __VLS_4({
                 size: (12),
             }));
-            const __VLS_10 = __VLS_9({
+            const __VLS_6 = __VLS_5({
                 size: (12),
-            }, ...__VLS_functionalComponentArgsRest(__VLS_9));
+            }, ...__VLS_functionalComponentArgsRest(__VLS_5));
             __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
                 ...{ class: "tutor-tool-label" },
             });
@@ -619,20 +494,6 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElement
 /** @type {__VLS_StyleScopedClasses['tutor-session-preview']} */ ;
 /** @type {__VLS_StyleScopedClasses['tutor-session-delete']} */ ;
 /** @type {__VLS_StyleScopedClasses['empty-copy']} */ ;
-/** @type {__VLS_StyleScopedClasses['tutor-memory']} */ ;
-/** @type {__VLS_StyleScopedClasses['tutor-memory-toggle']} */ ;
-/** @type {__VLS_StyleScopedClasses['count-chip']} */ ;
-/** @type {__VLS_StyleScopedClasses['tutor-memory-body']} */ ;
-/** @type {__VLS_StyleScopedClasses['tutor-memory-form']} */ ;
-/** @type {__VLS_StyleScopedClasses['button']} */ ;
-/** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
-/** @type {__VLS_StyleScopedClasses['button-tight']} */ ;
-/** @type {__VLS_StyleScopedClasses['empty-copy']} */ ;
-/** @type {__VLS_StyleScopedClasses['tutor-memory-list']} */ ;
-/** @type {__VLS_StyleScopedClasses['tutor-memory-head']} */ ;
-/** @type {__VLS_StyleScopedClasses['tutor-memory-kind']} */ ;
-/** @type {__VLS_StyleScopedClasses['tutor-memory-date']} */ ;
-/** @type {__VLS_StyleScopedClasses['tutor-memory-delete']} */ ;
 /** @type {__VLS_StyleScopedClasses['card']} */ ;
 /** @type {__VLS_StyleScopedClasses['tutor-chat']} */ ;
 /** @type {__VLS_StyleScopedClasses['tutor-chat-head']} */ ;
@@ -669,7 +530,6 @@ var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
-            Brain: Brain,
             Plus: Plus,
             Wrench: Wrench,
             renderMarkdown: renderMarkdown,
@@ -677,13 +537,9 @@ const __VLS_self = (await import('vue')).defineComponent({
             sessions: sessions,
             activeId: activeId,
             messages: messages,
-            memories: memories,
             draft: draft,
-            memoryDraft: memoryDraft,
             sending: sending,
             loadingSessions: loadingSessions,
-            savingMemory: savingMemory,
-            showMemory: showMemory,
             error: error,
             streamingId: streamingId,
             scrollRef: scrollRef,
@@ -693,8 +549,6 @@ const __VLS_self = (await import('vue')).defineComponent({
             selectSession: selectSession,
             startNewChat: startNewChat,
             deleteSession: deleteSession,
-            addMemory: addMemory,
-            deleteMemory: deleteMemory,
             handleSend: handleSend,
         };
     },

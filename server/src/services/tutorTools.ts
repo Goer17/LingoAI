@@ -1,7 +1,5 @@
 import { z } from 'zod';
-import { tutorMemoryRepository } from '../db/repositories.js';
 import { createSearchWordPrompt } from '../prompts/searchWordPrompt.js';
-import { createId } from '../utils/id.js';
 import type { AgentToolDefinition } from './openaiService.js';
 import { searchWord } from './openaiService.js';
 import { resolvePronunciation } from './commonPronunciationService.js';
@@ -32,8 +30,6 @@ import { processListeningTask, processVocabularyTask } from '../routes/vocabular
 import type {
   ListeningEntry,
   ListeningGroup,
-  TutorMemory,
-  TutorMemoryKind,
   VocabularyEntry,
 } from '../types/models.js';
 
@@ -680,107 +676,6 @@ const tools: Record<string, TutorTool> = {
     },
   },
 
-  remember: {
-    label: 'Saving a memory',
-    definition: {
-      name: 'remember',
-      description:
-        'Save one durable fact about the learner to long-term memory: a goal, preference, recurring mistake, or progress insight. Write it as a short standalone sentence. Never store secrets or passwords.',
-      parameters: {
-        type: 'object',
-        required: ['content'],
-        properties: {
-          content: { type: 'string', description: 'The memory, written as a standalone sentence.' },
-          kind: {
-            type: 'string',
-            enum: ['note', 'preference', 'goal', 'progress'],
-            description: 'Memory category. Defaults to note.',
-          },
-        },
-      },
-    },
-    async execute(rawArgs, context) {
-      const args = parseArgs(rememberSchema, rawArgs);
-      const now = new Date().toISOString();
-      const memory: TutorMemory = {
-        id: createId('memory'),
-        kind: (args.kind ?? 'note') as TutorMemoryKind,
-        content: args.content,
-        createdAt: now,
-        updatedAt: now,
-        sessionId: context.sessionId,
-      };
-      tutorMemoryRepository.save(memory);
-      return {
-        result: memory,
-        summary: `Remembered: ${truncate(memory.content, 80)}`,
-      };
-    },
-  },
-
-  list_memories: {
-    label: 'Recalling memories',
-    definition: {
-      name: 'list_memories',
-      description: 'Search the chronological long-term memory log when you need older context that is not in the system prompt.',
-      parameters: {
-        type: 'object',
-        properties: {
-          query: { type: 'string', description: 'Only return memories containing this text.' },
-          limit: { type: 'number', description: 'Maximum memories to return (default 50, max 200).' },
-        },
-      },
-    },
-    async execute(rawArgs) {
-      const args = parseArgs(listMemoriesSchema, rawArgs);
-      const query = args.query?.toLowerCase();
-      const memories = tutorMemoryRepository
-        .list()
-        .filter((memory) => !query || memory.content.toLowerCase().includes(query));
-      const selected = memories.slice(-(args.limit ?? 50));
-
-      return {
-        result: {
-          total: memories.length,
-          returned: selected.length,
-          // Chronological order, oldest first.
-          memories: selected,
-        },
-        summary: `${selected.length} of ${memories.length} memory item(s)`,
-      };
-    },
-  },
-
-  forget_memory: {
-    label: 'Deleting a memory',
-    definition: {
-      name: 'forget_memory',
-      description: 'Delete one memory by id when it is outdated or the learner asks you to forget it.',
-      parameters: {
-        type: 'object',
-        required: ['id'],
-        properties: {
-          id: { type: 'string', description: 'Memory id from the memory log.' },
-        },
-      },
-    },
-    async execute(rawArgs) {
-      const args = parseArgs(forgetMemorySchema, rawArgs);
-      const memory = tutorMemoryRepository.getById(args.id);
-      if (!memory) {
-        return {
-          result: { removed: false, id: args.id },
-          summary: 'Memory not found',
-        };
-      }
-
-      tutorMemoryRepository.remove(memory.id);
-      return {
-        result: { removed: true, id: memory.id },
-        summary: `Deleted memory: ${truncate(memory.content, 60)}`,
-      };
-    },
-  },
 };
 
 export const tutorToolDefinitions: AgentToolDefinition[] = Object.values(tools).map((tool) => tool.definition);

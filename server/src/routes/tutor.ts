@@ -1,13 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import {
-  addTutorMemory,
   createTutorSession,
   deleteTutorSession,
   getTutorSessionDetail,
-  listTutorMemories,
   listTutorSessions,
-  removeTutorMemory,
   renameTutorSession,
   streamTutorReply,
 } from '../services/tutorService.js';
@@ -23,11 +20,6 @@ const renameSessionSchema = z.object({
 
 const chatSchema = z.object({
   message: z.string().trim().min(1),
-});
-
-const memorySchema = z.object({
-  content: z.string().trim().min(1).max(1000),
-  kind: z.enum(['note', 'preference', 'goal', 'progress']).optional(),
 });
 
 export const tutorRouter = Router();
@@ -127,28 +119,4 @@ tutorRouter.post('/sessions/:id/chat/stream', async (req, res) => {
       res.end();
     }
   }
-});
-
-tutorRouter.get('/memories', (_req, res) => ok(res, listTutorMemories()));
-
-tutorRouter.post('/memories', (req, res) => {
-  const parsed = memorySchema.safeParse(req.body);
-  if (!parsed.success) {
-    return fail(res, 400, 'Memory content is required.');
-  }
-
-  try {
-    return ok(res, addTutorMemory(parsed.data.content, parsed.data.kind));
-  } catch (error) {
-    return fail(res, 400, error instanceof Error ? error.message : 'Failed to save memory.');
-  }
-});
-
-tutorRouter.post('/memories/:id/delete', (req, res) => {
-  const removed = removeTutorMemory(req.params.id);
-  if (!removed) {
-    return fail(res, 404, 'Memory not found.');
-  }
-
-  return ok(res, { removed: true });
 });

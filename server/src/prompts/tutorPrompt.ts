@@ -1,13 +1,9 @@
 import { LISTENING_MAX_FAMILIARITY, VOCABULARY_MAX_FAMILIARITY } from '../config/familiarity.js';
-import type { ListeningEntry, ListeningGroup, TutorMemory, VocabularyEntry } from '../types/models.js';
+import type { ListeningEntry, ListeningGroup, VocabularyEntry } from '../types/models.js';
 
-/** How many recent memories are injected into the system prompt. Older ones
- *  stay in the database and remain reachable through the `list_memories` tool. */
-const MEMORY_PROMPT_LIMIT = 120;
 const WEAK_WORD_LIMIT = 20;
 
 interface TutorPromptInput {
-  memories: TutorMemory[];
   vocabulary: VocabularyEntry[];
   listeningEntries: ListeningEntry[];
   listeningGroups: ListeningGroup[];
@@ -78,26 +74,9 @@ function describeListening(entries: ListeningEntry[], groups: ListeningGroup[]) 
   return lines.join('\n');
 }
 
-function describeMemories(memories: TutorMemory[]) {
-  if (memories.length === 0) {
-    return '- No memories stored yet. Save durable facts with the `remember` tool as you learn them.';
-  }
-
-  const recent = memories.slice(-MEMORY_PROMPT_LIMIT);
-  const skipped = memories.length - recent.length;
-  const lines = recent.map((memory) => `- [${formatDate(memory.createdAt)}] (${memory.kind}) ${truncate(memory.content, 400)}`);
-
-  if (skipped > 0) {
-    lines.unshift(`- (${skipped} older memories omitted here; use \`list_memories\` if you need them.)`);
-  }
-
-  return lines.join('\n');
-}
-
 /**
  * System prompt for the tutor agent. It carries the persona, the tool
- * playbook, and a compact snapshot of the learner's notebook plus the
- * chronological memory log.
+ * playbook, and a compact snapshot of the learner's notebook.
  */
 export function createTutorPrompt(input: TutorPromptInput) {
   return [
@@ -118,19 +97,10 @@ export function createTutorPrompt(input: TutorPromptInput) {
     '- `list_listening_groups`, `list_listening_sentences`, `add_listening_sentence`, `create_listening_group`: manage example sentences. When the learner says "add this sentence to group X", call `add_listening_sentence` with `groupName`; it creates the group if needed.',
     '- `generate_quiz`: start a background quiz (vocabulary, or listening for a whole group or one group). Tell the learner to open Tasks when it is ready.',
     '- `list_learning_tasks` / `list_mistakes`: check progress and what needs review.',
-    '- `remember`, `list_memories`, `forget_memory`: your long-term memory.',
     'Use at most a few tool calls per reply, and only when they add real value. Never fabricate notebook contents: if a tool is needed and fails, say so plainly.',
-    '',
-    '## Memory',
-    'You have a persistent memory log. Everything below was saved earlier, in chronological order (oldest first).',
-    'When the learner shares something durable — a goal, exam date, preference, recurring mistake, or a fact about their life or level — call `remember` with a short standalone sentence. Do not save trivia or one-off questions, and never save secrets.',
-    'Also save a `progress` memory when a session produces a clear insight about what the learner has mastered or still struggles with.',
     '',
     '## Learner snapshot',
     describeVocabulary(input.vocabulary),
     describeListening(input.listeningEntries, input.listeningGroups),
-    '',
-    '## Tutor memories (chronological)',
-    describeMemories(input.memories),
   ].join('\n');
 }

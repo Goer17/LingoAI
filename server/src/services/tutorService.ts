@@ -1,4 +1,4 @@
-import { tutorMemoryRepository, tutorMessageRepository, tutorSessionRepository } from '../db/repositories.js';
+import { tutorMessageRepository, tutorSessionRepository } from '../db/repositories.js';
 import { createTutorPrompt } from '../prompts/tutorPrompt.js';
 import type { AgentMessage, AgentToolCall } from './openaiService.js';
 import { streamAgentCompletion } from './openaiService.js';
@@ -8,8 +8,6 @@ import { listListeningEntries, listListeningGroups } from './listeningService.js
 import { listVocabulary } from './vocabularyService.js';
 import { createId } from '../utils/id.js';
 import type {
-  TutorMemory,
-  TutorMemoryKind,
   TutorMessage,
   TutorSession,
   TutorToolTrace,
@@ -24,7 +22,6 @@ const HISTORY_LIMIT = 40;
  *  runs without tools to force a written answer. */
 const MAX_TOOL_ROUNDS = 6;
 const MAX_TOOL_RESULT_CHARS = 8000;
-const MAX_MEMORY_CHARS = 1000;
 
 export type TutorStreamEvent =
   | { type: 'delta'; content: string }
@@ -109,45 +106,12 @@ export function deleteTutorSession(id: string) {
   return true;
 }
 
-export function listTutorMemories() {
-  return tutorMemoryRepository.list();
-}
-
-export function addTutorMemory(content: string, kind: TutorMemoryKind = 'note', sessionId?: string) {
-  const trimmed = content.trim().slice(0, MAX_MEMORY_CHARS);
-  if (!trimmed) {
-    throw new Error('Memory content is required.');
-  }
-
-  const now = new Date().toISOString();
-  const memory: TutorMemory = {
-    id: createId('memory'),
-    kind,
-    content: trimmed,
-    createdAt: now,
-    updatedAt: now,
-    ...(sessionId ? { sessionId } : {}),
-  };
-  tutorMemoryRepository.save(memory);
-  return memory;
-}
-
-export function removeTutorMemory(id: string) {
-  if (!tutorMemoryRepository.getById(id)) {
-    return false;
-  }
-
-  tutorMemoryRepository.remove(id);
-  return true;
-}
-
 function buildAgentMessages(sessionId: string, userMessage: string): AgentMessage[] {
-  const memories = tutorMemoryRepository.list();
   const vocabulary = listVocabulary();
   const listeningEntries = listListeningEntries();
   const listeningGroups = listListeningGroups();
 
-  const systemPrompt = createTutorPrompt({ memories, vocabulary, listeningEntries, listeningGroups });
+  const systemPrompt = createTutorPrompt({ vocabulary, listeningEntries, listeningGroups });
   const history = tutorMessageRepository.listRecent(sessionId, HISTORY_LIMIT);
 
   const messages: AgentMessage[] = [{ role: 'system', content: systemPrompt }];

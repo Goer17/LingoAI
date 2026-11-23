@@ -2473,115 +2473,6 @@ select:focus {
   color: var(--error);
 }
 
-.tutor-memory {
-  margin-top: auto;
-  border-top: 1px solid var(--line);
-  padding-top: 0.7rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  min-height: 0;
-}
-
-.tutor-memory-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 0.82rem;
-  padding: 0.2rem 0;
-}
-
-.tutor-memory-toggle:hover {
-  color: var(--text);
-}
-
-.tutor-memory-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  overflow-y: auto;
-  min-height: 0;
-  max-height: 40vh;
-}
-
-.tutor-memory-form {
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
-}
-
-.tutor-memory-form input {
-  padding: 0.5rem 0.65rem;
-  border-radius: 10px;
-  font-size: 0.8rem;
-}
-
-.tutor-memory-form .button {
-  flex: 0 0 auto;
-  padding: 0.5rem 0.7rem;
-  font-size: 0.78rem;
-}
-
-.tutor-memory-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.tutor-memory-list li {
-  position: relative;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.6);
-  padding: 0.5rem 1.6rem 0.55rem 0.65rem;
-}
-
-.tutor-memory-list p {
-  margin: 0.25rem 0 0;
-  font-size: 0.78rem;
-  line-height: 1.4;
-  word-break: break-word;
-}
-
-.tutor-memory-head {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.68rem;
-  color: var(--muted);
-}
-
-.tutor-memory-kind {
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 0.05rem 0.4rem;
-  font-size: 0.62rem;
-}
-
-.tutor-memory-delete {
-  position: absolute;
-  top: 0.3rem;
-  right: 0.35rem;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 0.95rem;
-  line-height: 1;
-  padding: 0.15rem;
-}
-
-.tutor-memory-delete:hover {
-  color: var(--error);
-}
-
 .tutor-chat {
   display: flex;
   flex-direction: column;
@@ -3113,14 +3004,6 @@ select:focus {
 
   .tutor-session-list {
     max-height: 18vh;
-  }
-
-  .tutor-memory {
-    margin-top: 0;
-  }
-
-  .tutor-memory-body {
-    max-height: 22vh;
   }
 
   .tutor-chat {

@@ -17,8 +17,6 @@ import type {
   ScenarioSummary,
   SearchResult,
   SettingsForm,
-  TutorMemory,
-  TutorMemoryKind,
   TutorMessage,
   TutorSession,
   TutorSessionDetail,
@@ -605,15 +603,6 @@ export const api = {
   },
   deleteTutorSession(id: string) {
     return unwrap<{ removed: boolean }>(http.post(`/tutor/sessions/${id}/delete`));
-  },
-  listTutorMemories() {
-    return unwrap<TutorMemory[]>(http.get('/tutor/memories'));
-  },
-  addTutorMemory(content: string, kind?: TutorMemoryKind) {
-    return unwrap<TutorMemory>(http.post('/tutor/memories', { content, kind }));
-  },
-  deleteTutorMemory(id: string) {
-    return unwrap<{ removed: boolean }>(http.post(`/tutor/memories/${id}/delete`));
   },
   listReadingCategories() {
     return unwrap<ReadingCategory[]>(http.get('/reading/categories'));

@@ -40,44 +40,6 @@
         <p v-if="sessions.length === 0" class="empty-copy">No conversations yet. Start a new chat.</p>
       </div>
 
-      <div class="tutor-memory">
-        <button class="tutor-memory-toggle" type="button" @click="showMemory = !showMemory">
-          <Brain :size="14" />
-          <span>Memory</span>
-          <span class="count-chip">{{ memories.length }}</span>
-        </button>
-
-        <div v-if="showMemory" class="tutor-memory-body">
-          <form class="tutor-memory-form" @submit.prevent="addMemory">
-            <input
-              v-model="memoryDraft"
-              type="text"
-              maxlength="1000"
-              placeholder="Add a durable note..."
-              :disabled="savingMemory"
-            />
-            <button class="button button-secondary button-tight" type="submit" :disabled="savingMemory || !memoryDraft.trim()">
-              Add
-            </button>
-          </form>
-
-          <p v-if="memories.length === 0" class="empty-copy">
-            Nothing saved yet. The tutor writes memories as it learns about you.
-          </p>
-          <ul v-else class="tutor-memory-list">
-            <li v-for="memory in memories" :key="memory.id">
-              <div class="tutor-memory-head">
-                <span class="tutor-memory-kind">{{ memory.kind }}</span>
-                <span class="tutor-memory-date">{{ formatDate(memory.createdAt) }}</span>
-                <button class="tutor-memory-delete" type="button" title="Delete memory" @click="deleteMemory(memory.id)">
-                  &times;
-                </button>
-              </div>
-              <p>{{ memory.content }}</p>
-            </li>
-          </ul>
-        </div>
-      </div>
     </aside>
 
     <section class="card tutor-chat">
@@ -85,7 +47,7 @@
         <div>
           <p class="eyebrow">Agent chat</p>
           <h2>{{ activeSession?.title || 'New conversation' }}</h2>
-          <p class="subtle-copy">Your tutor can read your notebook, add examples, start quizzes, and remember what matters.</p>
+          <p class="subtle-copy">Your tutor can read your notebook, add examples, and start quizzes.</p>
         </div>
       </header>
 
@@ -166,11 +128,11 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue';
-import { Brain, Plus, Wrench } from 'lucide-vue-next';
+import { Plus, Wrench } from 'lucide-vue-next';
 import { api } from '@/services/api';
 import { useConfirmStore } from '@/stores/confirm';
 import { renderMarkdown } from '@/utils/markdown';
-import type { TutorMemory, TutorMemoryKind, TutorMessage, TutorSession, TutorToolTrace } from '@/types/models';
+import type { TutorMessage, TutorSession, TutorToolTrace } from '@/types/models';
 
 const confirm = useConfirmStore();
 
@@ -201,13 +163,9 @@ const suggestions = [
 const sessions = ref<TutorSession[]>([]);
 const activeId = ref<string | null>(null);
 const messages = ref<DisplayMessage[]>([]);
-const memories = ref<TutorMemory[]>([]);
 const draft = ref('');
-const memoryDraft = ref('');
 const sending = ref(false);
 const loadingSessions = ref(true);
-const savingMemory = ref(false);
-const showMemory = ref(false);
 const error = ref('');
 const streamingId = ref<string | null>(null);
 const scrollRef = ref<HTMLElement | null>(null);
@@ -256,14 +214,6 @@ async function loadSessions() {
     error.value = err instanceof Error ? err.message : 'Failed to load tutor sessions.';
   } finally {
     loadingSessions.value = false;
-  }
-}
-
-async function loadMemories() {
-  try {
-    memories.value = await api.listTutorMemories();
-  } catch {
-    // The memory panel is auxiliary; a failed load should not break chat.
   }
 }
 
@@ -319,33 +269,6 @@ async function deleteSession(id: string) {
     }
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to delete the session.';
-  }
-}
-
-async function addMemory() {
-  const content = memoryDraft.value.trim();
-  if (!content || savingMemory.value) {
-    return;
-  }
-
-  savingMemory.value = true;
-  try {
-    const memory = await api.addTutorMemory(content, 'note' as TutorMemoryKind);
-    memories.value = [...memories.value, memory];
-    memoryDraft.value = '';
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to save the memory.';
-  } finally {
-    savingMemory.value = false;
-  }
-}
-
-async function deleteMemory(id: string) {
-  try {
-    await api.deleteTutorMemory(id);
-    memories.value = memories.value.filter((memory) => memory.id !== id);
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to delete the memory.';
   }
 }
 
@@ -456,7 +379,6 @@ async function handleSend() {
       ...sessions.value.filter((session) => session.id !== result.session.id),
     ].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
-    void loadMemories();
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Tutor chat failed.';
     messages.value = messages.value.filter((message) => (
@@ -472,6 +394,6 @@ async function handleSend() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadSessions(), loadMemories()]);
+  await loadSessions();
 });
 </script>
