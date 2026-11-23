@@ -1,6 +1,8 @@
 import { onBeforeUnmount, ref, watch } from 'vue';
+import { useConfirmStore } from '@/stores/confirm';
 const props = defineProps();
 const emit = defineEmits();
+const confirm = useConfirmStore();
 const draft = ref(props.mark.note);
 const saved = ref(props.mark.note);
 const dragging = ref(false);
@@ -40,8 +42,14 @@ function handleDragStart(event) {
     event.dataTransfer.setData('application/x-reading-mark', props.mark.id);
     event.dataTransfer.setData('text/plain', props.mark.text);
 }
-function handleDelete() {
-    if (window.confirm('Delete this mark and its note?')) {
+async function handleDelete() {
+    const confirmed = await confirm.ask({
+        title: 'Delete this mark?',
+        message: 'The highlight and its note will be removed from the article.',
+        confirmLabel: 'Delete',
+        tone: 'danger',
+    });
+    if (confirmed) {
         emit('delete', props.mark.id);
     }
 }

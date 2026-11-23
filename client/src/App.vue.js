@@ -1,4 +1,5 @@
 import { RouterView } from 'vue-router';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
 let __VLS_components;
@@ -8,13 +9,16 @@ const __VLS_0 = {}.RouterView;
 // @ts-ignore
 const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({}));
 const __VLS_2 = __VLS_1({}, ...__VLS_functionalComponentArgsRest(__VLS_1));
-var __VLS_4 = {};
-var __VLS_3;
+/** @type {[typeof ConfirmDialog, ]} */ ;
+// @ts-ignore
+const __VLS_4 = __VLS_asFunctionalComponent(ConfirmDialog, new ConfirmDialog({}));
+const __VLS_5 = __VLS_4({}, ...__VLS_functionalComponentArgsRest(__VLS_4));
 var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
             RouterView: RouterView,
+            ConfirmDialog: ConfirmDialog,
         };
     },
 });

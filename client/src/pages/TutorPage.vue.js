@@ -1,7 +1,9 @@
 import { computed, nextTick, onMounted, ref } from 'vue';
 import { Brain, Plus, Wrench } from 'lucide-vue-next';
 import { api } from '@/services/api';
+import { useConfirmStore } from '@/stores/confirm';
 import { renderMarkdown } from '@/utils/markdown';
+const confirm = useConfirmStore();
 const suggestions = [
     'Quiz me on my weakest words',
     'Review my vocabulary notebook and tell me what to focus on',
@@ -101,7 +103,13 @@ async function deleteSession(id) {
     if (sending.value) {
         return;
     }
-    if (!window.confirm('Delete this tutor conversation?')) {
+    const confirmed = await confirm.ask({
+        title: 'Delete this conversation?',
+        message: 'The chat history and its tool traces will be removed. This cannot be undone.',
+        confirmLabel: 'Delete',
+        tone: 'danger',
+    });
+    if (!confirmed) {
         return;
     }
     try {

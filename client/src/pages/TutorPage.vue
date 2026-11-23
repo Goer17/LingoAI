@@ -168,8 +168,11 @@
 import { computed, nextTick, onMounted, ref } from 'vue';
 import { Brain, Plus, Wrench } from 'lucide-vue-next';
 import { api } from '@/services/api';
+import { useConfirmStore } from '@/stores/confirm';
 import { renderMarkdown } from '@/utils/markdown';
 import type { TutorMemory, TutorMemoryKind, TutorMessage, TutorSession, TutorToolTrace } from '@/types/models';
+
+const confirm = useConfirmStore();
 
 type DisplayTrace = TutorToolTrace & { pending?: boolean };
 type DisplayMessage = Omit<TutorMessage, 'toolCalls'> & {
@@ -298,7 +301,13 @@ async function deleteSession(id: string) {
     return;
   }
 
-  if (!window.confirm('Delete this tutor conversation?')) {
+  const confirmed = await confirm.ask({
+    title: 'Delete this conversation?',
+    message: 'The chat history and its tool traces will be removed. This cannot be undone.',
+    confirmLabel: 'Delete',
+    tone: 'danger',
+  });
+  if (!confirmed) {
     return;
   }
 
