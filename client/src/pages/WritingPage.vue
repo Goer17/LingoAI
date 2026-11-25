@@ -95,18 +95,11 @@
             </div>
           </header>
 
-          <div class="expression-split">
-            <textarea
-              v-model="draft"
-              class="expression-textarea"
-              spellcheck="false"
-              placeholder="Write in Markdown — the preview updates as you type."
-            />
-            <div class="expression-preview markdown-content">
-              <div v-if="draft.trim()" v-html="renderMarkdown(draft)" />
-              <p v-else class="empty-copy">Nothing written yet.</p>
-            </div>
-          </div>
+          <MarkdownNoteEditor
+            :value="draft"
+            class="expression-surface"
+            @update:value="draft = $event"
+          />
 
           <div class="expression-foot">
             <p class="expression-status muted-text">{{ statusLabel }}</p>
@@ -131,7 +124,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useConfirmStore } from '@/stores/confirm';
 import { useWritingStore } from '@/stores/writing';
-import { renderMarkdown } from '@/utils/markdown';
+import MarkdownNoteEditor from '@/components/MarkdownNoteEditor.vue';
 
 const store = useWritingStore();
 const confirm = useConfirmStore();

@@ -1,7 +1,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useConfirmStore } from '@/stores/confirm';
 import { useWritingStore } from '@/stores/writing';
-import { renderMarkdown } from '@/utils/markdown';
+import MarkdownNoteEditor from '@/components/MarkdownNoteEditor.vue';
 const store = useWritingStore();
 const confirm = useConfirmStore();
 const SAVE_DELAY_MS = 700;
@@ -316,27 +316,29 @@ if (__VLS_ctx.selected) {
         ...{ class: "button button-secondary button-tight" },
         type: "button",
     });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "expression-split" },
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.textarea)({
+    /** @type {[typeof MarkdownNoteEditor, ]} */ ;
+    // @ts-ignore
+    const __VLS_0 = __VLS_asFunctionalComponent(MarkdownNoteEditor, new MarkdownNoteEditor({
+        ...{ 'onUpdate:value': {} },
         value: (__VLS_ctx.draft),
-        ...{ class: "expression-textarea" },
-        spellcheck: "false",
-        placeholder: "Write in Markdown — the preview updates as you type.",
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "expression-preview markdown-content" },
-    });
-    if (__VLS_ctx.draft.trim()) {
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.div)({});
-        __VLS_asFunctionalDirective(__VLS_directives.vHtml)(null, { ...__VLS_directiveBindingRestFields, value: (__VLS_ctx.renderMarkdown(__VLS_ctx.draft)) }, null, null);
-    }
-    else {
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-            ...{ class: "empty-copy" },
-        });
-    }
+        ...{ class: "expression-surface" },
+    }));
+    const __VLS_1 = __VLS_0({
+        ...{ 'onUpdate:value': {} },
+        value: (__VLS_ctx.draft),
+        ...{ class: "expression-surface" },
+    }, ...__VLS_functionalComponentArgsRest(__VLS_0));
+    let __VLS_3;
+    let __VLS_4;
+    let __VLS_5;
+    const __VLS_6 = {
+        'onUpdate:value': (...[$event]) => {
+            if (!(__VLS_ctx.selected))
+                return;
+            __VLS_ctx.draft = $event;
+        }
+    };
+    var __VLS_2;
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "expression-foot" },
     });
@@ -394,11 +396,7 @@ else {
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-tight']} */ ;
-/** @type {__VLS_StyleScopedClasses['expression-split']} */ ;
-/** @type {__VLS_StyleScopedClasses['expression-textarea']} */ ;
-/** @type {__VLS_StyleScopedClasses['expression-preview']} */ ;
-/** @type {__VLS_StyleScopedClasses['markdown-content']} */ ;
-/** @type {__VLS_StyleScopedClasses['empty-copy']} */ ;
+/** @type {__VLS_StyleScopedClasses['expression-surface']} */ ;
 /** @type {__VLS_StyleScopedClasses['expression-foot']} */ ;
 /** @type {__VLS_StyleScopedClasses['expression-status']} */ ;
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
@@ -411,7 +409,7 @@ var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
-            renderMarkdown: renderMarkdown,
+            MarkdownNoteEditor: MarkdownNoteEditor,
             store: store,
             newTitle: newTitle,
             adding: adding,
