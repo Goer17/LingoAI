@@ -3925,8 +3925,15 @@ select:focus {
   color: var(--text);
 }
 
-.expression-textarea {
+.expression-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.75rem;
   flex: 1;
+  min-height: 0;
+}
+
+.expression-textarea {
   min-height: 46vh;
   resize: none;
   border: 1px solid var(--line);
@@ -3938,7 +3945,6 @@ select:focus {
 }
 
 .expression-preview {
-  flex: 1;
   min-height: 46vh;
   overflow: auto;
   border: 1px solid var(--line);
@@ -4002,10 +4008,14 @@ select:focus {
     max-height: 40vh;
   }
 
+  .expression-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .expression-textarea,
   .expression-preview,
   .expression-empty {
-    min-height: 50vh;
+    min-height: 40vh;
   }
 }
 

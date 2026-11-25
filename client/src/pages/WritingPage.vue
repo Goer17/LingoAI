@@ -86,24 +86,6 @@
             </div>
 
             <div class="expression-actions">
-              <div class="expression-modes" role="group" aria-label="View mode">
-                <button
-                  class="expression-mode"
-                  :class="{ active: mode === 'edit' }"
-                  type="button"
-                  @click="mode = 'edit'"
-                >
-                  Edit
-                </button>
-                <button
-                  class="expression-mode"
-                  :class="{ active: mode === 'preview' }"
-                  type="button"
-                  @click="mode = 'preview'"
-                >
-                  Preview
-                </button>
-              </div>
               <button class="button button-secondary button-tight" type="button" @click="startRename">
                 Rename
               </button>
@@ -113,16 +95,17 @@
             </div>
           </header>
 
-          <textarea
-            v-if="mode === 'edit'"
-            v-model="draft"
-            class="expression-textarea"
-            spellcheck="false"
-            placeholder="Write in Markdown. Headings, lists and code blocks all work — the Preview tab shows the result."
-          />
-          <div v-else class="expression-preview markdown-content">
-            <div v-if="draft.trim()" v-html="renderMarkdown(draft)" />
-            <p v-else class="empty-copy">Nothing written yet.</p>
+          <div class="expression-split">
+            <textarea
+              v-model="draft"
+              class="expression-textarea"
+              spellcheck="false"
+              placeholder="Write in Markdown — the preview updates as you type."
+            />
+            <div class="expression-preview markdown-content">
+              <div v-if="draft.trim()" v-html="renderMarkdown(draft)" />
+              <p v-else class="empty-copy">Nothing written yet.</p>
+            </div>
           </div>
 
           <div class="expression-foot">
@@ -158,7 +141,6 @@ const SAVE_DELAY_MS = 700;
 const newTitle = ref('');
 const adding = ref(false);
 const error = ref('');
-const mode = ref<'edit' | 'preview'>('edit');
 const draft = ref('');
 const savedNote = ref('');
 const saving = ref(false);

@@ -8,7 +8,6 @@ const SAVE_DELAY_MS = 700;
 const newTitle = ref('');
 const adding = ref(false);
 const error = ref('');
-const mode = ref('edit');
 const draft = ref('');
 const savedNote = ref('');
 const saving = ref(false);
@@ -307,31 +306,6 @@ if (__VLS_ctx.selected) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "expression-actions" },
     });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-        ...{ class: "expression-modes" },
-        role: "group",
-        'aria-label': "View mode",
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
-        ...{ onClick: (...[$event]) => {
-                if (!(__VLS_ctx.selected))
-                    return;
-                __VLS_ctx.mode = 'edit';
-            } },
-        ...{ class: "expression-mode" },
-        ...{ class: ({ active: __VLS_ctx.mode === 'edit' }) },
-        type: "button",
-    });
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
-        ...{ onClick: (...[$event]) => {
-                if (!(__VLS_ctx.selected))
-                    return;
-                __VLS_ctx.mode = 'preview';
-            } },
-        ...{ class: "expression-mode" },
-        ...{ class: ({ active: __VLS_ctx.mode === 'preview' }) },
-        type: "button",
-    });
     __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
         ...{ onClick: (__VLS_ctx.startRename) },
         ...{ class: "button button-secondary button-tight" },
@@ -342,27 +316,26 @@ if (__VLS_ctx.selected) {
         ...{ class: "button button-secondary button-tight" },
         type: "button",
     });
-    if (__VLS_ctx.mode === 'edit') {
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.textarea)({
-            value: (__VLS_ctx.draft),
-            ...{ class: "expression-textarea" },
-            spellcheck: "false",
-            placeholder: "Write in Markdown. Headings, lists and code blocks all work — the Preview tab shows the result.",
-        });
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "expression-split" },
+    });
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.textarea)({
+        value: (__VLS_ctx.draft),
+        ...{ class: "expression-textarea" },
+        spellcheck: "false",
+        placeholder: "Write in Markdown — the preview updates as you type.",
+    });
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "expression-preview markdown-content" },
+    });
+    if (__VLS_ctx.draft.trim()) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.div)({});
+        __VLS_asFunctionalDirective(__VLS_directives.vHtml)(null, { ...__VLS_directiveBindingRestFields, value: (__VLS_ctx.renderMarkdown(__VLS_ctx.draft)) }, null, null);
     }
     else {
-        __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-            ...{ class: "expression-preview markdown-content" },
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+            ...{ class: "empty-copy" },
         });
-        if (__VLS_ctx.draft.trim()) {
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.div)({});
-            __VLS_asFunctionalDirective(__VLS_directives.vHtml)(null, { ...__VLS_directiveBindingRestFields, value: (__VLS_ctx.renderMarkdown(__VLS_ctx.draft)) }, null, null);
-        }
-        else {
-            __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-                ...{ class: "empty-copy" },
-            });
-        }
     }
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
         ...{ class: "expression-foot" },
@@ -415,15 +388,13 @@ else {
 /** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
 /** @type {__VLS_StyleScopedClasses['expression-title-input']} */ ;
 /** @type {__VLS_StyleScopedClasses['expression-actions']} */ ;
-/** @type {__VLS_StyleScopedClasses['expression-modes']} */ ;
-/** @type {__VLS_StyleScopedClasses['expression-mode']} */ ;
-/** @type {__VLS_StyleScopedClasses['expression-mode']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-tight']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-tight']} */ ;
+/** @type {__VLS_StyleScopedClasses['expression-split']} */ ;
 /** @type {__VLS_StyleScopedClasses['expression-textarea']} */ ;
 /** @type {__VLS_StyleScopedClasses['expression-preview']} */ ;
 /** @type {__VLS_StyleScopedClasses['markdown-content']} */ ;
@@ -445,7 +416,6 @@ const __VLS_self = (await import('vue')).defineComponent({
             newTitle: newTitle,
             adding: adding,
             error: error,
-            mode: mode,
             draft: draft,
             renaming: renaming,
             titleDraft: titleDraft,
