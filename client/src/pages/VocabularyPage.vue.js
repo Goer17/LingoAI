@@ -382,9 +382,6 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)(
     ...{ class: "eyebrow" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.h2, __VLS_intrinsicElements.h2)({});
-__VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-    ...{ class: "subtle-copy" },
-});
 __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
     ...{ onClick: (__VLS_ctx.startLearning) },
     ...{ class: "button button-primary" },
@@ -398,7 +395,6 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElement
 /** @type {__VLS_StyleScopedClasses['workspace-grid']} */ ;
 /** @type {__VLS_StyleScopedClasses['learning-bar']} */ ;
 /** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
-/** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
 var __VLS_dollars;

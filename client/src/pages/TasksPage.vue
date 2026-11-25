@@ -9,7 +9,6 @@
           <div>
             <p class="eyebrow">Tasks</p>
             <h2>Learning Queue</h2>
-            <p class="subtle-copy">Vocabulary, listening, and expression tasks are generated in the background. Start when ready.</p>
           </div>
           <div class="result-actions">
             <button class="button button-secondary" type="button" :disabled="store.tasksLoading" @click="refresh">
@@ -89,7 +88,6 @@
           <div>
             <p class="eyebrow">Review</p>
             <h2>Mistake Notebook</h2>
-            <p class="subtle-copy">Solve mistakes correctly to remove them from the notebook.</p>
           </div>
           <button
             class="button button-primary"

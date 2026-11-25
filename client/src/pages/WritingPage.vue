@@ -125,7 +125,13 @@
             <p v-else class="empty-copy">Nothing written yet.</p>
           </div>
 
-          <p class="expression-status muted-text">{{ statusLabel }}</p>
+          <div class="expression-foot">
+            <p class="expression-status muted-text">{{ statusLabel }}</p>
+            <p class="expression-practice">
+              <span class="expression-practice-label">Practice</span>
+              <span class="expression-practice-note">Coming soon</span>
+            </p>
+          </div>
         </template>
 
         <div v-else class="expression-empty">

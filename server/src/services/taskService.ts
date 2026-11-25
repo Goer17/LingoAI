@@ -1,7 +1,7 @@
 import { mistakeRepository, taskRepository } from '../db/repositories.js';
 import { clearTaskProgress } from './taskProgressService.js';
 import { ensureListeningMaskedSentence } from './fillBlankService.js';
-import type { LearningTask, MistakeEntry, QuizSession, ScenarioData } from '../types/models.js';
+import type { LearningTask, MistakeEntry, QuizSession } from '../types/models.js';
 import { createId } from '../utils/id.js';
 import { createQuizSession } from './quizService.js';
 import { getOrCreateSentenceImage } from './imageService.js';
@@ -116,22 +116,6 @@ export function removeLearningTaskByQuizSessionId(quizSessionId: string) {
 export function removeLearningTask(id: string) {
   taskRepository.remove(id);
   clearTaskProgress(id);
-}
-
-export function attachScenarioToTask(id: string, scenario: ScenarioData) {
-  const current = getLearningTask(id);
-  if (!current) {
-    return null;
-  }
-
-  const updated: LearningTask = {
-    ...current,
-    scenario,
-    updatedAt: new Date().toISOString(),
-  };
-
-  taskRepository.save(updated);
-  return updated;
 }
 
 export function clearFailedLearningTask(id: string) {

@@ -328,9 +328,6 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)(
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.h2, __VLS_intrinsicElements.h2)({});
 (__VLS_ctx.activeSession?.title || 'New conversation');
-__VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-    ...{ class: "subtle-copy" },
-});
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ref: "scrollRef",
     ...{ class: "tutor-messages" },
@@ -498,7 +495,6 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElement
 /** @type {__VLS_StyleScopedClasses['tutor-chat']} */ ;
 /** @type {__VLS_StyleScopedClasses['tutor-chat-head']} */ ;
 /** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
-/** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['tutor-messages']} */ ;
 /** @type {__VLS_StyleScopedClasses['tutor-empty']} */ ;
 /** @type {__VLS_StyleScopedClasses['tutor-empty-title']} */ ;

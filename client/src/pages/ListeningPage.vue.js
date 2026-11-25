@@ -239,9 +239,6 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)(
     ...{ class: "eyebrow" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.h2, __VLS_intrinsicElements.h2)({});
-__VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-    ...{ class: "subtle-copy" },
-});
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "group-bar" },
 });
@@ -428,9 +425,6 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)(
     ...{ class: "eyebrow" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.h2, __VLS_intrinsicElements.h2)({});
-__VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-    ...{ class: "subtle-copy" },
-});
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "learning-bar-actions" },
 });
@@ -455,7 +449,6 @@ if (__VLS_ctx.store.listeningItems.length > 0) {
 /** @type {__VLS_StyleScopedClasses['listening-input-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['section-heading']} */ ;
 /** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
-/** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['group-bar']} */ ;
 /** @type {__VLS_StyleScopedClasses['group-selector']} */ ;
 /** @type {__VLS_StyleScopedClasses['field']} */ ;
@@ -488,7 +481,6 @@ if (__VLS_ctx.store.listeningItems.length > 0) {
 /** @type {__VLS_StyleScopedClasses['sentence-item-familiarity']} */ ;
 /** @type {__VLS_StyleScopedClasses['learning-bar']} */ ;
 /** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
-/** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['learning-bar-actions']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;

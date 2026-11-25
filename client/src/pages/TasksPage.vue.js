@@ -177,9 +177,6 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)(
     ...{ class: "eyebrow" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.h2, __VLS_intrinsicElements.h2)({});
-__VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-    ...{ class: "subtle-copy" },
-});
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "result-actions" },
 });
@@ -334,9 +331,6 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)(
     ...{ class: "eyebrow" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.h2, __VLS_intrinsicElements.h2)({});
-__VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
-    ...{ class: "subtle-copy" },
-});
 __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
     ...{ onClick: (__VLS_ctx.startMistakeReview) },
     ...{ class: "button button-primary" },
@@ -395,7 +389,6 @@ else {
 /** @type {__VLS_StyleScopedClasses['tasks-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['tasks-head']} */ ;
 /** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
-/** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['result-actions']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-secondary']} */ ;
@@ -427,7 +420,6 @@ else {
 /** @type {__VLS_StyleScopedClasses['tasks-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['tasks-head']} */ ;
 /** @type {__VLS_StyleScopedClasses['eyebrow']} */ ;
-/** @type {__VLS_StyleScopedClasses['subtle-copy']} */ ;
 /** @type {__VLS_StyleScopedClasses['button']} */ ;
 /** @type {__VLS_StyleScopedClasses['button-primary']} */ ;
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;

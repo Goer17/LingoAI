@@ -364,10 +364,22 @@ if (__VLS_ctx.selected) {
             });
         }
     }
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+        ...{ class: "expression-foot" },
+    });
     __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
         ...{ class: "expression-status muted-text" },
     });
     (__VLS_ctx.statusLabel);
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)({
+        ...{ class: "expression-practice" },
+    });
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+        ...{ class: "expression-practice-label" },
+    });
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+        ...{ class: "expression-practice-note" },
+    });
 }
 else {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -416,8 +428,12 @@ else {
 /** @type {__VLS_StyleScopedClasses['expression-preview']} */ ;
 /** @type {__VLS_StyleScopedClasses['markdown-content']} */ ;
 /** @type {__VLS_StyleScopedClasses['empty-copy']} */ ;
+/** @type {__VLS_StyleScopedClasses['expression-foot']} */ ;
 /** @type {__VLS_StyleScopedClasses['expression-status']} */ ;
 /** @type {__VLS_StyleScopedClasses['muted-text']} */ ;
+/** @type {__VLS_StyleScopedClasses['expression-practice']} */ ;
+/** @type {__VLS_StyleScopedClasses['expression-practice-label']} */ ;
+/** @type {__VLS_StyleScopedClasses['expression-practice-note']} */ ;
 /** @type {__VLS_StyleScopedClasses['expression-empty']} */ ;
 /** @type {__VLS_StyleScopedClasses['empty-copy']} */ ;
 var __VLS_dollars;

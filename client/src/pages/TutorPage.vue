@@ -47,7 +47,6 @@
         <div>
           <p class="eyebrow">Agent chat</p>
           <h2>{{ activeSession?.title || 'New conversation' }}</h2>
-          <p class="subtle-copy">Your tutor can read your notebook, add examples, and start quizzes.</p>
         </div>
       </header>
 

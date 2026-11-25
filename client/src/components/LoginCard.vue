@@ -3,7 +3,6 @@
     <div class="section-heading">
       <p class="eyebrow">Private Access</p>
       <h1>Enter Access Token</h1>
-      <p class="subtle-copy">This browser will remember the token after a successful login.</p>
     </div>
     <form class="stack" @submit.prevent="$emit('submit')">
       <label class="field">

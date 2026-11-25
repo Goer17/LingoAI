@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { getActiveModelEntries } from './settingsService.js';
-import type { PolishResult, QuizDraftQuestion, ScenarioSummary, SearchResult } from '../types/models.js';
+import type { QuizDraftQuestion, SearchResult } from '../types/models.js';
 
 const meaningSchema = z.object({
   partOfSpeech: z.string().min(1),
@@ -80,40 +80,6 @@ const exampleFillBlankSchema = z.object({
 const quizAppealSchema = z.object({
   acceptable: z.boolean(),
   reason: z.string().min(1),
-});
-
-const scenarioSchema = z.object({
-  setting: z.string().min(1),
-  userRole: z.string().min(1),
-  assistantRole: z.string().min(1),
-  objectives: z.array(z.object({
-    id: z.string().min(1),
-    description: z.string().min(1),
-  })).min(1),
-});
-
-const objectiveCheckSchema = z.object({
-  completedObjectiveIds: z.array(z.string()),
-});
-
-const scenarioSummarySchema = z.object({
-  overallAssessment: z.string().min(1),
-  objectiveResults: z.array(z.object({
-    objective: z.string().min(1),
-    feedback: z.string().min(1),
-  })).min(1),
-  expressionSuggestions: z.array(z.string().min(1)).min(1),
-  encouragement: z.string().min(1),
-});
-
-const polishResultsSchema = z.object({
-  results: z.array(z.object({
-    index: z.number(),
-    original: z.string(),
-    polished: z.string(),
-    isPerfect: z.boolean(),
-    explanation: z.string(),
-  })).min(1),
 });
 
 const sentenceMatchSchema = z.object({
@@ -344,75 +310,10 @@ export async function judgeQuizAppeal(prompt: string): Promise<{ acceptable: boo
   return requestJson(prompt, quizAppealSchema);
 }
 
-export async function generateScenario(prompt: string) {
-  return requestJson(prompt, scenarioSchema);
-}
-
 export async function segmentReadingArticle(
   prompt: string,
 ): Promise<{ paragraphs: string[]; summary?: string }> {
   return requestJson(prompt, readingSegmentsSchema);
-}
-
-export async function checkObjectives(prompt: string) {
-  return requestJson(prompt, objectiveCheckSchema);
-}
-
-export async function summarizeScenario(prompt: string): Promise<ScenarioSummary> {
-  return requestJson(prompt, scenarioSummarySchema);
-}
-
-export async function polishUserMessages(prompt: string): Promise<{ results: PolishResult[] }> {
-  return requestJson(prompt, polishResultsSchema);
-}
-
-export async function streamScenarioChat(
-  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
-  onDelta: (chunk: string) => void,
-): Promise<string> {
-  const clients = getLanguageClients();
-  let lastError: unknown;
-
-  for (const { client, model, extraBody } of clients) {
-    let emitted = false;
-    try {
-      const stream = await client.chat.completions.create({
-        model,
-        temperature: 0.7,
-        stream: true,
-        messages,
-        ...extraBody,
-      });
-
-      let fullText = '';
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content ?? '';
-        if (!delta) {
-          continue;
-        }
-
-        emitted = true;
-        fullText += delta;
-        onDelta(delta);
-      }
-
-      const output = fullText.trim();
-      if (!output) {
-        throw new Error('The language model returned an empty reply.');
-      }
-
-      return output;
-    } catch (error) {
-      lastError = error;
-      // Content already streamed to the caller cannot be unstuck — failing
-      // over now would duplicate the partial reply in the UI.
-      if (emitted) {
-        throw error;
-      }
-    }
-  }
-
-  throw modelChainError('language', clients.length, lastError);
 }
 
 /**
