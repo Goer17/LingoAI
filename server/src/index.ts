@@ -11,11 +11,23 @@ import { writingRouter } from './routes/writing.js';
 import { tutorRouter } from './routes/tutor.js';
 import { readingRouter } from './routes/reading.js';
 import { scanAndEnqueueMissing } from './services/autoImageService.js';
+import { backfillWritingNotes } from './services/writingService.js';
 import { startDailyQuizScheduler } from './services/dailyQuizService.js';
 import { validateAccessToken } from './services/tokenService.js';
 import { fail, ok } from './utils/http.js';
 
 bootstrapDatabase();
+
+// Expression notes used to live in knowledge points; fold any leftovers into
+// the per-title note once so the text survives the Points UI removal.
+try {
+  const migrated = backfillWritingNotes();
+  if (migrated > 0) {
+    console.log(`[writing] folded knowledge points into notes for ${migrated} title(s)`);
+  }
+} catch (error) {
+  console.error('[writing] note backfill failed:', error instanceof Error ? error.message : error);
+}
 
 const app = express();
 const clientIndexPath = path.join(env.clientDistPath, 'index.html');

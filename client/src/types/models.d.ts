@@ -173,11 +173,17 @@ export interface WritingKnowledgePoint {
     updatedAt: string;
     chatHistory: ChatMessage[];
 }
+export type WritingTopicKind = 'grammar' | 'topic';
 export interface WritingTopic {
     id: string;
     title: string;
+    /** Grammar and topic notes live in one list; the Expression page splits on it. */
+    kind: WritingTopicKind;
+    /** One Markdown note per title. */
+    note: string;
     createdAt: string;
     updatedAt: string;
+    /** Legacy knowledge points, folded into `note`; kept for old payloads. */
     knowledgePoints: WritingKnowledgePoint[];
 }
 export interface ScenarioObjective {

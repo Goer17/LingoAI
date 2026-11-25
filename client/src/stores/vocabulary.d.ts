@@ -1,4 +1,4 @@
-import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, QuizSession, SearchResult, VocabularyEntry, WritingKnowledgePoint, WritingTopic } from '@/types/models';
+import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, QuizSession, SearchResult, VocabularyEntry } from '@/types/models';
 interface ExampleImageState {
     url: string;
     loading: boolean;
@@ -336,78 +336,6 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         updatedAt: string;
     }[]>;
     selectedListeningGroupId: import("vue").Ref<string, string>;
-    writingTopics: import("vue").Ref<{
-        id: string;
-        title: string;
-        createdAt: string;
-        updatedAt: string;
-        knowledgePoints: {
-            id: string;
-            title: string;
-            content: string;
-            createdAt: string;
-            updatedAt: string;
-            chatHistory: {
-                id: string;
-                role: "user" | "assistant";
-                content: string;
-                createdAt: string;
-            }[];
-        }[];
-    }[], WritingTopic[] | {
-        id: string;
-        title: string;
-        createdAt: string;
-        updatedAt: string;
-        knowledgePoints: {
-            id: string;
-            title: string;
-            content: string;
-            createdAt: string;
-            updatedAt: string;
-            chatHistory: {
-                id: string;
-                role: "user" | "assistant";
-                content: string;
-                createdAt: string;
-            }[];
-        }[];
-    }[]>;
-    selectedWritingTopicId: import("vue").Ref<string, string>;
-    selectedWritingPointId: import("vue").Ref<string, string>;
-    selectedWritingTopic: import("vue").ComputedRef<{
-        id: string;
-        title: string;
-        createdAt: string;
-        updatedAt: string;
-        knowledgePoints: {
-            id: string;
-            title: string;
-            content: string;
-            createdAt: string;
-            updatedAt: string;
-            chatHistory: {
-                id: string;
-                role: "user" | "assistant";
-                content: string;
-                createdAt: string;
-            }[];
-        }[];
-    } | null>;
-    selectedWritingPoint: import("vue").ComputedRef<{
-        id: string;
-        title: string;
-        content: string;
-        createdAt: string;
-        updatedAt: string;
-        chatHistory: {
-            id: string;
-            role: "user" | "assistant";
-            content: string;
-            createdAt: string;
-        }[];
-    } | null>;
-    writingLoading: import("vue").Ref<boolean, boolean>;
     fetchVocabulary: () => Promise<void>;
     selectWord: (id: string) => Promise<void>;
     searchWord: (query: string) => Promise<void>;
@@ -462,33 +390,6 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     }>;
     deleteListeningGroup: (id: string) => Promise<void>;
     selectListeningGroup: (id: string) => void;
-    fetchWritingTopics: () => Promise<void>;
-    addWritingTopic: (title: string) => Promise<{
-        created: boolean;
-        topic: WritingTopic;
-    }>;
-    updateWritingTopicTitle: (topicId: string, title: string) => Promise<WritingTopic>;
-    deleteWritingTopic: (topicId: string) => Promise<void>;
-    selectWritingTopic: (topicId: string) => void;
-    selectWritingPoint: (pointId: string) => void;
-    addWritingKnowledgePoint: (topicId: string, payload: {
-        title: string;
-        content: string;
-    }) => Promise<{
-        topic: WritingTopic;
-        point: WritingKnowledgePoint;
-    }>;
-    updateWritingKnowledgePoint: (topicId: string, pointId: string, payload: {
-        title: string;
-        content: string;
-    }) => Promise<WritingTopic>;
-    deleteWritingKnowledgePoint: (topicId: string, pointId: string) => Promise<void>;
-    sendWritingKnowledgePointChatMessage: (topicId: string, pointId: string, message: string) => Promise<string>;
-    clearWritingKnowledgePointChat: (topicId: string, pointId: string) => Promise<{
-        topic: WritingTopic;
-        point: WritingKnowledgePoint;
-    }>;
-    createExpressionTask: (topicId: string) => Promise<LearningTask>;
     ensureWordAudio: (id: string) => Promise<string>;
     ensureListeningAudio: (id: string) => Promise<string>;
     selectListening: (id: string) => void;
@@ -526,7 +427,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     markExampleImagesLoading: (sentences: string[]) => void;
     checkExampleImage: (example: string) => Promise<string | null>;
     startExampleImagePolling: () => void;
-}, "loading" | "items" | "selectedId" | "searchResult" | "searching" | "savingWord" | "quizSession" | "tasks" | "mistakes" | "tasksLoading" | "listeningItems" | "listeningLoading" | "selectedListeningId" | "listeningGroups" | "selectedListeningGroupId" | "writingTopics" | "selectedWritingTopicId" | "selectedWritingPointId" | "writingLoading">, Pick<{
+}, "loading" | "selectedId" | "items" | "searchResult" | "searching" | "savingWord" | "quizSession" | "tasks" | "mistakes" | "tasksLoading" | "listeningItems" | "listeningLoading" | "selectedListeningId" | "listeningGroups" | "selectedListeningGroupId">, Pick<{
     items: import("vue").Ref<{
         id: string;
         text: string;
@@ -858,78 +759,6 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         updatedAt: string;
     }[]>;
     selectedListeningGroupId: import("vue").Ref<string, string>;
-    writingTopics: import("vue").Ref<{
-        id: string;
-        title: string;
-        createdAt: string;
-        updatedAt: string;
-        knowledgePoints: {
-            id: string;
-            title: string;
-            content: string;
-            createdAt: string;
-            updatedAt: string;
-            chatHistory: {
-                id: string;
-                role: "user" | "assistant";
-                content: string;
-                createdAt: string;
-            }[];
-        }[];
-    }[], WritingTopic[] | {
-        id: string;
-        title: string;
-        createdAt: string;
-        updatedAt: string;
-        knowledgePoints: {
-            id: string;
-            title: string;
-            content: string;
-            createdAt: string;
-            updatedAt: string;
-            chatHistory: {
-                id: string;
-                role: "user" | "assistant";
-                content: string;
-                createdAt: string;
-            }[];
-        }[];
-    }[]>;
-    selectedWritingTopicId: import("vue").Ref<string, string>;
-    selectedWritingPointId: import("vue").Ref<string, string>;
-    selectedWritingTopic: import("vue").ComputedRef<{
-        id: string;
-        title: string;
-        createdAt: string;
-        updatedAt: string;
-        knowledgePoints: {
-            id: string;
-            title: string;
-            content: string;
-            createdAt: string;
-            updatedAt: string;
-            chatHistory: {
-                id: string;
-                role: "user" | "assistant";
-                content: string;
-                createdAt: string;
-            }[];
-        }[];
-    } | null>;
-    selectedWritingPoint: import("vue").ComputedRef<{
-        id: string;
-        title: string;
-        content: string;
-        createdAt: string;
-        updatedAt: string;
-        chatHistory: {
-            id: string;
-            role: "user" | "assistant";
-            content: string;
-            createdAt: string;
-        }[];
-    } | null>;
-    writingLoading: import("vue").Ref<boolean, boolean>;
     fetchVocabulary: () => Promise<void>;
     selectWord: (id: string) => Promise<void>;
     searchWord: (query: string) => Promise<void>;
@@ -984,33 +813,6 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     }>;
     deleteListeningGroup: (id: string) => Promise<void>;
     selectListeningGroup: (id: string) => void;
-    fetchWritingTopics: () => Promise<void>;
-    addWritingTopic: (title: string) => Promise<{
-        created: boolean;
-        topic: WritingTopic;
-    }>;
-    updateWritingTopicTitle: (topicId: string, title: string) => Promise<WritingTopic>;
-    deleteWritingTopic: (topicId: string) => Promise<void>;
-    selectWritingTopic: (topicId: string) => void;
-    selectWritingPoint: (pointId: string) => void;
-    addWritingKnowledgePoint: (topicId: string, payload: {
-        title: string;
-        content: string;
-    }) => Promise<{
-        topic: WritingTopic;
-        point: WritingKnowledgePoint;
-    }>;
-    updateWritingKnowledgePoint: (topicId: string, pointId: string, payload: {
-        title: string;
-        content: string;
-    }) => Promise<WritingTopic>;
-    deleteWritingKnowledgePoint: (topicId: string, pointId: string) => Promise<void>;
-    sendWritingKnowledgePointChatMessage: (topicId: string, pointId: string, message: string) => Promise<string>;
-    clearWritingKnowledgePointChat: (topicId: string, pointId: string) => Promise<{
-        topic: WritingTopic;
-        point: WritingKnowledgePoint;
-    }>;
-    createExpressionTask: (topicId: string) => Promise<LearningTask>;
     ensureWordAudio: (id: string) => Promise<string>;
     ensureListeningAudio: (id: string) => Promise<string>;
     selectListening: (id: string) => void;
@@ -1048,7 +850,7 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     markExampleImagesLoading: (sentences: string[]) => void;
     checkExampleImage: (example: string) => Promise<string | null>;
     startExampleImagePolling: () => void;
-}, "selectedWord" | "selectedListening" | "selectedWritingTopic" | "selectedWritingPoint">, Pick<{
+}, "selectedWord" | "selectedListening">, Pick<{
     items: import("vue").Ref<{
         id: string;
         text: string;
@@ -1380,78 +1182,6 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
         updatedAt: string;
     }[]>;
     selectedListeningGroupId: import("vue").Ref<string, string>;
-    writingTopics: import("vue").Ref<{
-        id: string;
-        title: string;
-        createdAt: string;
-        updatedAt: string;
-        knowledgePoints: {
-            id: string;
-            title: string;
-            content: string;
-            createdAt: string;
-            updatedAt: string;
-            chatHistory: {
-                id: string;
-                role: "user" | "assistant";
-                content: string;
-                createdAt: string;
-            }[];
-        }[];
-    }[], WritingTopic[] | {
-        id: string;
-        title: string;
-        createdAt: string;
-        updatedAt: string;
-        knowledgePoints: {
-            id: string;
-            title: string;
-            content: string;
-            createdAt: string;
-            updatedAt: string;
-            chatHistory: {
-                id: string;
-                role: "user" | "assistant";
-                content: string;
-                createdAt: string;
-            }[];
-        }[];
-    }[]>;
-    selectedWritingTopicId: import("vue").Ref<string, string>;
-    selectedWritingPointId: import("vue").Ref<string, string>;
-    selectedWritingTopic: import("vue").ComputedRef<{
-        id: string;
-        title: string;
-        createdAt: string;
-        updatedAt: string;
-        knowledgePoints: {
-            id: string;
-            title: string;
-            content: string;
-            createdAt: string;
-            updatedAt: string;
-            chatHistory: {
-                id: string;
-                role: "user" | "assistant";
-                content: string;
-                createdAt: string;
-            }[];
-        }[];
-    } | null>;
-    selectedWritingPoint: import("vue").ComputedRef<{
-        id: string;
-        title: string;
-        content: string;
-        createdAt: string;
-        updatedAt: string;
-        chatHistory: {
-            id: string;
-            role: "user" | "assistant";
-            content: string;
-            createdAt: string;
-        }[];
-    } | null>;
-    writingLoading: import("vue").Ref<boolean, boolean>;
     fetchVocabulary: () => Promise<void>;
     selectWord: (id: string) => Promise<void>;
     searchWord: (query: string) => Promise<void>;
@@ -1506,33 +1236,6 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     }>;
     deleteListeningGroup: (id: string) => Promise<void>;
     selectListeningGroup: (id: string) => void;
-    fetchWritingTopics: () => Promise<void>;
-    addWritingTopic: (title: string) => Promise<{
-        created: boolean;
-        topic: WritingTopic;
-    }>;
-    updateWritingTopicTitle: (topicId: string, title: string) => Promise<WritingTopic>;
-    deleteWritingTopic: (topicId: string) => Promise<void>;
-    selectWritingTopic: (topicId: string) => void;
-    selectWritingPoint: (pointId: string) => void;
-    addWritingKnowledgePoint: (topicId: string, payload: {
-        title: string;
-        content: string;
-    }) => Promise<{
-        topic: WritingTopic;
-        point: WritingKnowledgePoint;
-    }>;
-    updateWritingKnowledgePoint: (topicId: string, pointId: string, payload: {
-        title: string;
-        content: string;
-    }) => Promise<WritingTopic>;
-    deleteWritingKnowledgePoint: (topicId: string, pointId: string) => Promise<void>;
-    sendWritingKnowledgePointChatMessage: (topicId: string, pointId: string, message: string) => Promise<string>;
-    clearWritingKnowledgePointChat: (topicId: string, pointId: string) => Promise<{
-        topic: WritingTopic;
-        point: WritingKnowledgePoint;
-    }>;
-    createExpressionTask: (topicId: string) => Promise<LearningTask>;
     ensureWordAudio: (id: string) => Promise<string>;
     ensureListeningAudio: (id: string) => Promise<string>;
     selectListening: (id: string) => void;
@@ -1570,5 +1273,5 @@ export declare const useVocabularyStore: import("pinia").StoreDefinition<"vocabu
     markExampleImagesLoading: (sentences: string[]) => void;
     checkExampleImage: (example: string) => Promise<string | null>;
     startExampleImagePolling: () => void;
-}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "deleteWord" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "createListeningTaskForGroup" | "fetchListeningGroups" | "createListeningGroup" | "deleteListeningGroup" | "selectListeningGroup" | "fetchWritingTopics" | "addWritingTopic" | "updateWritingTopicTitle" | "deleteWritingTopic" | "selectWritingTopic" | "selectWritingPoint" | "addWritingKnowledgePoint" | "updateWritingKnowledgePoint" | "deleteWritingKnowledgePoint" | "sendWritingKnowledgePointChatMessage" | "clearWritingKnowledgePointChat" | "createExpressionTask" | "ensureWordAudio" | "ensureListeningAudio" | "selectListening" | "updateListeningNote" | "sendListeningChatMessage" | "clearListeningChatHistory" | "startTask" | "clearTask" | "retryTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "setQuizSession" | "setQuizQuestionImage" | "saveWordNoteById" | "saveListeningNoteById" | "updateListeningSentenceText" | "submitQuizAnswer" | "exampleImageState" | "exampleImageUrl" | "isExampleImageLoading" | "exampleImageError" | "exampleImageLabel" | "exampleImageButtonTitle" | "generateExampleImage" | "markExampleImagesLoading" | "checkExampleImage" | "startExampleImagePolling">>;
+}, "fetchVocabulary" | "selectWord" | "searchWord" | "saveWord" | "updateNote" | "sendChatMessage" | "clearChatHistory" | "deleteWord" | "generateQuiz" | "fetchTasks" | "createVocabularyTask" | "createListeningTask" | "createListeningTaskForGroup" | "fetchListeningGroups" | "createListeningGroup" | "deleteListeningGroup" | "selectListeningGroup" | "ensureWordAudio" | "ensureListeningAudio" | "selectListening" | "updateListeningNote" | "sendListeningChatMessage" | "clearListeningChatHistory" | "startTask" | "clearTask" | "retryTask" | "startMistakeReview" | "fetchListening" | "addListeningSentence" | "deleteListeningSentence" | "loadQuiz" | "setQuizSession" | "setQuizQuestionImage" | "saveWordNoteById" | "saveListeningNoteById" | "updateListeningSentenceText" | "submitQuizAnswer" | "exampleImageState" | "exampleImageUrl" | "isExampleImageLoading" | "exampleImageError" | "exampleImageLabel" | "exampleImageButtonTitle" | "generateExampleImage" | "markExampleImagesLoading" | "checkExampleImage" | "startExampleImagePolling">>;
 export {};

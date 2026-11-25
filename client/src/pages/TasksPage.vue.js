@@ -60,8 +60,9 @@ async function startTask(taskId) {
             throw new Error('Task not found.');
         }
         if (task.type === 'expression') {
-            await router.push(`/expression-practice/${task.id}`);
-            return;
+            // Role-play practice was retired; old expression tasks stay visible but
+            // are no longer startable.
+            throw new Error('Expression role-play practice is no longer available.');
         }
         const sessionId = await store.startTask(taskId);
         await router.push(`/quiz/${sessionId}`);

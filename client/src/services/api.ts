@@ -4,7 +4,6 @@ import type {
   ListeningEntry,
   ListeningGroup,
   MistakeEntry,
-  PolishResult,
   QuizSession,
   ReadingArticle,
   ReadingArticleBundle,
@@ -13,15 +12,12 @@ import type {
   ReadingChatMessage,
   ReadingMark,
   ReadingMarkKind,
-  ScenarioData,
-  ScenarioSummary,
   SearchResult,
   SettingsForm,
   TutorMessage,
   TutorSession,
   TutorSessionDetail,
   VocabularyEntry,
-  WritingKnowledgePoint,
   WritingTopic,
 } from '@/types/models';
 
@@ -395,199 +391,17 @@ export const api = {
   getWritingTopics() {
     return unwrap<WritingTopic[]>(http.get('/writing/topics'));
   },
-  addWritingTopic(title: string) {
-    return unwrap<{ created: boolean; topic: WritingTopic }>(http.post('/writing/topics', { title }));
+  addWritingTopic(title: string, kind: 'grammar' | 'topic' = 'topic') {
+    return unwrap<{ created: boolean; topic: WritingTopic }>(http.post('/writing/topics', { title, kind }));
   },
   updateWritingTopicTitle(topicId: string, title: string) {
     return unwrap<WritingTopic>(http.post(`/writing/topics/${topicId}/title`, { title }));
   },
+  saveWritingTopicNote(topicId: string, note: string) {
+    return unwrap<WritingTopic>(http.post(`/writing/topics/${topicId}/note`, { note }));
+  },
   deleteWritingTopic(topicId: string) {
     return unwrap<{ removed: boolean }>(http.post(`/writing/topics/${topicId}/delete`));
-  },
-  addWritingKnowledgePoint(topicId: string, payload: { title: string; content: string }) {
-    return unwrap<{ topic: WritingTopic; point: WritingKnowledgePoint }>(http.post(`/writing/topics/${topicId}/points`, payload));
-  },
-  updateWritingKnowledgePoint(topicId: string, pointId: string, payload: { title: string; content: string }) {
-    return unwrap<WritingTopic>(http.post(`/writing/topics/${topicId}/points/${pointId}`, payload));
-  },
-  deleteWritingKnowledgePoint(topicId: string, pointId: string) {
-    return unwrap<WritingTopic>(http.post(`/writing/topics/${topicId}/points/${pointId}/delete`));
-  },
-  async streamWritingKnowledgePointChat(
-    topicId: string,
-    pointId: string,
-    message: string,
-    onDelta: (chunk: string) => void,
-  ) {
-    const token = getStoredAccessToken();
-    const response = await fetch(`/api/writing/topics/${topicId}/points/${pointId}/chat/stream`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'x-access-token': token } : {}),
-      },
-      body: JSON.stringify({ message }),
-    });
-
-    if (!response.ok || !response.body) {
-      throw new Error('Chat failed.');
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let fullReply = '';
-    let doneReceived = false;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-
-      buffer += decoder.decode(value, { stream: true });
-      const events = buffer.split('\n\n');
-      buffer = events.pop() ?? '';
-
-      for (const event of events) {
-        const dataLine = event
-          .split('\n')
-          .map((line) => line.trim())
-          .find((line) => line.startsWith('data:'));
-
-        if (!dataLine) {
-          continue;
-        }
-
-        const payload = JSON.parse(dataLine.slice(5).trim()) as {
-          type: 'delta' | 'done' | 'error';
-          content?: string;
-          error?: string;
-        };
-
-        if (payload.type === 'delta' && payload.content) {
-          fullReply += payload.content;
-          onDelta(payload.content);
-        }
-
-        if (payload.type === 'error') {
-          throw new Error(payload.error || 'Chat failed.');
-        }
-
-        if (payload.type === 'done') {
-          doneReceived = true;
-        }
-      }
-    }
-
-    if (!doneReceived) {
-      throw new Error('Chat stream ended unexpectedly.');
-    }
-
-    return fullReply.trim();
-  },
-  clearWritingKnowledgePointChat(topicId: string, pointId: string) {
-    return unwrap<{ topic: WritingTopic; point: WritingKnowledgePoint }>(http.post(`/writing/topics/${topicId}/points/${pointId}/chat/clear`));
-  },
-  createExpressionTask(topicId: string) {
-    return unwrap<LearningTask>(http.post(`/writing/scenarios/${topicId}`));
-  },
-  async streamScenarioChat(
-    scenario: ScenarioData,
-    history: Array<{ role: 'user' | 'assistant'; content: string }>,
-    message: string,
-    onDelta: (chunk: string) => void,
-  ) {
-    const token = getStoredAccessToken();
-    const response = await fetch('/api/writing/scenarios/chat/stream', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'x-access-token': token } : {}),
-      },
-      body: JSON.stringify({ scenario, history, message }),
-    });
-
-    if (!response.ok || !response.body) {
-      throw new Error('Chat failed.');
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let fullReply = '';
-    let doneReceived = false;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-
-      buffer += decoder.decode(value, { stream: true });
-      const events = buffer.split('\n\n');
-      buffer = events.pop() ?? '';
-
-      for (const event of events) {
-        const dataLine = event
-          .split('\n')
-          .map((line) => line.trim())
-          .find((line) => line.startsWith('data:'));
-
-        if (!dataLine) {
-          continue;
-        }
-
-        const payload = JSON.parse(dataLine.slice(5).trim()) as {
-          type: 'delta' | 'done' | 'error';
-          content?: string;
-          error?: string;
-        };
-
-        if (payload.type === 'delta' && payload.content) {
-          fullReply += payload.content;
-          onDelta(payload.content);
-        }
-
-        if (payload.type === 'error') {
-          throw new Error(payload.error || 'Chat failed.');
-        }
-
-        if (payload.type === 'done') {
-          doneReceived = true;
-        }
-      }
-    }
-
-    if (!doneReceived) {
-      throw new Error('Chat stream ended unexpectedly.');
-    }
-
-    return fullReply.trim();
-  },
-  checkObjectives(
-    scenario: ScenarioData,
-    history: Array<{ role: 'user' | 'assistant'; content: string }>,
-  ) {
-    return unwrap<{ completedObjectiveIds: string[] }>(
-      http.post('/writing/scenarios/check-objectives', { scenario, history }),
-    );
-  },
-  summarizeScenario(
-    scenario: ScenarioData,
-    history: Array<{ role: 'user' | 'assistant'; content: string }>,
-  ) {
-    return unwrap<ScenarioSummary>(
-      http.post('/writing/scenarios/summarize', { scenario, history }),
-    );
-  },
-  polishUserMessages(
-    scenario: ScenarioData,
-    messages: string[],
-  ) {
-    return unwrap<{ results: PolishResult[] }>(
-      http.post('/writing/scenarios/polish', { scenario, messages }),
-    );
   },
   listTutorSessions() {
     return unwrap<TutorSession[]>(http.get('/tutor/sessions'));

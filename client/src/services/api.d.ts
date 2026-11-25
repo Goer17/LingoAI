@@ -1,4 +1,4 @@
-import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, PolishResult, QuizSession, ReadingArticle, ReadingArticleBundle, ReadingArticleSummary, ReadingCategory, ReadingChatMessage, ReadingMark, ReadingMarkKind, ScenarioData, ScenarioSummary, SearchResult, SettingsForm, TutorMessage, TutorSession, TutorSessionDetail, VocabularyEntry, WritingKnowledgePoint, WritingTopic } from '@/types/models';
+import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, QuizSession, ReadingArticle, ReadingArticleBundle, ReadingArticleSummary, ReadingCategory, ReadingChatMessage, ReadingMark, ReadingMarkKind, SearchResult, SettingsForm, TutorMessage, TutorSession, TutorSessionDetail, VocabularyEntry, WritingTopic } from '@/types/models';
 export declare const api: {
     login(token: string): Promise<{
         token: string;
@@ -139,48 +139,14 @@ export declare const api: {
         newMessage: string;
     }, onDelta: (chunk: string) => void): Promise<string>;
     getWritingTopics(): Promise<WritingTopic[]>;
-    addWritingTopic(title: string): Promise<{
+    addWritingTopic(title: string, kind?: "grammar" | "topic"): Promise<{
         created: boolean;
         topic: WritingTopic;
     }>;
     updateWritingTopicTitle(topicId: string, title: string): Promise<WritingTopic>;
+    saveWritingTopicNote(topicId: string, note: string): Promise<WritingTopic>;
     deleteWritingTopic(topicId: string): Promise<{
         removed: boolean;
-    }>;
-    addWritingKnowledgePoint(topicId: string, payload: {
-        title: string;
-        content: string;
-    }): Promise<{
-        topic: WritingTopic;
-        point: WritingKnowledgePoint;
-    }>;
-    updateWritingKnowledgePoint(topicId: string, pointId: string, payload: {
-        title: string;
-        content: string;
-    }): Promise<WritingTopic>;
-    deleteWritingKnowledgePoint(topicId: string, pointId: string): Promise<WritingTopic>;
-    streamWritingKnowledgePointChat(topicId: string, pointId: string, message: string, onDelta: (chunk: string) => void): Promise<string>;
-    clearWritingKnowledgePointChat(topicId: string, pointId: string): Promise<{
-        topic: WritingTopic;
-        point: WritingKnowledgePoint;
-    }>;
-    createExpressionTask(topicId: string): Promise<LearningTask>;
-    streamScenarioChat(scenario: ScenarioData, history: Array<{
-        role: "user" | "assistant";
-        content: string;
-    }>, message: string, onDelta: (chunk: string) => void): Promise<string>;
-    checkObjectives(scenario: ScenarioData, history: Array<{
-        role: "user" | "assistant";
-        content: string;
-    }>): Promise<{
-        completedObjectiveIds: string[];
-    }>;
-    summarizeScenario(scenario: ScenarioData, history: Array<{
-        role: "user" | "assistant";
-        content: string;
-    }>): Promise<ScenarioSummary>;
-    polishUserMessages(scenario: ScenarioData, messages: string[]): Promise<{
-        results: PolishResult[];
     }>;
     listTutorSessions(): Promise<TutorSession[]>;
     createTutorSession(title?: string): Promise<TutorSession>;

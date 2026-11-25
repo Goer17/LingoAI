@@ -1,25 +1,27 @@
 import { writingTopicRepository } from '../db/repositories.js';
-import type { ChatMessage, WritingTopic } from '../types/models.js';
+import type { WritingTopic, WritingTopicKind } from '../types/models.js';
 import { createId } from '../utils/id.js';
 
 function normalizeTitle(value: string) {
   return value.trim().replace(/\s+/g, ' ');
 }
 
+function normalizeKind(value: unknown): WritingTopicKind {
+  return value === 'grammar' ? 'grammar' : 'topic';
+}
+
+/** Fill in the fields older rows predate, so callers never see undefined. */
 function normalizeTopic(topic: WritingTopic): WritingTopic {
   return {
     ...topic,
-    knowledgePoints: (topic.knowledgePoints ?? []).map((item) => ({
-      ...item,
-      title: typeof item.title === 'string' ? item.title : '',
-      content: typeof item.content === 'string' ? item.content : '',
-      chatHistory: Array.isArray(item.chatHistory) ? item.chatHistory : [],
-    })),
+    kind: normalizeKind(topic.kind),
+    note: typeof topic.note === 'string' ? topic.note : '',
+    knowledgePoints: topic.knowledgePoints ?? [],
   };
 }
 
 export function listWritingTopics() {
-  return writingTopicRepository.list().map((item) => normalizeTopic(item));
+  return writingTopicRepository.list().map(normalizeTopic);
 }
 
 export function getWritingTopicById(id: string) {
@@ -27,10 +29,10 @@ export function getWritingTopicById(id: string) {
   return topic ? normalizeTopic(topic) : null;
 }
 
-export function addWritingTopic(title: string) {
+export function addWritingTopic(title: string, kind: WritingTopicKind = 'topic') {
   const normalized = normalizeTitle(title);
   if (!normalized) {
-    throw new Error('Topic title is required.');
+    throw new Error('Title is required.');
   }
 
   const existing = writingTopicRepository.getByNormalizedTitle(normalized.toLowerCase());
@@ -42,6 +44,8 @@ export function addWritingTopic(title: string) {
   const topic: WritingTopic = {
     id: createId('writing-topic'),
     title: normalized,
+    kind: normalizeKind(kind),
+    note: '',
     createdAt: now,
     updatedAt: now,
     knowledgePoints: [],
@@ -59,12 +63,12 @@ export function updateWritingTopicTitle(id: string, title: string) {
 
   const normalized = normalizeTitle(title);
   if (!normalized) {
-    throw new Error('Topic title is required.');
+    throw new Error('Title is required.');
   }
 
   const duplicate = writingTopicRepository.getByNormalizedTitle(normalized.toLowerCase());
   if (duplicate && duplicate.id !== id) {
-    throw new Error('Topic title already exists.');
+    throw new Error('That title already exists.');
   }
 
   const updated: WritingTopic = {
@@ -77,9 +81,24 @@ export function updateWritingTopicTitle(id: string, title: string) {
   return updated;
 }
 
-export function removeWritingTopic(id: string) {
+export function updateWritingTopicNote(id: string, note: string) {
   const topic = getWritingTopicById(id);
   if (!topic) {
+    return null;
+  }
+
+  const updated: WritingTopic = {
+    ...topic,
+    note,
+    updatedAt: new Date().toISOString(),
+  };
+
+  writingTopicRepository.save(updated);
+  return updated;
+}
+
+export function removeWritingTopic(id: string) {
+  if (!writingTopicRepository.getById(id)) {
     return false;
   }
 
@@ -87,179 +106,29 @@ export function removeWritingTopic(id: string) {
   return true;
 }
 
-export function addKnowledgePoint(topicId: string, title: string, content: string) {
-  const topic = getWritingTopicById(topicId);
-  if (!topic) {
-    return null;
-  }
+/**
+ * One-time data move: older topics kept their writing in knowledge points.
+ * Fold each point into the topic note (as a `##` section) so the text survives
+ * the Points UI being removed. Rows that already have a note are left alone.
+ */
+export function backfillWritingNotes() {
+  let changed = 0;
 
-  const normalizedTitle = normalizeTitle(title);
-  if (!normalizedTitle) {
-    throw new Error('Knowledge point title is required.');
-  }
-
-  const now = new Date().toISOString();
-  const point = {
-    id: createId('writing-point'),
-    title: normalizedTitle,
-    content: content.trim(),
-    createdAt: now,
-    updatedAt: now,
-    chatHistory: [] as ChatMessage[],
-  };
-
-  const updated: WritingTopic = {
-    ...topic,
-    updatedAt: now,
-    knowledgePoints: [point, ...topic.knowledgePoints],
-  };
-
-  writingTopicRepository.save(updated);
-  return { topic: updated, point };
-}
-
-export function updateKnowledgePoint(topicId: string, pointId: string, payload: { title: string; content: string }) {
-  const topic = getWritingTopicById(topicId);
-  if (!topic) {
-    return null;
-  }
-
-  const normalizedTitle = normalizeTitle(payload.title);
-  if (!normalizedTitle) {
-    throw new Error('Knowledge point title is required.');
-  }
-
-  let found = false;
-  const updatedPoints = topic.knowledgePoints.map((item) => {
-    if (item.id !== pointId) {
-      return item;
+  for (const raw of writingTopicRepository.list()) {
+    const topic = normalizeTopic(raw);
+    if (topic.note.trim() || !topic.knowledgePoints?.length) {
+      continue;
     }
 
-    found = true;
-    return {
-      ...item,
-      title: normalizedTitle,
-      content: payload.content.trim(),
-      updatedAt: new Date().toISOString(),
-    };
-  });
+    // Points were prepended when created, so reverse for the original order.
+    const note = [...topic.knowledgePoints]
+      .reverse()
+      .map((point) => `## ${point.title}\n\n${point.content}`.trim())
+      .join('\n\n');
 
-  if (!found) {
-    return null;
+    writingTopicRepository.save({ ...topic, note, updatedAt: new Date().toISOString() });
+    changed += 1;
   }
 
-  const updated: WritingTopic = {
-    ...topic,
-    updatedAt: new Date().toISOString(),
-    knowledgePoints: updatedPoints,
-  };
-  writingTopicRepository.save(updated);
-  return updated;
+  return changed;
 }
-
-export function removeKnowledgePoint(topicId: string, pointId: string) {
-  const topic = getWritingTopicById(topicId);
-  if (!topic) {
-    return null;
-  }
-
-  const nextPoints = topic.knowledgePoints.filter((item) => item.id !== pointId);
-  if (nextPoints.length === topic.knowledgePoints.length) {
-    return null;
-  }
-
-  const updated: WritingTopic = {
-    ...topic,
-    updatedAt: new Date().toISOString(),
-    knowledgePoints: nextPoints,
-  };
-  writingTopicRepository.save(updated);
-  return updated;
-}
-
-export function getKnowledgePoint(topicId: string, pointId: string) {
-  const topic = getWritingTopicById(topicId);
-  if (!topic) {
-    return null;
-  }
-
-  const point = topic.knowledgePoints.find((item) => item.id === pointId);
-  if (!point) {
-    return null;
-  }
-
-  return { topic, point };
-}
-
-export function appendKnowledgePointChat(topicId: string, pointId: string, role: ChatMessage['role'], content: string) {
-  const data = getKnowledgePoint(topicId, pointId);
-  if (!data) {
-    return null;
-  }
-
-  const now = new Date().toISOString();
-  const updatedPoints = data.topic.knowledgePoints.map((item) => {
-    if (item.id !== pointId) {
-      return item;
-    }
-
-    return {
-      ...item,
-      updatedAt: now,
-      chatHistory: [
-        ...item.chatHistory,
-        {
-          id: createId('chat'),
-          role,
-          content,
-          createdAt: now,
-        },
-      ],
-    };
-  });
-
-  const updatedTopic: WritingTopic = {
-    ...data.topic,
-    updatedAt: now,
-    knowledgePoints: updatedPoints,
-  };
-
-  writingTopicRepository.save(updatedTopic);
-  const point = updatedTopic.knowledgePoints.find((item) => item.id === pointId) ?? null;
-  if (!point) {
-    return null;
-  }
-
-  return { topic: updatedTopic, point };
-}
-
-export function clearKnowledgePointChat(topicId: string, pointId: string) {
-  const data = getKnowledgePoint(topicId, pointId);
-  if (!data) {
-    return null;
-  }
-
-  const now = new Date().toISOString();
-  const updatedTopic: WritingTopic = {
-    ...data.topic,
-    updatedAt: now,
-    knowledgePoints: data.topic.knowledgePoints.map((item) => (
-      item.id === pointId
-        ? {
-          ...item,
-          updatedAt: now,
-          chatHistory: [],
-        }
-        : item
-    )),
-  };
-
-  writingTopicRepository.save(updatedTopic);
-  const point = updatedTopic.knowledgePoints.find((item) => item.id === pointId) ?? null;
-  if (!point) {
-    return null;
-  }
-
-  return { topic: updatedTopic, point };
-}
-

@@ -10,7 +10,6 @@ import TutorPage from '@/pages/TutorPage.vue';
 import ListeningPage from '@/pages/ListeningPage.vue';
 import ReadingPage from '@/pages/ReadingPage.vue';
 import WritingPage from '@/pages/WritingPage.vue';
-import ExpressionPracticePage from '@/pages/ExpressionPracticePage.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -62,11 +61,6 @@ const router = createRouter({
           path: 'tasks',
           name: 'tasks',
           component: TasksPage,
-        },
-        {
-          path: 'expression-practice/:taskId',
-          name: 'expression-practice',
-          component: ExpressionPracticePage,
         },
       ],
     },

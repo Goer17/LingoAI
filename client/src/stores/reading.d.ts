@@ -449,4 +449,4 @@ export declare const useReadingStore: import("pinia").StoreDefinition<"reading",
     setError: (message: string) => void;
     setNotice: (message: string) => void;
     clearMessages: () => void;
-}, "loadCategories" | "loadArticles" | "selectCategory" | "createCategory" | "deleteCategory" | "createArticle" | "selectArticle" | "deleteArticle" | "resegmentArticle" | "addMark" | "saveNote" | "deleteMark" | "clearChat" | "sendChat" | "setError" | "setNotice" | "clearMessages">>;
+}, "saveNote" | "loadCategories" | "loadArticles" | "selectCategory" | "createCategory" | "deleteCategory" | "createArticle" | "selectArticle" | "deleteArticle" | "resegmentArticle" | "addMark" | "deleteMark" | "clearChat" | "sendChat" | "setError" | "setNotice" | "clearMessages">>;

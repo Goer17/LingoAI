@@ -206,11 +206,18 @@ export interface WritingKnowledgePoint {
   chatHistory: ChatMessage[];
 }
 
+export type WritingTopicKind = 'grammar' | 'topic';
+
 export interface WritingTopic {
   id: string;
   title: string;
+  /** Grammar and topic notes share one table; the Expression page splits on it. */
+  kind: WritingTopicKind;
+  /** One free-form Markdown note per title. */
+  note: string;
   createdAt: string;
   updatedAt: string;
+  /** Legacy knowledge points. Merged into `note` once, then no longer edited. */
   knowledgePoints: WritingKnowledgePoint[];
 }
 
