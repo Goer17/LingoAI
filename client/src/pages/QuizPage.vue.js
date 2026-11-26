@@ -145,9 +145,14 @@ const noteTarget = computed(() => {
     }
     return null;
 });
-const canAppeal = computed(() => (!feedbackIsCorrect.value
-    && displayQuestion.value?.type === 'fill_blank'
-    && Boolean(displayQuestion.value.imageUrl)));
+const canAppeal = computed(() => {
+    const question = displayQuestion.value;
+    if (!question || feedbackIsCorrect.value)
+        return false;
+    // Listening questions always get an appeal after a wrong answer. Keep the
+    // existing image-only rule for fill-in-the-blank questions.
+    return question.type === 'listening' || (question.type === 'fill_blank' && Boolean(question.imageUrl));
+});
 async function submit(payload) {
     if (submitting.value) {
         return;
