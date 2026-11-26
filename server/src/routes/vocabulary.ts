@@ -20,7 +20,7 @@ import { enqueueAutoImageGeneration } from '../services/autoImageService.js';
 import { getSettings } from '../services/settingsService.js';
 import { getTaskProgress, setTaskProgress } from '../services/taskProgressService.js';
 import type { TaskProgress } from '../services/taskProgressService.js';
-import { createQuizSession, getQuizSession, pickQuizEntries, setQuizAnswerCorrectness, setQuizQuestionImage, submitQuizAnswer, updateQuizSession } from '../services/quizService.js';
+import { addQuizAnswerVariant, createQuizSession, getQuizSession, pickQuizEntries, rememberAcceptedQuizAnswer, setQuizAnswerCorrectness, setQuizQuestionImage, submitQuizAnswer, updateQuizSession } from '../services/quizService.js';
 import {
   createLearningTask,
   createMistakeReviewSession,
@@ -1176,8 +1176,13 @@ vocabularyRouter.post('/quiz/:id/appeal', async (req, res) => {
     }));
 
     let updated = session;
-    if (verdict.acceptable && !answer.isCorrect) {
-      updated = setQuizAnswerCorrectness(session.id, question.id, true) ?? session;
+    if (verdict.acceptable) {
+      // Learn this answer so auto-grading accepts it next time without an appeal.
+      rememberAcceptedQuizAnswer(question, answer.response);
+      updated = addQuizAnswerVariant(session.id, question.id, answer.response) ?? session;
+      if (!answer.isCorrect) {
+        updated = setQuizAnswerCorrectness(updated.id, question.id, true) ?? updated;
+      }
       if (updated.completed) {
         removeMistakeForQuestion(updated, question.id);
         reconcileMistakesForCompletedSession(updated);

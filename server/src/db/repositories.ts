@@ -1,3 +1,4 @@
+import { createId } from '../utils/id.js';
 import { db } from './database.js';
 import type { LearningTask, ListeningEntry, ListeningGroup, MistakeEntry, QuizSession, ReadingArticle, ReadingCategory, ReadingMark, SentenceImage, Settings, SettingsModelCategory, TutorMemory, TutorMessage, TutorSession, VocabularyEntry, WritingTopic } from '../types/models.js';
 
@@ -212,6 +213,33 @@ export const quizRepository = {
       session.currentIndex,
       session.completed ? 1 : 0,
       JSON.stringify(session),
+    );
+  },
+};
+
+export const quizAliasRepository = {
+  listForQuestion(questionKey: string): string[] {
+    const rows = db.prepare(`
+      SELECT response
+      FROM quiz_answer_aliases
+      WHERE question_key = ?
+      ORDER BY created_at ASC
+    `).all(questionKey) as Array<{ response: string }>;
+    return rows.map((row) => row.response);
+  },
+
+  add(questionKey: string, response: string, normalizedResponse: string) {
+    db.prepare(`
+      INSERT INTO quiz_answer_aliases
+        (id, question_key, response, normalized_response, created_at)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(question_key, normalized_response) DO NOTHING
+    `).run(
+      createId('alias'),
+      questionKey,
+      response,
+      normalizedResponse,
+      new Date().toISOString(),
     );
   },
 };

@@ -53,6 +53,15 @@ db.exec(`
     payload_json TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS quiz_answer_aliases (
+    id TEXT PRIMARY KEY,
+    question_key TEXT NOT NULL,
+    response TEXT NOT NULL,
+    normalized_response TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE(question_key, normalized_response)
+  );
+
   CREATE TABLE IF NOT EXISTS learning_tasks (
     id TEXT PRIMARY KEY,
     type TEXT NOT NULL,
@@ -113,6 +122,9 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_vocabulary_order
     ON vocabulary_entries (familiarity ASC, created_at DESC);
+
+  CREATE INDEX IF NOT EXISTS idx_quiz_answer_aliases_question
+    ON quiz_answer_aliases (question_key);
 
   CREATE INDEX IF NOT EXISTS idx_learning_tasks_created
     ON learning_tasks (created_at DESC);

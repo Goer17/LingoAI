@@ -1,4 +1,4 @@
-import { quizRepository } from '../db/repositories.js';
+import { quizAliasRepository, quizRepository } from '../db/repositories.js';
 import { createId } from '../utils/id.js';
 import { pickByFamiliarity } from '../utils/quizSelection.js';
 import type { QuizQuestion, QuizSession, QuizSourceType, VocabularyEntry } from '../types/models.js';
@@ -52,6 +52,52 @@ export function updateQuizSession(session: QuizSession) {
   return session;
 }
 
+export function normalizeQuizResponse(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+/** Stable content key so an alias learned in one quiz applies to the same
+ *  question content in a future quiz (question ids change every session). */
+export function quizAnswerKey(question: Pick<QuizQuestion, 'type' | 'word' | 'sentence' | 'answer'>): string {
+  return [question.type, question.word, question.sentence, question.answer]
+    .map(normalizeQuizResponse)
+    .join('\u0000');
+}
+
+/** Persist an answer accepted through appeal so auto-grading accepts it next time. */
+export function rememberAcceptedQuizAnswer(question: QuizQuestion, response: string): void {
+  const normalized = normalizeQuizResponse(response);
+  if (!normalized) return;
+  quizAliasRepository.add(quizAnswerKey(question), response.trim(), normalized);
+}
+
+/** Also expose the accepted answer on the current question for immediate reuse. */
+export function addQuizAnswerVariant(
+  id: string,
+  questionId: string,
+  response: string,
+): QuizSession | null {
+  const session = getQuizSession(id);
+  if (!session) return null;
+  const question = session.questions.find((item) => item.id === questionId);
+  if (!question) return session;
+  const normalized = normalizeQuizResponse(response);
+  if (!normalized) return session;
+  const existing = [question.answer, ...(question.answerVariants ?? [])]
+    .map(normalizeQuizResponse);
+  if (existing.includes(normalized)) return session;
+  const updated: QuizSession = {
+    ...session,
+    questions: session.questions.map((item) => (
+      item.id === questionId
+        ? { ...item, answerVariants: [...(item.answerVariants ?? []), response.trim()] }
+        : item
+    )),
+  };
+  quizRepository.save(updated);
+  return updated;
+}
+
 export function submitQuizAnswer(
   id: string,
   payload: { questionId: string; response: string },
@@ -71,10 +117,11 @@ export function submitQuizAnswer(
     return session;
   }
 
-  const normalizedAnswer = payload.response.trim().replace(/\s+/g, ' ').toLowerCase();
+  const normalizedAnswer = normalizeQuizResponse(payload.response);
   const expectedSet = new Set([
-    question.answer.trim().replace(/\s+/g, ' ').toLowerCase(),
-    ...(question.answerVariants ?? []).map((item) => item.trim().replace(/\s+/g, ' ').toLowerCase()),
+    normalizeQuizResponse(question.answer),
+    ...(question.answerVariants ?? []).map(normalizeQuizResponse),
+    ...quizAliasRepository.listForQuestion(quizAnswerKey(question)).map(normalizeQuizResponse),
   ]);
   const isCorrect = expectedSet.has(normalizedAnswer);
 
