@@ -22,12 +22,23 @@ export function createQuizAppealPrompt(context: QuizAppealContext) {
     ? 'The question shows an illustration that the learner used as context.'
     : 'The question has no illustration.';
 
+  const gradingRules = context.type === 'listening'
+    ? [
+        'Accept the learner\'s answer ONLY when it is the expected answer with a spelling difference in ONE word — for example, a typo or a valid alternate spelling of that same word.',
+        'If the expected answer contains multiple words, all other words must match exactly; only one word may differ in spelling.',
+        'Reject every other difference, including synonyms, different words, missing or extra words, changes in tense, number, articles, prepositions, part of speech, contractions, punctuation, or paraphrases.',
+        'Do not use the illustration or general plausibility to accept a different word. When in doubt, reject.',
+      ]
+    : [
+        'Be fair and generous: accept defensible alternatives such as synonyms that fit the sentence, optional articles, singular/plural where the sentence allows it, contractions, and small typos that clearly represent the intended answer.',
+        'Do not accept answers that change the meaning of the sentence, use the wrong part of speech, or are unrelated to the target word.',
+        'If the question includes an illustration and the illustration is genuinely ambiguous, lean towards accepting a reasonable answer.',
+      ];
+
   return [
     'You are an experienced English teacher re-judging a vocabulary quiz answer after the learner appealed the automatic grade.',
-    'Accept the learner\'s answer ONLY when it is the expected answer with a spelling difference in ONE word — for example, a typo or a valid alternate spelling of that same word.',
-    'If the expected answer contains multiple words, all other words must match exactly; only one word may differ in spelling.',
-    'Reject every other difference, including synonyms, different words, missing or extra words, changes in tense, number, articles, prepositions, part of speech, contractions, punctuation, or paraphrases.',
-    'Do not use the illustration or general plausibility to accept a different word. When in doubt, reject.',
+    'Decide whether the learner\'s answer should be accepted as correct in this exact sentence.',
+    ...gradingRules,
     'Return a JSON object with exactly two fields: "acceptable" (boolean) and "reason" (a short explanation in English, 2-4 sentences).',
     '',
     `Question type: ${typeText}`,
